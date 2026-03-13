@@ -1,0 +1,7 @@
+(set-logic QF_UF)
+(declare-sort S 0)
+(declare-fun f (S) Bool)
+(declare-fun g (S) S)
+(declare-fun x1 () S)
+(assert (not (f (g x1))))
+(check-sat)
