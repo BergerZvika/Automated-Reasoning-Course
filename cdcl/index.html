@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Basic CDCL Interactive Lab</title>
+<title>CDCL Interactive Lab</title>
 <style>
 :root {
   --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
@@ -79,6 +79,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .ab-learn:not(.not-app):hover{background:rgba(20,184,166,.22);border-color:var(--teal)}
 .ab-back{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.3);color:#d8b4fe}
 .ab-back:not(.not-app):hover{background:rgba(168,85,247,.22);border-color:var(--purple)}
+.ab-forget{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.3);color:#93c5fd}
+.ab-forget:not(.not-app):hover{background:rgba(59,130,246,.22);border-color:var(--blue)}
+.ab-restart{background:rgba(103,232,249,.08);border-color:rgba(103,232,249,.25);color:#67e8f9}
+.ab-restart:not(.not-app):hover{background:rgba(103,232,249,.18);border-color:#67e8f9}
 .ab-fail{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.25);color:#fca5a5}
 .ab-fail:not(.not-app):hover{background:rgba(239,68,68,.18);border-color:var(--red)}
 
@@ -159,6 +163,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .hb-start{color:var(--muted)}
 .hb-unit{color:#fbbf24}.hb-decide{color:#a5b4fc}.hb-conflict{color:#fca5a5}
 .hb-explain{color:#fb923c}.hb-learn{color:#5eead4}.hb-backjump{color:#d8b4fe}.hb-fail{color:#ef4444}
+.hb-forget{color:#93c5fd}.hb-restart{color:#67e8f9}
 
 /* Modals */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center}
@@ -235,11 +240,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 </head>
 <body>
 <div class="hdr">
-  <a href="../../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
   <div class="hdr-left">
-    <h1>Basic CDCL Interactive Lab</h1>
-    <p>Conflict-Driven Clause Learning &mdash; step-by-step exploration</p>
+    <h1>CDCL Interactive Lab</h1>
+    <p>Conflict-Driven Clause Learning with Forget &amp; Restart &mdash; step-by-step exploration</p>
   </div>
+  <span class="hdr-badge">With Forget + Restart</span>
 </div>
 
 <div class="wrap">
@@ -266,6 +272,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <button class="exbtn" onclick="loadEx('learn')">Clause Learning</button>
       <button class="exbtn" onclick="loadEx('sat')">SAT formula</button>
       <button class="exbtn" onclick="loadEx('chain')">Chain Conflict</button>
+      <button class="exbtn" onclick="loadEx('forget')">Forget Demo</button>
+      <button class="exbtn" onclick="loadEx('restart')">Restart Demo</button>
     </div>
   </div>
 
@@ -312,6 +320,18 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
         <button id="btn-back"     class="abtn ab-back"     onclick="tryAct('backjump')">
           <span class="an">Backjump</span>
           <span class="ar">K≠∅, assertion level exists</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-forget"   class="abtn ab-forget"   onclick="tryAct('forget')">
+          <span class="an">Forget</span>
+          <span class="ar">K=∅, ∃ learned clause in F</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-restart"  class="abtn ab-restart"  onclick="tryAct('restart')">
+          <span class="an">Restart</span>
+          <span class="ar">K=∅, M≠∅ or D≠∅</span>
           <span class="ac">✓ Applicable</span>
           <span class="aw">✗ Not applicable — click to see why</span>
         </button>
@@ -447,6 +467,16 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   </div>
 </div>
 
+<!-- Forget Picker Modal -->
+<div class="overlay" id="forgetOv">
+  <div class="modal bj-modal">
+    <div class="modal-t">Choose a Learned Clause to Forget</div>
+    <div class="modal-d">Select a learned clause to remove from F. The solver may re-derive it if the same conflict arises again.</div>
+    <div id="forgetOpts" class="bj-opts"></div>
+    <button class="btn btn-g" style="margin-top:14px;width:100%" onclick="closeForget()">Cancel</button>
+  </div>
+</div>
+
 <!-- Heuristic Decision Modal -->
 <div class="overlay" id="heurOv">
   <div class="modal" style="max-width:700px;width:95%">
@@ -507,6 +537,14 @@ const EX = {
   chain:{
     f:'a | b, -a | c, -b | c, -c | d, -c | -d',
     d:'Chain: decisions cascade through unit propagations. Conflict involves multiple levels — watch CDCL resolve it.'
+  },
+  forget:{
+    f:'x1 | x2, -x1 | x3, -x2 | x3, -x3',
+    d:'Forget demo: after learning a clause and backjumping, use Forget to remove the learned clause, then observe the solver re-deriving it when the same conflict arises.'
+  },
+  restart:{
+    f:'x1 | x2 | x3, -x1 | x4, -x2 | x4, -x3 | x4, -x4',
+    d:'Restart demo: decide some literals, let unit propagation run, then use Restart to clear the trail while keeping any learned clauses. Notice the solver resumes with a clean state.'
   }
 };
 
@@ -673,6 +711,8 @@ function getApplicable(){
     explain:  !!S.k && findExplainStep()!==null,
     learn:    canLearnNow(),
     backjump: findBackjump()!==null,
+    forget:   !S.k && S.learned.length>0,
+    restart:  !S.k && (S.m.length>0||S.d.length>0),
     fail:     !!S.k && S.d.length===0 && findBackjump()===null
   };
 }
@@ -736,15 +776,15 @@ function doLearn(){
     <span class="expl-badge" style="background:rgba(20,184,166,.18);color:#5eead4">Learn</span>
     <p class="expl-text">
       The conflict clause <b>${fmtC(k)}</b> has been fully analyzed via resolution.<br>
-      We <b>add it to F</b> as a <em>learned clause</em>. This is the core of CDCL:<br>
-      the learned clause encodes what the solver discovered, preventing the same conflict in future.
+      We <b>add it to F</b> as a <em>learned clause</em> and <b>clear K</b>.<br>
+      Now apply <b>Conflict</b> — the learned clause is still fully false in M, so it is immediately detected as a new conflict. Then <b>Backjump</b>.
     </p>
     <div class="rule-box">
-      M, F, D, K &nbsp;⊢&nbsp; M, F ∪ {K}, D, K<br>
-      <span class="cm">// K = ${fmtC(k)} added to formula</span><br>
-      <span class="cm">// K is still active for Backjump</span>
+      M, F, D, K &nbsp;⊢&nbsp; M, F ∪ {K}, D, ∅<br>
+      <span class="cm">// K = ${fmtC(k)} added to formula, K cleared</span><br>
+      <span class="cm">// Next: Conflict will re-detect learned clause, then Backjump</span>
     </div>`;
-  snap('learn','K='+fmtC(k)); S.learned.push(k); S.lastExpl=expl; return true;
+  snap('learn','K='+fmtC(k)); S.learned.push(k); S.k=null; S.lastExpl=expl; return true;
 }
 
 function doBackjump(bj){
@@ -824,6 +864,44 @@ function doFail(){
   snap('fail','UNSAT — D=∅'); S.lastExpl=expl; S.status='unsat'; render(); showResult('unsat'); return true;
 }
 
+function doForget(clause){
+  if(!clause) clause=S.learned[0];
+  if(!clause) return false;
+  const expl=`
+    <span class="expl-badge" style="background:rgba(59,130,246,.18);color:#93c5fd">Forget</span>
+    <p class="expl-text">
+      Learned clause <b>${fmtC(clause)}</b> has been <b>removed from F</b>.<br>
+      This frees memory. The solver may re-derive this clause if the same conflict arises again.
+    </p>
+    <div class="rule-box">
+      M, F, D, ∅ &nbsp;⊢&nbsp; M, F \\ {${fmtC(clause)}}, D, ∅<br>
+      <span class="cm">// Learned clause removed from formula</span><br>
+      <span class="cm">// Can be re-learned if needed</span>
+    </div>`;
+  snap('forget','removed '+fmtC(clause));
+  const key=JSON.stringify([...clause].sort((a,b)=>a-b));
+  S.learned=S.learned.filter(c=>JSON.stringify([...c].sort((a,b)=>a-b))!==key);
+  S.lastExpl=expl; return true;
+}
+
+function doRestart(){
+  if(S.k!==null||(!S.m.length&&!S.d.length)) return false;
+  const nLearned=S.learned.length;
+  const expl=`
+    <span class="expl-badge" style="background:rgba(103,232,249,.15);color:#67e8f9">Restart</span>
+    <p class="expl-text">
+      Trail M and decisions D have been <b>cleared</b>. Learned clauses are <b>kept in F</b>.<br>
+      The solver restarts the search with accumulated knowledge from ${nLearned} learned clause${nLearned===1?'':'s'}.
+    </p>
+    <div class="rule-box">
+      M, F, D, ∅ &nbsp;⊢&nbsp; ∅, F, ∅, ∅<br>
+      <span class="cm">// M = ∅, D = ∅, K = ∅</span><br>
+      <span class="cm">// ${nLearned} learned clause${nLearned===1?'':'s'} preserved in F</span>
+    </div>`;
+  snap('restart','cleared M+D, kept '+nLearned+' learned');
+  S.m=[]; S.d=[]; S.k=null; S.lastExpl=expl; return true;
+}
+
 function checkSat(){
   if(isSat()){ S.status='sat'; render(); showResult('sat'); return true; }
   return false;
@@ -839,6 +917,8 @@ function render(){
   setB('btn-explain', app.explain);
   setB('btn-learn',   app.learn);
   setB('btn-back',    app.backjump);
+  setB('btn-forget',  app.forget);
+  setB('btn-restart', app.restart);
   setB('btn-fail',    app.fail);
   renderK();
   renderFormula();
@@ -1003,8 +1083,8 @@ function renderHint(app){
   } else if(app.explain){
     const step=findExplainStep();
     el.innerHTML=`🔍 <b>Explain</b> (resolution) applicable:<br>Resolve on <b>${fmt(step.lit)}</b> using ${fmtC(step.reasonClause)}.`;
-  } else if(app.learn&&app.backjump){
-    el.innerHTML=`📚 K is ready. Apply <b>Learn</b> to add K to F, then <b>Backjump</b>.`;
+  } else if(app.learn){
+    el.innerHTML=`📚 K is ready. Apply <b>Learn</b> to add K to F (K will be cleared — then use Conflict + Backjump).`;
   } else if(app.backjump){
     const bj=findBackjump();
     el.innerHTML=`↩ <b>Backjump</b>: assert <b>${fmt(bj.l)}</b>, jump to before decision <b>${fmt(bj.l0)}</b>.`;
@@ -1013,6 +1093,10 @@ function renderHint(app){
   } else if(app.decide){
     const v=allUnassigned()[0];
     el.innerHTML=`🔵 No unit clauses, no conflict. <b>Decide</b> a variable. Suggestion: <b>${S.varNames[v]}</b>.`;
+  } else if(app.forget){
+    el.innerHTML=`🗑 <b>Forget</b> available: ${S.learned.length} learned clause${S.learned.length===1?'':'s'} in F. Remove one to free memory.`;
+  } else if(app.restart){
+    el.innerHTML=`🔄 <b>Restart</b> available. Clears M and D, keeps ${S.learned.length} learned clause${S.learned.length===1?'':'s'}.`;
   } else if(isSat()){
     el.innerHTML='✅ All clauses satisfied!';
   } else {
@@ -1020,7 +1104,7 @@ function renderHint(app){
   }
 }
 
-const H_LABELS={unit:'Unit Propagate',decide:'Decide',conflict:'Conflict',explain:'Explain',learn:'Learn',backjump:'Backjump',fail:'Fail'};
+const H_LABELS={unit:'Unit Propagate',decide:'Decide',conflict:'Conflict',explain:'Explain',learn:'Learn',backjump:'Backjump',forget:'Forget',restart:'Restart',fail:'Fail'};
 function renderHistory(){
   const el=document.getElementById('histTrack');
   el.innerHTML='';
@@ -1141,14 +1225,36 @@ function getPreconditions(type){
       `D = {${d.map(fmt).join(', ')}} — decisions remain; use Backjump instead`)
   ];
 
+  if(type==='forget') return [
+    cond('K = ∅ (no active conflict)',
+      k===null,
+      'K = ∅ ✓',
+      `K = <b>${fmtC(k)}</b> is active — finish conflict analysis first`),
+    cond('∃ learned clause in F to remove',
+      S.learned.length>0,
+      `${S.learned.length} learned clause${S.learned.length===1?'':'s'} available`,
+      'No learned clauses in F — nothing to forget')
+  ];
+
+  if(type==='restart') return [
+    cond('K = ∅ (no active conflict)',
+      k===null,
+      'K = ∅ ✓',
+      `K = <b>${fmtC(k)}</b> is active — finish conflict analysis first`),
+    cond('M ≠ ∅ or D ≠ ∅ (something to restart from)',
+      m.length>0||d.length>0,
+      `M has ${m.length} literal${m.length===1?'':'s'} — restart will clear them`,
+      'M = ∅ and D = ∅ — nothing to restart (already at initial state)')
+  ];
+
   return [];
 }
 
 function showPrecondsFail(type){
   const names={unit:'Unit Propagate',decide:'Decide',conflict:'Conflict',
-    explain:'Explain',learn:'Learn',backjump:'Backjump',fail:'Fail (UNSAT)'};
+    explain:'Explain',learn:'Learn',backjump:'Backjump',forget:'Forget',restart:'Restart',fail:'Fail (UNSAT)'};
   const colors={unit:'#fbbf24',decide:'#a5b4fc',conflict:'#fca5a5',
-    explain:'#fb923c',learn:'#5eead4',backjump:'#d8b4fe',fail:'#fca5a5'};
+    explain:'#fb923c',learn:'#5eead4',backjump:'#d8b4fe',forget:'#93c5fd',restart:'#67e8f9',fail:'#fca5a5'};
   const preconds=getPreconditions(type);
 
   let html=`
@@ -1186,12 +1292,13 @@ function tryAct(type){
   if(S.status!=='running') return;
   const app=getApplicable();
   const canApply={unit:app.unit,conflict:app.conflict,explain:app.explain,
-    learn:app.learn,backjump:app.backjump,fail:app.fail}[type];
+    learn:app.learn,backjump:app.backjump,forget:app.forget,restart:app.restart,fail:app.fail}[type];
   if(!canApply){ showPrecondsFail(type); return; }
   if(type==='backjump'){ showBackjumpModal(); return; }
   if(type==='unit'){ showUnitPropModal(); return; }
   if(type==='conflict'){ showConflictModal(); return; }
   if(type==='explain'){ showExplainModal(); return; }
+  if(type==='forget'){ showForgetModal(); return; }
   act(type);
 }
 
@@ -1209,6 +1316,8 @@ function act(type){
   else if(type==='explain')  ok=doExplain();
   else if(type==='learn')    ok=doLearn();
   else if(type==='backjump') ok=doBackjump();
+  else if(type==='forget')   ok=doForget();
+  else if(type==='restart')  ok=doRestart();
   else if(type==='fail')     ok=doFail();
   if(ok){ if(type!=='fail') checkSat(); render(); }
 }
@@ -1327,7 +1436,7 @@ function showConflictModal(){
     const clauseHtml=clause.map(l=>
       `<span class="bj-trail-chip bj-removed">${fmt(l)} <span class="bj-dec-tag" style="background:#ef4444">F</span></span>`
     ).join(' <span style="color:var(--muted)">∨</span> ');
-    const isLearned=S.learned&&S.learned.some(c=>JSON.stringify([...c].sort())===JSON.stringify([...clause].sort()));
+    const isLearned=S.learned.some(c=>JSON.stringify([...c].sort())===JSON.stringify([...clause].sort()));
     btn.innerHTML=`
       <div class="bj-opt-hdr">
         <span class="bj-assert" style="color:#fca5a5">C${i+1}${isLearned?' (learned)':''}: ${fmtC(clause)}</span>
@@ -1379,6 +1488,33 @@ function showExplainModal(){
   document.getElementById('explainOv').classList.add('show');
 }
 function closeExplain(){ document.getElementById('explainOv').classList.remove('show'); }
+
+function showForgetModal(){
+  if(S.status!=='running') return;
+  const opts=document.getElementById('forgetOpts');
+  opts.innerHTML='';
+  S.learned.forEach((clause,i)=>{
+    const btn=document.createElement('button');
+    btn.className='bj-opt';
+    const st=clauseSt(clause,S.m);
+    const clauseHtml=clause.map(l=>{
+      const ls=S.m.includes(l)?'t':S.m.includes(-l)?'f':'u';
+      return `<span class="bj-trail-chip ${ls==='t'?'bj-new':ls==='f'?'bj-removed':'bj-kept'}">${fmt(l)}</span>`;
+    }).join(' <span style="color:var(--muted)">∨</span> ');
+    btn.innerHTML=`
+      <div class="bj-opt-hdr">
+        <span class="bj-assert" style="color:#93c5fd">L${i+1}: ${fmtC(clause)}</span>
+        <span style="font-size:11px;color:var(--muted)">${st}</span>
+      </div>
+      <div class="bj-rows">
+        <div class="bj-row"><span class="bj-row-label">literals:</span><div class="bj-row-val">${clauseHtml}</div></div>
+      </div>`;
+    btn.onclick=()=>{ closeForget(); doForget(clause); checkSat(); render(); };
+    opts.appendChild(btn);
+  });
+  document.getElementById('forgetOv').classList.add('show');
+}
+function closeForget(){ document.getElementById('forgetOv').classList.remove('show'); }
 
 function applyBackjump(bj){
   doBackjump(bj);
@@ -1616,8 +1752,8 @@ function downloadHistory(){
   const fs=arr=>arr&&arr.length?arr.map(fl).join(', '):'∅';
   const fk=k=>k&&k.length?k.map(fl).join(' ∨ '):'∅';
   const formulaStr=S.formula.map(c=>c.map(fl).join(' ∨ ')).join(', ');
-  const LABS={unit:'Unit Propagate',decide:'Decide',conflict:'Conflict',explain:'Explain',learn:'Learn',backjump:'Backjump',fail:'Fail'};
-  const lines=['=== CDCL Step History ===','Formula: '+formulaStr,''];
+  const LABS={unit:'Unit Propagate',decide:'Decide',conflict:'Conflict',explain:'Explain',learn:'Learn',backjump:'Backjump',forget:'Forget',restart:'Restart',fail:'Fail'};
+  const lines=['=== CDCL Step History (with Forget + Restart) ===','Formula: '+formulaStr,''];
   lines.push('Step 0 | Start');
   lines.push('  M = ∅ | D = ∅ | K = ∅ | Learned = 0 clauses');
   lines.push('');
@@ -1663,6 +1799,7 @@ function undoStep(){
 function autoSolve(){
   if(S.status!=='running') return;
   // Priority: UnitProp → Conflict → Explain → Learn → Backjump → Decide → Fail
+  // (Forget and Restart are manual-only in auto-solve)
   for(let i=0;i<300&&S.status==='running';i++){
     const app=getApplicable();
     if(app.unit)          doUnitProp();
@@ -1690,6 +1827,7 @@ document.getElementById('upOv').addEventListener('click',e=>{if(e.target===e.cur
 document.getElementById('bjOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBj();});
 document.getElementById('conflictOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeConflict();});
 document.getElementById('explainOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeExplain();});
+document.getElementById('forgetOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeForget();});
 document.getElementById('heurOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeHeuristic();});
 document.getElementById('resultOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeResult();});
 document.getElementById('fi').addEventListener('keydown',e=>{if(e.key==='Enter')loadFormula();});
