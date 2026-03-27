@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Congruence Closure — Interactive Tutorial</title>
+<title>Congruence Closure — Interactive Lab</title>
 <style>
 :root {
   --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
@@ -224,11 +224,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
       <div class="warn-title">&#9888; Formula is not flat &mdash; CC requires a flat cube</div>
       <div class="warn-desc">
         The Congruence Closure algorithm requires all literals to be in flat form.<br>
-        You can auto-flatten here, or open the Flatten Tutorial to do it step by step.
+        You can auto-flatten here, or open the Flatten Lab to do it step by step.
       </div>
       <div class="warn-btns">
         <button class="btn btn-orange" onclick="inlineAutoFlatten()">Auto-Flatten</button>
-        <button class="btn btn-ghost" onclick="openFlattenTutorial()">Open in Flatten Tutorial &#8594;</button>
+        <button class="btn btn-ghost" onclick="openFlattenLab()">Open in Flatten Lab &#8594;</button>
       </div>
     </div>
     <div class="input-row">
@@ -419,7 +419,7 @@ function loadExample(key){
 }
 
 // ═══════════════════════════════════════
-// SHARED PARSER (same as flatten tutorial)
+// SHARED PARSER (same as flatten lab)
 // ═══════════════════════════════════════
 function termStr(t){ return t.k==='v' ? t.n : `${t.n}(${t.a.map(termStr).join(', ')})`; }
 function litStr(lit){
@@ -840,7 +840,7 @@ function inlineAutoFlatten(){
   initializeCC();
 }
 
-function openFlattenTutorial(){
+function openFlattenLab(){
   const raw=document.getElementById('formulaInput').value.trim();
   const encoded=encodeURIComponent(raw);
   localStorage.setItem('flatten_formula',raw);

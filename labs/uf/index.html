@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Union-Find — Interactive Tutorial</title>
+<title>Union-Find — Interactive Lab</title>
 <style>
 :root {
   --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
@@ -195,7 +195,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
   <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
   <div class="hdr-left">
     <h1>Union-Find</h1>
-    <p>Interactive tutorial — UF solver with path compression &amp; union by rank</p>
+    <p>Interactive lab — UF solver with path compression &amp; union by rank</p>
   </div>
   <span class="hdr-badge">QF_UF · Flat Cube</span>
 </div>
@@ -209,11 +209,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
       <div class="warn-title">⚠ Formula is not flat — UF requires a flat cube</div>
       <div class="warn-desc">
         Union-Find requires all literals to be in flat form (all function arguments must be variables).<br>
-        You can auto-flatten here, or open the Flatten Tutorial to do it step by step.
+        You can auto-flatten here, or open the Flatten Lab to do it step by step.
       </div>
       <div class="warn-btns">
         <button class="btn btn-orange" onclick="inlineAutoFlatten()">Auto-Flatten</button>
-        <button class="btn btn-ghost" onclick="openFlattenTutorial()">Open in Flatten Tutorial →</button>
+        <button class="btn btn-ghost" onclick="openFlattenLab()">Open in Flatten Lab →</button>
       </div>
     </div>
     <div class="input-row">
@@ -375,7 +375,7 @@ function loadEx(key) {
 }
 
 // ═══════════════════════════════════════
-// PARSER (shared with CC/flatten tutorials)
+// PARSER (shared with CC/flatten labs)
 // ═══════════════════════════════════════
 function termStr(t){ return t.k==='v' ? t.n : `${t.n}(${t.a.map(termStr).join(', ')})`; }
 function litStr(lit){
@@ -1148,7 +1148,7 @@ function downloadHistory() {
 }
 
 // ═══════════════════════════════════════
-// FLATTEN ENGINE (same as CC tutorial)
+// FLATTEN ENGINE (same as CC lab)
 // ═══════════════════════════════════════
 function freshName(count){ return 'z'+(count+1); }
 
@@ -1241,7 +1241,7 @@ function inlineAutoFlatten(){
   initSolver(cube);
 }
 
-function openFlattenTutorial(){
+function openFlattenLab(){
   const raw=document.getElementById('formulaInput').value.trim();
   localStorage.setItem('flatten_formula',raw);
   window.location.href=`../flatten/?f=${encodeURIComponent(raw)}`;
