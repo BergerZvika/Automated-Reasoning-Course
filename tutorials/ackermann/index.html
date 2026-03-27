@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ackermanization — Interactive Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --blue:#3b82f6;--blue2:#60a5fa;--cyan:#06b6d4;--cyan2:#22d3ee;
+  --violet:#8b5cf6;--violet2:#a78bfa;
+  --green:#22c55e;--green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.35);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.12);--red-bd:rgba(239,68,68,.35);
+  --amber:#f59e0b;--orange:#f97316;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#2e1065 0%,#4c1d95 40%,#5b21b6 70%,#2e1065 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#e9d5ff,#c4b5fd,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);
+  color:var(--violet2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+
+.wrap{max-width:1400px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+  border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-violet{background:linear-gradient(135deg,var(--violet),#4c1d95);color:#fff}
+.btn-violet:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--violet);color:var(--violet2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s
+}
+.formula-input:focus{border-color:var(--violet)}
+.input-row{display:flex;gap:10px;align-items:stretch}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700}
+.badge-violet{background:rgba(139,92,246,.2);color:var(--violet2);border:1px solid rgba(139,92,246,.3)}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.badge-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue2);border:1px solid rgba(59,130,246,.3)}
+.badge-cyan{background:rgba(6,182,212,.15);color:var(--cyan2);border:1px solid rgba(6,182,212,.3)}
+
+/* Algorithm flow */
+.flow-step{
+  border:2px solid var(--border);border-radius:10px;padding:10px 14px;
+  font-size:12px;font-weight:600;text-align:center;transition:all .3s;color:var(--muted)
+}
+.flow-step.active{border-color:var(--violet);background:rgba(139,92,246,.15);color:var(--violet2)}
+.flow-step.done{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.07);color:var(--green)}
+.flow-arrow{text-align:center;color:var(--border);font-size:18px;margin:3px 0;line-height:1}
+
+/* Info panel */
+.info-section{margin-bottom:14px}
+.info-section-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.info-content{font-family:'Consolas','Courier New',monospace;font-size:12px;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);
+  white-space:pre-wrap;line-height:1.6}
+.info-text{font-size:13px;color:var(--muted);line-height:1.7}
+.info-text b{color:var(--text)}
+.info-text code{background:var(--surface2);padding:1px 5px;border-radius:4px;font-family:'Consolas',monospace;font-size:11px;color:var(--violet2)}
+
+/* Ack trace rows */
+.atrace-row{display:flex;gap:14px;padding:9px 12px;border-radius:8px;border:1px solid transparent;
+  margin-bottom:5px;align-items:flex-start;transition:all .25s}
+.atrace-row.active{border-color:var(--violet);background:rgba(139,92,246,.09)}
+.atrace-label{font-size:11px;font-style:italic;color:var(--muted);min-width:155px;padding-top:1px;
+  font-family:'Consolas',monospace;flex-shrink:0}
+.atrace-value{font-family:'Consolas','Courier New',monospace;font-size:12px;white-space:pre-wrap;
+  line-height:1.55;color:var(--text)}
+
+/* Controls */
+.ctrl-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* History */
+.hist-list{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto}
+.hist-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px}
+.hist-item .h-step{font-size:10px;color:var(--muted);margin-bottom:2px}
+.hist-item .h-text{font-family:'Consolas',monospace;font-size:12px;line-height:1.4;color:var(--text)}
+.hist-item.h-sat{border-color:var(--green-bd);background:var(--green-bg)}
+.hist-item.h-unsat{border-color:var(--red-bd);background:var(--red-bg)}
+.hist-item.h-violet{border-color:rgba(139,92,246,.3);background:rgba(139,92,246,.07)}
+.hist-item.h-blue{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.07)}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>Ackermanization</h1>
+    <p>Eliminate uninterpreted functions — reduce QF_UF to quantifier-free equality (QF_EQ)</p>
+  </div>
+  <span class="hdr-badge">QF_UF → QF_EQ</span>
+</div>
+
+<div class="wrap">
+
+<!-- Formula Input -->
+<div class="card">
+  <div class="card-title">Formula Input</div>
+  <div class="input-row">
+    <input class="formula-input" id="formulaInput" placeholder="e.g.  f(a)!=f(b) & a=b"
+           onkeydown="if(event.key==='Enter')runAck()">
+    <button class="btn btn-violet" onclick="runAck()">Run ▶</button>
+  </div>
+  <div class="io-row" id="exampleBtns"></div>
+  <div class="input-hint">
+    Syntax: <code style="font-family:Consolas;font-size:12px;background:var(--surface2);padding:1px 5px;border-radius:4px">f(x)=y</code>&nbsp;
+    <code style="font-family:Consolas;font-size:12px;background:var(--surface2);padding:1px 5px;border-radius:4px">g(a,b)!=c</code>&nbsp;&nbsp;
+    operators: <code style="font-family:Consolas;font-size:12px;background:var(--surface2);padding:1px 5px;border-radius:4px">&amp; | ! -&gt; &lt;-&gt;</code>&nbsp;&nbsp;
+    functions: any lowercase name followed by <code style="font-family:Consolas;font-size:12px;background:var(--surface2);padding:1px 5px;border-radius:4px">(args)</code>
+  </div>
+</div>
+
+<!-- Main content: 3-column grid -->
+<div style="display:grid;grid-template-columns:200px 1fr 360px;gap:18px;align-items:start">
+
+  <!-- Col 1: Algorithm flow -->
+  <div class="card">
+    <div class="card-title">Algorithm Flow</div>
+    <div class="flow-step" id="fs-input">φ — Input</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-collect">Find F-apps</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-map">Map → Fresh k<sub>i</sub></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-replace">Replace → φ'</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-axioms">Congruence Axioms</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-ack">Ack(φ) = φ' ∧ Axioms</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-sat">SAT Check</div>
+  </div>
+
+  <!-- Col 2: Ackermanization trace -->
+  <div class="card">
+    <div class="card-title">Ackermanization Trace</div>
+    <div class="atrace-row" id="at-phi">
+      <span class="atrace-label">φ (original)</span>
+      <span class="atrace-value" id="av-phi">—</span>
+    </div>
+    <div class="atrace-row" id="at-fapps">
+      <span class="atrace-label">F-applications</span>
+      <span class="atrace-value" id="av-fapps">—</span>
+    </div>
+    <div class="atrace-row" id="at-map">
+      <span class="atrace-label">Fresh map (k<sub>i</sub>)</span>
+      <span class="atrace-value" id="av-map">—</span>
+    </div>
+    <div class="atrace-row" id="at-phi-prime">
+      <span class="atrace-label">φ' (replaced)</span>
+      <span class="atrace-value" id="av-phi-prime">—</span>
+    </div>
+    <div class="atrace-row" id="at-axioms">
+      <span class="atrace-label">Congruence axioms</span>
+      <span class="atrace-value" id="av-axioms">—</span>
+    </div>
+    <div class="atrace-row" id="at-ack">
+      <span class="atrace-label">Ack(φ)</span>
+      <span class="atrace-value" id="av-ack">—</span>
+    </div>
+  </div>
+
+  <!-- Col 3: Info panel -->
+  <div class="card" id="infoCard">
+    <div class="card-title">
+      <span id="infoTitle">Explanation</span>
+      <span id="infoBadge"></span>
+    </div>
+    <div id="infoBody">
+      <p class="info-text">Enter a formula and click <b>Run ▶</b> to start,<br>then step through the algorithm.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav controls -->
+<div class="card" id="ctrlCard" style="display:none">
+  <div class="ctrl-row">
+    <button class="btn btn-ghost btn-sm" id="prevBtn" onclick="prevStep()" disabled>← Prev</button>
+    <button class="btn btn-ghost btn-sm" id="autoBtn" onclick="toggleAuto()">▶ Auto</button>
+    <button class="btn btn-violet btn-sm" id="nextBtn" onclick="nextStep()" disabled>Next →</button>
+    <span id="stepCounter" style="font-size:12px;color:var(--muted);margin-left:8px"></span>
+  </div>
+</div>
+
+<!-- Step History -->
+<div class="card" id="histCard" style="display:none">
+  <div class="card-title">
+    <span>Step History</span>
+    <span style="display:flex;align-items:center;gap:10px">
+      <span id="resultBadge" style="display:none"></span>
+      <button class="btn btn-ghost btn-sm" onclick="downloadHistory()">↓ history.txt</button>
+    </span>
+  </div>
+  <div class="hist-list" id="histList"></div>
+</div>
+
+</div><!-- wrap -->
+
+<script>
+const EXAMPLES=[
+  {label:'UNSAT: congruence violation',    formula:'f(a)!=f(b) & a=b'},
+  {label:'SAT: non-injective function',    formula:'f(a)=f(b) & a!=b'},
+  {label:'UNSAT: indirect equality',       formula:'f(a)=a & f(b)=b & a!=b & f(a)=f(b)'},
+  {label:'SAT: two-cycle',                 formula:'f(a)=b & f(b)=a & a!=b'},
+  {label:'UNSAT: same app two values',     formula:'f(a)=b & f(a)=c & b!=c'},
+  {label:'UNSAT: nested congruence',       formula:'f(g(a))!=f(g(b)) & g(a)=g(b)'},
+];
+
+function buildExamples(){
+  const row=document.getElementById('exampleBtns');
+  EXAMPLES.forEach(e=>{
+    const b=document.createElement('button');
+    b.className='btn btn-ghost btn-sm';b.textContent=e.label;
+    b.onclick=()=>{document.getElementById('formulaInput').value=e.formula;runAck();};
+    row.appendChild(b);
+  });
+}
+
+// ── PARSER ───────────────────────────────────────────────────────
+let _tok,_pos;
+function tokenize(src){
+  const toks=[];let i=0;
+  while(i<src.length){
+    if(/\s/.test(src[i])){i++;continue;}
+    if(src.slice(i,i+3)==='<->'){toks.push('<->');i+=3;continue;}
+    if(src.slice(i,i+2)==='->'){toks.push('->');i+=2;continue;}
+    if(src.slice(i,i+2)==='!='){toks.push('!=');i+=2;continue;}
+    if('!&|()=,'.includes(src[i])){toks.push(src[i]);i++;continue;}
+    if(/[A-Za-z_]/.test(src[i])){
+      let j=i;while(j<src.length&&/[A-Za-z0-9_]/.test(src[j]))j++;
+      toks.push(src.slice(i,j));i=j;continue;
+    }
+    throw new Error('Unknown char: '+src[i]);
+  }
+  return toks;
+}
+function peek(){return _tok[_pos];}
+function consume(t){
+  if(t&&_tok[_pos]!==t)throw new Error('Expected '+t+' got '+_tok[_pos]);
+  return _tok[_pos++];
+}
+function parseTerm(){
+  const name=consume();
+  if(peek()==='('){
+    consume('(');const args=[];
+    if(peek()!==')')args.push(parseTerm());
+    while(peek()===','){consume(',');args.push(parseTerm());}
+    consume(')');return{type:'fapp',name,args};
+  }
+  return{type:'var',name};
+}
+function parseAtom(){
+  if(peek()==='!'){
+    consume('!');
+    if(peek()==='('){consume('(');const c=parseIff();consume(')');return{type:'not',child:c};}
+    return{type:'not',child:parseAtom()};
+  }
+  if(peek()==='('){consume('(');const e=parseIff();consume(')');return e;}
+  const t1=parseTerm();
+  if(peek()==='='||peek()==='!='){const op=consume();const t2=parseTerm();return{type:'uf',op,t1,t2};}
+  throw new Error('Expected = or != after term, got '+peek());
+}
+function parseAnd(){let l=parseAtom();while(peek()==='&'){consume('&');l={type:'and',children:[l,parseAtom()]};}return l;}
+function parseOr() {let l=parseAnd();while(peek()==='|'){consume('|');l={type:'or',children:[l,parseAnd()]};}return l;}
+function parseImp(){let l=parseOr();if(peek()==='->'){ consume('->');return{type:'imp',children:[l,parseImp()]};}return l;}
+function parseIff(){let l=parseImp();if(peek()==='<->'){consume('<->');return{type:'iff',children:[l,parseIff()]};}return l;}
+function parseFormula(src){_tok=tokenize(src);_pos=0;const a=parseIff();if(_pos<_tok.length)throw new Error('Unexpected: '+_tok[_pos]);return a;}
+
+// ── PRINTER ──────────────────────────────────────────────────────
+function pTerm(t){
+  if(t.type==='var')  return t.name;
+  if(t.type==='fapp') return t.name+'('+t.args.map(pTerm).join(',')+')';;
+  return '?';
+}
+function pFml(ast,wrap){
+  let s;
+  if(ast.type==='uf')  s=pTerm(ast.t1)+(ast.op==='='?'=':'!=')+pTerm(ast.t2);
+  else if(ast.type==='not')  s='!'+pFml(ast.child,true);
+  else if(ast.type==='and')  s=ast.children.map(c=>pFml(c,true)).join(' & ');
+  else if(ast.type==='or')   s=ast.children.map(c=>pFml(c,true)).join(' | ');
+  else if(ast.type==='imp')  s=pFml(ast.children[0],true)+' -> '+pFml(ast.children[1],true);
+  else if(ast.type==='iff')  s=pFml(ast.children[0],true)+' <-> '+pFml(ast.children[1],true);
+  else s='?';
+  return(wrap&&['and','or','imp','iff'].includes(ast.type))?'('+s+')':s;
+}
+
+// ── ACKERMANIZATION ──────────────────────────────────────────────
+// Collect unique f-apps bottom-up (innermost first, deduplicated)
+function collectFapps(term,list){
+  if(term.type==='fapp'){
+    term.args.forEach(a=>collectFapps(a,list));
+    const key=pTerm(term);
+    if(!list.find(x=>x.key===key))list.push({key,name:term.name,args:term.args});
+  }
+}
+function collectFmlFapps(ast,list){
+  if(ast.type==='uf'){collectFapps(ast.t1,list);collectFapps(ast.t2,list);}
+  else if(ast.type==='not')collectFmlFapps(ast.child,list);
+  else if(ast.children)ast.children.forEach(c=>collectFmlFapps(c,list));
+}
+
+// Replace f-apps in a term (outermost first via key lookup)
+function repTerm(term,fm){
+  const key=pTerm(term);
+  if(fm.has(key))return{type:'var',name:fm.get(key)};
+  if(term.type==='fapp')return{type:'fapp',name:term.name,args:term.args.map(a=>repTerm(a,fm))};
+  return term;
+}
+// Replace f-apps throughout a formula
+function repFml(ast,fm){
+  if(ast.type==='uf')return{type:'uf',op:ast.op,t1:repTerm(ast.t1,fm),t2:repTerm(ast.t2,fm)};
+  if(ast.type==='not')return{type:'not',child:repFml(ast.child,fm)};
+  if(ast.children)return{...ast,children:ast.children.map(c=>repFml(c,fm))};
+  return ast;
+}
+
+// Congruence axiom for one pair of same-function apps
+function mkAxiom(fa1,fa2,fm){
+  const k1=fm.get(fa1.key),k2=fm.get(fa2.key);
+  const consequent={type:'uf',op:'=',t1:{type:'var',name:k1},t2:{type:'var',name:k2}};
+  const eqArgs=fa1.args.map((a,i)=>({type:'uf',op:'=',t1:repTerm(a,fm),t2:repTerm(fa2.args[i],fm)}));
+  if(eqArgs.length===0)return consequent;
+  const ante=eqArgs.length===1?eqArgs[0]:{type:'and',children:eqArgs};
+  return{type:'imp',children:[ante,consequent]};
+}
+
+function ackermanize(src){
+  const ast=parseFormula(src);
+  const fapps=[];
+  collectFmlFapps(ast,fapps);
+  const fm=new Map();
+  fapps.forEach((fa,i)=>fm.set(fa.key,'k'+i));
+  const phiPrime=repFml(ast,fm);
+  const axioms=[];
+  for(let i=0;i<fapps.length;i++)
+    for(let j=i+1;j<fapps.length;j++)
+      if(fapps[i].name===fapps[j].name&&fapps[i].args.length===fapps[j].args.length)
+        axioms.push(mkAxiom(fapps[i],fapps[j],fm));
+  const ackAst=axioms.length===0?phiPrime:{type:'and',children:[phiPrime,...axioms]};
+  return{ast,fapps,fm,phiPrime,axioms,ackAst};
+}
+
+// ── SAT CHECK (exhaustive, atoms ≤ 14) ───────────────────────────
+function collectAtoms(ast,list){
+  if(ast.type==='uf'){
+    const norm=pTerm(ast.t1)+'='+pTerm(ast.t2);
+    if(!list.find(x=>x.norm===norm))list.push({norm,t1s:pTerm(ast.t1),t2s:pTerm(ast.t2)});
+    return;
+  }
+  if(ast.type==='not')collectAtoms(ast.child,list);
+  else if(ast.children)ast.children.forEach(c=>collectAtoms(c,list));
+}
+
+function evalFml(ast,atoms,asgn){
+  if(ast.type==='uf'){
+    const norm=pTerm(ast.t1)+'='+pTerm(ast.t2);
+    const idx=atoms.findIndex(a=>a.norm===norm);
+    const eq=idx>=0&&!!asgn[idx];
+    return ast.op==='='?eq:!eq;
+  }
+  if(ast.type==='not')return!evalFml(ast.child,atoms,asgn);
+  if(ast.type==='and')return ast.children.every(c=>evalFml(c,atoms,asgn));
+  if(ast.type==='or') return ast.children.some(c=>evalFml(c,atoms,asgn));
+  if(ast.type==='imp')return!evalFml(ast.children[0],atoms,asgn)||evalFml(ast.children[1],atoms,asgn);
+  if(ast.type==='iff')return evalFml(ast.children[0],atoms,asgn)===evalFml(ast.children[1],atoms,asgn);
+  return false;
+}
+
+function eqConsistent(atoms,asgn){
+  // union-find over all terms
+  const terms=new Set();
+  atoms.forEach(a=>{terms.add(a.t1s);terms.add(a.t2s);});
+  const par={};terms.forEach(t=>par[t]=t);
+  function find(x){return par[x]===x?x:(par[x]=find(par[x]));}
+  function union(x,y){par[find(x)]=find(y);}
+  // union all equalities assigned true
+  atoms.forEach((a,i)=>{if(asgn[i])union(a.t1s,a.t2s);});
+  // check: any equality assigned false must have distinct components
+  for(let i=0;i<atoms.length;i++)
+    if(!asgn[i]&&find(atoms[i].t1s)===find(atoms[i].t2s))return false;
+  return true;
+}
+
+function checkSat(ackAst){
+  const atoms=[];collectAtoms(ackAst,atoms);
+  const n=atoms.length;
+  if(n>14)return{result:'unknown',reason:'Too many equality atoms ('+n+') for exhaustive check.'};
+  for(let mask=0;mask<(1<<n);mask++){
+    const asgn=Array.from({length:n},(_,i)=>!!(mask&(1<<i)));
+    if(evalFml(ackAst,atoms,asgn)&&eqConsistent(atoms,asgn)){
+      const model=atoms.map((a,i)=>a.t1s+(asgn[i]?'=':'!=')+a.t2s).join(', ');
+      return{result:'sat',model};
+    }
+  }
+  return{result:'unsat'};
+}
+
+// ── GLOBAL STATE ─────────────────────────────────────────────────
+let G={frames:[],current:-1,autoTimer:null};
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── RUN ───────────────────────────────────────────────────────────
+function runAck(){
+  if(G.autoTimer){clearInterval(G.autoTimer);G.autoTimer=null;}
+  const src=document.getElementById('formulaInput').value.trim();
+  if(!src)return;
+
+  let data;
+  try{data=ackermanize(src);}
+  catch(e){alert('Parse error: '+e.message);return;}
+  const{fapps,fm,phiPrime,axioms,ackAst}=data;
+  const sat=checkSat(ackAst);
+  const frames=[];
+
+  function addFrame(type,title,badge,badgeClass,body,histText,histClass){
+    frames.push({type,title,badge,badgeClass,body,histText,histClass});
+  }
+
+  // Frame 1 — Input
+  addFrame('input','Input Formula','INPUT','badge-blue',
+    `<div class="info-section"><div class="info-section-title">Formula φ</div><div class="info-content">${esc(src)}</div></div>`+
+    `<div class="info-section"><div class="info-section-title">Concept</div><div class="info-text">`+
+    `<b>Ackermanization</b> reduces a QF_UF formula (uninterpreted functions + equality) to a QF_EQ formula (pure equality, no functions).<br><br>`+
+    `Steps:<br>1. Collect all unique function applications<br>2. Map each to a fresh constant k<sub>i</sub><br>`+
+    `3. Replace applications in φ → φ'<br>4. Add congruence axioms enforcing function semantics<br>5. Ack(φ) = φ' ∧ Axioms<br><br>`+
+    `<b>Theorem:</b> φ is SAT (in QF_UF) iff Ack(φ) is SAT (in QF_EQ).</div></div>`,
+    'Input: '+src,'h-blue');
+
+  // Frame 2 — Collect
+  const fappLines=fapps.length===0
+    ?'(none — no function applications found)'
+    :fapps.map((fa,i)=>`${fa.key}   [${fa.name}/${fa.args.length}]`).join('\n');
+  addFrame('collect','Find F-applications','COLLECT','badge-violet',
+    `<div class="info-section"><div class="info-section-title">Unique f-applications (bottom-up order)</div><div class="info-content">${esc(fappLines)}</div></div>`+
+    `<div class="info-text">We scan φ <b>bottom-up</b> (innermost subterms first) and collect each unique subterm of the form <code>f(t₁,...,tₙ)</code>. Nested applications like <code>f(g(a))</code> yield both <code>g(a)</code> and <code>f(g(a))</code> as separate entries.</div>`,
+    `Collected ${fapps.length} f-app(s): `+(fapps.map(f=>f.key).join(', ')||'none'),'h-violet');
+
+  // Frame 3 — Map
+  const mapLines=fapps.length===0
+    ?'(no mapping needed)'
+    :fapps.map(fa=>`${fa.key.padEnd(20)}→  ${fm.get(fa.key)}`).join('\n');
+  addFrame('map','Map → Fresh Constants','MAP','badge-violet',
+    `<div class="info-section"><div class="info-section-title">Fresh constant mapping</div><div class="info-content">${esc(mapLines)}</div></div>`+
+    `<div class="info-text">Each unique application receives a new constant <code>k₀, k₁, ...</code> not present in φ. Two distinct applications get <b>different</b> constants. The constants are unconstrained — the congruence axioms will restrict them.</div>`,
+    'Map: '+[...fm.entries()].map(([k,v])=>k+'→'+v).join(', '),'h-violet');
+
+  // Frame 4 — Replace
+  const ppStr=pFml(phiPrime,false);
+  addFrame('replace',"Replace in φ → φ'",'REPLACE','badge-violet',
+    `<div class="info-section"><div class="info-section-title">φ' (function-free)</div><div class="info-content">${esc(ppStr)}</div></div>`+
+    `<div class="info-text">Every function application in φ is substituted with its fresh constant. φ' contains only <b>constants and equality atoms</b> — no function symbols remain.</div>`,
+    "φ' = "+ppStr,'h-violet');
+
+  // Frame 5 — Axioms
+  const axLines=axioms.length===0
+    ?'(none — each function has at most one distinct application)'
+    :axioms.map(ax=>pFml(ax,false)).join('\n');
+  addFrame('axioms','Congruence Axioms','AXIOMS','badge-violet',
+    `<div class="info-section"><div class="info-section-title">Generated congruence axioms (${axioms.length})</div><div class="info-content">${esc(axLines)}</div></div>`+
+    `<div class="info-text">For each pair of applications <code>f(s̄) → kᵢ</code> and <code>f(t̄) → kⱼ</code> of the <b>same function f</b>:<br><code>(s₁=t₁ ∧ ... ∧ sₙ=tₙ) → kᵢ=kⱼ</code><br><br>`+
+    `These axioms encode the <b>functional consistency</b> requirement: equal arguments must produce equal results. Without them, the fresh constants would be unconstrained.</div>`,
+    `Axioms (${axioms.length}): `+(axioms.length?axioms.map(ax=>pFml(ax,false)).join(' ; '):'none'),'h-violet');
+
+  // Frame 6 — Ack(φ)
+  const ackStr=pFml(ackAst,false);
+  addFrame('ack','Ack(φ) = φ\' ∧ Axioms','ACK(φ)','badge-cyan',
+    `<div class="info-section"><div class="info-section-title">Ackermanized formula (QF_EQ)</div><div class="info-content">${esc(ackStr)}</div></div>`+
+    `<div class="info-text"><b>Key theorem (Ackermann 1954):</b><br>φ is satisfiable in QF_UF  ⟺  Ack(φ) is satisfiable in QF_EQ.<br><br>`+
+    `Ack(φ) is in pure <b>quantifier-free equality logic</b>. No function symbols remain. Any equality solver (e.g. union-find with DPLL) can decide it.</div>`,
+    'Ack(φ) = '+ackStr,'h-violet');
+
+  // Frame 7 — SAT
+  let satBody,satHist,satClass,satBadge,satBadgeClass;
+  if(sat.result==='sat'){
+    satBody=`<div class="info-section"><div class="info-section-title">Result</div><div class="info-content" style="color:var(--green)">SAT ✓</div></div>`+
+      `<div class="info-section"><div class="info-section-title">Satisfying model</div><div class="info-content">${esc(sat.model)}</div></div>`+
+      `<div class="info-text" style="margin-top:8px">A consistent equality assignment satisfying Ack(φ) was found.<br>Therefore φ is <b>satisfiable</b> in QF_UF.</div>`;
+    satHist='SAT — model: '+sat.model;satClass='h-sat';satBadge='SAT';satBadgeClass='badge-green';
+  }else if(sat.result==='unsat'){
+    satBody=`<div class="info-section"><div class="info-section-title">Result</div><div class="info-content" style="color:var(--red)">UNSAT ✗</div></div>`+
+      `<div class="info-text" style="margin-top:8px">No consistent equality assignment satisfies Ack(φ).<br>Therefore φ is <b>unsatisfiable</b> in QF_UF.</div>`;
+    satHist='UNSAT';satClass='h-unsat';satBadge='UNSAT';satBadgeClass='badge-red';
+  }else{
+    satBody=`<div class="info-section"><div class="info-section-title">Result</div><div class="info-content" style="color:var(--amber)">${esc(sat.reason)}</div></div>`;
+    satHist='? — '+sat.reason;satClass='h-violet';satBadge='?';satBadgeClass='badge-violet';
+  }
+  addFrame('sat','SAT Check on Ack(φ)',satBadge,satBadgeClass,satBody,satHist,satClass);
+
+  G.frames=frames;G.current=-1;
+
+  // Populate trace
+  document.getElementById('av-phi').textContent=src;
+  document.getElementById('av-fapps').textContent=fapps.length
+    ?fapps.map(fa=>`${fa.key}  →  ${fm.get(fa.key)}`).join('\n'):'(none)';
+  document.getElementById('av-map').textContent=fapps.length
+    ?[...fm.entries()].map(([k,v])=>k+' → '+v).join('\n'):'(none)';
+  document.getElementById('av-phi-prime').textContent=ppStr;
+  document.getElementById('av-axioms').textContent=axioms.length
+    ?axioms.map(ax=>pFml(ax,false)).join('\n'):'(none)';
+  document.getElementById('av-ack').textContent=ackStr;
+  ['phi','fapps','map','phi-prime','axioms','ack'].forEach(id=>
+    document.getElementById('at-'+id).classList.remove('active'));
+
+  // UI
+  document.getElementById('ctrlCard').style.display='';
+  document.getElementById('histCard').style.display='';
+  document.getElementById('histList').innerHTML='';
+  document.getElementById('resultBadge').style.display='none';
+  document.getElementById('nextBtn').disabled=false;
+  document.getElementById('prevBtn').disabled=true;
+
+  nextStep();
+}
+
+// ── FLOW STEP ORDER ───────────────────────────────────────────────
+const FLOW_STEPS=['input','collect','map','replace','axioms','ack','sat'];
+const TRACE_ACTIVE={
+  input:['phi'],collect:['fapps'],map:['map'],
+  replace:['phi-prime'],axioms:['axioms'],ack:['ack'],sat:['ack']
+};
+const TRACE_IDS=['phi','fapps','map','phi-prime','axioms','ack'];
+
+function renderAll(){
+  const f=G.frames[G.current];if(!f)return;
+
+  // Flow diagram
+  FLOW_STEPS.forEach(s=>{
+    const el=document.getElementById('fs-'+s);
+    const ci=FLOW_STEPS.indexOf(f.type),si=FLOW_STEPS.indexOf(s);
+    el.className='flow-step'+(si===ci?' active':si<ci?' done':'');
+  });
+
+  // Info panel
+  document.getElementById('infoTitle').textContent=f.title;
+  const b=document.getElementById('infoBadge');b.className='badge '+f.badgeClass;b.textContent=f.badge;
+  document.getElementById('infoBody').innerHTML=f.body;
+
+  // Trace highlights
+  const act=TRACE_ACTIVE[f.type]||[];
+  TRACE_IDS.forEach(id=>document.getElementById('at-'+id).classList.toggle('active',act.includes(id)));
+
+  // History list
+  const list=document.getElementById('histList');list.innerHTML='';
+  G.frames.slice(0,G.current+1).forEach((fr,i)=>{
+    const div=document.createElement('div');
+    div.className='hist-item '+fr.histClass;
+    div.innerHTML=`<div class="h-step">Step ${i+1} — ${fr.title}</div><div class="h-text">${esc(fr.histText)}</div>`;
+    list.appendChild(div);
+  });
+  list.scrollTop=list.scrollHeight;
+
+  // Result badge on last step
+  if(G.current===G.frames.length-1){
+    const rb=document.getElementById('resultBadge');
+    rb.style.display='';rb.className='badge '+f.badgeClass;rb.textContent=f.badge;
+  }
+
+  document.getElementById('stepCounter').textContent=`Step ${G.current+1} / ${G.frames.length}`;
+  document.getElementById('prevBtn').disabled=G.current<=0;
+  document.getElementById('nextBtn').disabled=G.current>=G.frames.length-1;
+}
+
+function nextStep(){if(G.current<G.frames.length-1){G.current++;renderAll();}}
+function prevStep(){if(G.current>0){G.current--;renderAll();}}
+function toggleAuto(){
+  if(G.autoTimer){
+    clearInterval(G.autoTimer);G.autoTimer=null;
+    document.getElementById('autoBtn').textContent='▶ Auto';
+  }else{
+    document.getElementById('autoBtn').textContent='⏸ Pause';
+    G.autoTimer=setInterval(()=>{
+      if(G.current>=G.frames.length-1){
+        clearInterval(G.autoTimer);G.autoTimer=null;
+        document.getElementById('autoBtn').textContent='▶ Auto';return;
+      }
+      nextStep();
+    },1500);
+  }
+}
+
+function downloadHistory(){
+  if(!G.frames.length){alert('No steps yet. Run a formula first.');return;}
+  const src=G.frames[0]?G.frames[0].histText.replace(/^Input:\s*/,''):'';
+  let out=`Ackermanization Step History\nFormula: ${src}\n${'='.repeat(60)}\n\n`;
+  G.frames.forEach((f,i)=>{out+=`Step ${i+1}: ${f.title}\n${'-'.repeat(40)}\n${f.histText}\n\n`;});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));
+  a.download='ackermanization-history.txt';a.click();URL.revokeObjectURL(a.href);
+}
+
+buildExamples();
+</script>
+</body>
+</html>

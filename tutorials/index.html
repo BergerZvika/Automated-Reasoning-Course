@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Automated Reasoning — Interactive Tutorials</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#0d1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;
+  min-height:100vh;padding:40px 20px 60px;
+}
+.page-header{text-align:center;margin-bottom:48px}
+.page-header h1{
+  font-size:2rem;font-weight:700;letter-spacing:-.5px;
+  background:linear-gradient(135deg,#e2e8f0 0%,#94a3b8 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:10px;
+}
+.page-header p{color:#8892a4;font-size:.95rem}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:18px;
+  max-width:1100px;
+  margin:0 auto;
+}
+
+.card{
+  background:#161b27;border:1px solid #2a3148;border-radius:14px;
+  padding:22px 20px;display:flex;flex-direction:column;gap:10px;
+  text-decoration:none;color:inherit;
+  transition:border-color .2s,transform .15s,box-shadow .2s;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--accent);opacity:.8;
+  border-radius:14px 14px 0 0;
+}
+.card:hover{
+  border-color:var(--accent);
+  transform:translateY(-2px);
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+.card-badge{
+  font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--accent);background:var(--accent-bg);
+  padding:2px 8px;border-radius:4px;align-self:flex-start;
+}
+.card h2{font-size:1.05rem;font-weight:600;color:#e2e8f0;line-height:1.3}
+.card p{font-size:.82rem;color:#8892a4;line-height:1.5;flex:1}
+.card .arrow{
+  align-self:flex-end;font-size:.8rem;color:var(--accent);
+  opacity:.7;transition:opacity .2s,transform .2s;
+}
+.card:hover .arrow{opacity:1;transform:translateX(3px)}
+
+/* accent palettes per tutorial */
+.c-indigo {--accent:#6366f1;--accent-bg:rgba(99,102,241,.12)}
+.c-lime   {--accent:#84cc16;--accent-bg:rgba(132,204,22,.12)}
+.c-violet {--accent:#a855f7;--accent-bg:rgba(168,85,247,.12)}
+.c-teal   {--accent:#14b8a6;--accent-bg:rgba(20,184,166,.12)}
+.c-amber  {--accent:#f59e0b;--accent-bg:rgba(245,158,11,.12)}
+.c-blue   {--accent:#3b82f6;--accent-bg:rgba(59,130,246,.12)}
+.c-purple {--accent:#8b5cf6;--accent-bg:rgba(139,92,246,.12)}
+.c-orange {--accent:#f97316;--accent-bg:rgba(249,115,22,.12)}
+.c-emerald{--accent:#10b981;--accent-bg:rgba(16,185,129,.12)}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Automated Reasoning — Interactive Tutorials</h1>
+  <p>Step-by-step algorithm visualizations ordered by lecture</p>
+</header>
+
+<main class="grid">
+
+  <a href="horn/index.html" class="card c-indigo">
+    <span class="card-badge">Lecture 2</span>
+    <h2>Horn Clause Solver</h2>
+    <p>Linear-time satisfiability for Horn CNF formulas — unit propagation until fixpoint.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="dpll/index.html" class="card c-indigo">
+    <span class="card-badge">Lecture 4</span>
+    <h2>DPLL</h2>
+    <p>Davis–Putnam–Logemann–Loveland algorithm — backtracking SAT solving with unit propagation and pure literal elimination.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="basic-cdcl/index.html" class="card c-indigo">
+    <span class="card-badge">Lecture 5</span>
+    <h2>Basic CDCL</h2>
+    <p>Conflict-Driven Clause Learning without non-chronological backjumping — build your intuition for conflict analysis.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="cdcl/index.html" class="card c-indigo">
+    <span class="card-badge">Lecture 5</span>
+    <h2>CDCL</h2>
+    <p>Full Conflict-Driven Clause Learning with UIP-based conflict analysis and non-chronological backjumping.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="tseytin/index.html" class="card c-lime">
+    <span class="card-badge">Lecture 7</span>
+    <h2>Tseytin Transformation</h2>
+    <p>Convert a propositional formula to an equisatisfiable CNF — one sub-formula at a time.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="flatten/index.html" class="card c-violet">
+    <span class="card-badge">Lecture 7</span>
+    <h2>Term Flattening</h2>
+    <p>EUF pre-processing — transform a cube into an equisatisfiable flat cube, one rewrite rule at a time.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="cc/index.html" class="card c-teal">
+    <span class="card-badge">Lecture 8</span>
+    <h2>Congruence Closure</h2>
+    <p>EUF theory solver — decide satisfiability of a flat cube using equivalence classes and the CC algorithm.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="uf/index.html" class="card c-amber">
+    <span class="card-badge">Lecture 9</span>
+    <h2>Union-Find</h2>
+    <p>Interactive Union-Find data structure with path compression and union by rank — building block for CC.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="dpllt/index.html" class="card c-blue">
+    <span class="card-badge">Lecture 9</span>
+    <h2>DPLL(T)</h2>
+    <p>DPLL modulo theories — combine a SAT solver (DPLL / Basic CDCL / CDCL) with a theory solver (Union-Find or CC).</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="ackermann/index.html" class="card c-purple">
+    <span class="card-badge">Ackermanization</span>
+    <h2>Ackermanization</h2>
+    <p>Reduce QF_UF to QF_EQ — replace function applications with fresh constants and add congruence axioms.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="bitblasting/index.html" class="card c-orange">
+    <span class="card-badge">Lecture 10 / 11.1</span>
+    <h2>Bit Blasting (BV-Flattening)</h2>
+    <p>Reduce bit-vector constraints to propositional logic — equality, bitwise ops, addition, subtraction, and multiplication.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+  <a href="pnf/index.html" class="card c-emerald">
+    <span class="card-badge">Lecture 13</span>
+    <h2>Prenex Normal Form (PNF)</h2>
+    <p>Convert a first-order formula to PNF in four steps: eliminate →/↔, push ¬ inward, rename variables, pull quantifiers out.</p>
+    <span class="arrow">Explore →</span>
+  </a>
+
+</main>
+
+</body>
+</html>

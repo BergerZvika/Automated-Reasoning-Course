@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPLL Interactive Tutorial</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b27; --surface2: #1e2535;
+  --border: #2a3148; --text: #e2e8f0; --muted: #8892a4;
+  --accent: #6366f1; --accent2: #818cf8;
+  --green: #22c55e; --green-bg: rgba(34,197,94,0.12); --green-border: rgba(34,197,94,0.3);
+  --red: #ef4444;   --red-bg:   rgba(239,68,68,0.12);  --red-border:   rgba(239,68,68,0.35);
+  --yellow: #f59e0b;--yellow-bg:rgba(245,158,11,0.12);--yellow-border:rgba(245,158,11,0.35);
+  --orange: #f97316;--orange-bg:rgba(249,115,22,0.12);--orange-border:rgba(249,115,22,0.35);
+  --purple: #a855f7;--blue: #3b82f6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;min-height:100vh}
+
+/* ── Header ── */
+.hdr{
+  background:linear-gradient(135deg,#1a1040 0%,#2d1b69 45%,#1a1040 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#c4b5fd,#a5b4fc,#93c5fd);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);
+  color:var(--accent2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+
+/* ── Layout ── */
+.wrap{max-width:1440px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+/* ── Formula input ── */
+.input-row{display:flex;gap:10px;align-items:stretch}
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s
+}
+.formula-input:focus{border-color:var(--accent)}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.examples-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.examples-row span{font-size:12px;color:var(--muted);margin-right:2px}
+.ex-btn{
+  padding:4px 11px;font-size:12px;border-radius:20px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;
+  font-family:'Consolas',monospace
+}
+.ex-btn:hover{border-color:var(--accent);color:var(--accent2)}
+
+/* ── Buttons ── */
+.btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--border)}
+.btn-sm{padding:7px 13px;font-size:12px}
+
+/* ── Main grid ── */
+.main-grid{display:grid;grid-template-columns:260px 1fr;gap:18px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+
+/* ── Action buttons ── */
+.action-btn{
+  width:100%;padding:13px 15px;border-radius:10px;border:2px solid transparent;
+  cursor:pointer;text-align:left;transition:all .2s;margin-bottom:9px;
+  display:flex;flex-direction:column;gap:3px
+}
+.action-btn .a-name{font-size:14px;font-weight:700;letter-spacing:-.2px}
+.action-btn .a-rule{font-size:10.5px;font-family:'Consolas',monospace;opacity:.75;margin-top:1px}
+.action-btn.not-app{opacity:.35}
+.action-btn.not-app:hover{opacity:.58;cursor:help}
+.action-btn:not(.not-app) .a-check{display:block;font-size:10px;font-weight:700;margin-top:4px;opacity:.9}
+.action-btn.not-app .a-check{display:none}
+.action-btn.not-app .a-why{display:block;font-size:10px;margin-top:3px;opacity:.7}
+.action-btn:not(.not-app) .a-why{display:none}
+
+.ab-unit  {background:var(--yellow-bg);border-color:var(--yellow-border);color:#fbbf24}
+.ab-unit:not(.not-app):hover{background:rgba(245,158,11,.22);border-color:var(--yellow)}
+.ab-decide{background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3);color:#a5b4fc}
+.ab-decide:not(.not-app):hover{background:rgba(99,102,241,.22);border-color:var(--accent)}
+.ab-back  {background:var(--orange-bg);border-color:var(--orange-border);color:#fb923c}
+.ab-back:not(.not-app):hover{background:rgba(249,115,22,.22);border-color:var(--orange)}
+.ab-fail  {background:var(--red-bg);border-color:var(--red-border);color:#fca5a5}
+.ab-fail:not(.not-app):hover{background:rgba(239,68,68,.22);border-color:var(--red)}
+
+/* ── Hint panel ── */
+.hint-box{font-size:13px;color:var(--muted);line-height:1.7}
+.hint-box b{color:var(--text)}
+.step-num{font-size:36px;font-weight:800;color:var(--accent2);line-height:1}
+
+/* ── Formula display ── */
+.formula-list{display:flex;flex-direction:column;gap:7px}
+.clause-row{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-radius:9px;border:1px solid var(--border);background:var(--bg);transition:all .25s
+}
+.clause-row.sat    {background:var(--green-bg);border-color:var(--green-border)}
+.clause-row.conflict{background:var(--red-bg);border-color:var(--red-border);animation:flash-red 1.2s ease}
+.clause-row.unit   {background:var(--yellow-bg);border-color:var(--yellow-border)}
+.c-idx{font-size:11px;color:var(--muted);font-family:monospace;min-width:22px;flex-shrink:0}
+.c-lits{display:flex;align-items:center;gap:5px;flex:1;font-family:'Consolas',monospace;flex-wrap:wrap}
+.lit{padding:3px 9px;border-radius:5px;font-size:13px;transition:all .25s;font-family:'Consolas',monospace}
+.lit.l-true  {background:rgba(34,197,94,.18);color:#86efac}
+.lit.l-false {background:rgba(239,68,68,.14);color:#fca5a5;text-decoration:line-through;opacity:.65}
+.lit.l-unset {background:rgba(100,116,139,.18);color:#cbd5e1}
+.lit.l-unit  {background:rgba(245,158,11,.22);color:#fde68a;border:1px solid rgba(245,158,11,.5);font-weight:700}
+.or-dot{color:var(--muted);font-size:12px;user-select:none}
+.c-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.b-sat    {background:rgba(34,197,94,.2);color:#86efac}
+.b-conflict{background:rgba(239,68,68,.2);color:#fca5a5}
+.b-unit   {background:rgba(245,158,11,.2);color:#fbbf24}
+.b-unresolved{background:rgba(100,116,139,.12);color:#94a3b8}
+
+/* ── Var grid ── */
+.var-grid{display:flex;flex-wrap:wrap;gap:8px}
+.vchip{padding:5px 11px;border-radius:7px;font-family:'Consolas',monospace;font-size:12px;border:1px solid var(--border);display:flex;align-items:center;gap:5px}
+.vchip .vname{color:var(--muted)}
+.vchip.v-true {background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
+.vchip.v-true .vval{color:#86efac;font-weight:700}
+.vchip.v-false{background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.22)}
+.vchip.v-false .vval{color:#fca5a5;font-weight:700}
+.vchip.v-unset .vval{color:var(--muted)}
+.dec-tag{font-size:9px;background:#6d28d9;color:#e9d5ff;padding:1px 5px;border-radius:3px;font-weight:700}
+
+/* ── Trail ── */
+.trail{display:flex;flex-wrap:wrap;gap:7px;align-items:center;min-height:38px}
+.trail-empty{color:var(--muted);font-size:13px;font-style:italic}
+.trail-sep{color:var(--border);font-size:16px;user-select:none}
+.t-chip{
+  padding:6px 13px;border-radius:8px;font-family:'Consolas',monospace;font-size:13px;font-weight:600;
+  border:2px solid transparent;display:flex;align-items:center;gap:5px
+}
+.t-chip.t-dec  {background:rgba(168,85,247,.18);border-color:rgba(168,85,247,.45);color:#d8b4fe}
+.t-chip.t-prop {background:rgba(59,130,246,.14);border-color:rgba(59,130,246,.3);color:#93c5fd}
+.t-chip.t-new  {animation:pop-in .3s ease-out}
+.t-dec-badge{font-size:9px;background:#7c3aed;color:#fff;padding:1px 4px;border-radius:3px;font-weight:700}
+.trail-legend{display:flex;gap:12px;font-size:12px;color:var(--muted)}
+.trail-legend span{display:flex;align-items:center;gap:4px}
+
+/* ── Explanation ── */
+.expl-badge{
+  display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;
+  border-radius:20px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px
+}
+.expl-text{font-size:14px;line-height:1.75;color:var(--muted)}
+.expl-text b{color:var(--text)}
+.rule-box{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:12px 16px;margin-top:12px;font-family:'Consolas',monospace;font-size:13px;
+  color:#a5b4fc;line-height:1.8
+}
+.rule-box .comment{color:#4b5563;font-style:normal}
+
+/* History list */
+.hist-list{display:flex;flex-direction:column;gap:3px;max-height:220px;overflow-y:auto;padding-right:2px}
+.hist-list::-webkit-scrollbar{width:4px}.hist-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.hentry{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:7px;background:var(--bg);border:1px solid var(--border);font-size:12px;transition:border-color .15s}
+.hentry.hcur{border-color:var(--accent);background:rgba(99,102,241,.08)}
+.hnum{font-size:10px;font-weight:700;color:var(--muted);min-width:18px;text-align:right}
+.hbadge{font-size:11px;font-weight:700;min-width:110px}
+.hdetail{color:var(--muted);font-family:'Consolas',monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb-start{color:var(--muted)}
+.hb-unit{color:#fbbf24}.hb-decide{color:#a5b4fc}.hb-conflict{color:#fca5a5}
+.hb-explain{color:#fb923c}.hb-learn{color:#5eead4}.hb-backjump{color:#d8b4fe}.hb-fail{color:#ef4444}
+.hb-backtrack{color:#fb923c}
+.hist-controls{display:flex;gap:8px;margin-top:12px}
+
+/* ── Modals ── */
+.overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);
+  backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center
+}
+.overlay.show{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:36px;max-width:500px;width:92%;text-align:center
+}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:8px;text-align:left}
+.modal-desc{font-size:13px;color:var(--muted);margin-bottom:18px;text-align:left;line-height:1.6}
+.lit-options{display:flex;flex-direction:column;gap:7px;max-height:320px;overflow-y:auto}
+.lit-opt-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.lit-opt-btn{
+  padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);
+  color:var(--text);cursor:pointer;font-family:'Consolas',monospace;font-size:13px;font-weight:600;
+  transition:all .15s;text-align:center
+}
+.lit-opt-btn.pos:hover{background:rgba(34,197,94,.2);border-color:#22c55e;color:#86efac}
+.lit-opt-btn.neg:hover{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+
+/* ── Result overlay ── */
+.result-icon{font-size:64px;margin-bottom:16px}
+.result-title{font-size:38px;font-weight:900;margin-bottom:10px}
+.result-title.sat{color:var(--green)}
+.result-title.unsat{color:var(--red)}
+.result-desc{font-size:15px;color:var(--muted);line-height:1.65;margin-bottom:18px}
+.assignment-box{
+  background:var(--bg);border-radius:10px;padding:14px 18px;margin-bottom:22px;
+  font-family:'Consolas',monospace;font-size:13px;text-align:left;line-height:2
+}
+
+/* ── Animations ── */
+@keyframes pop-in{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes flash-red{0%,100%{box-shadow:none}50%{box-shadow:0 0 14px rgba(239,68,68,.45)}}
+@keyframes slide-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.slide-up{animation:slide-up .25s ease-out}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Heuristic cards */
+.heur-card{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--bg)}
+.heur-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.heur-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.heur-full{font-size:12px;color:var(--muted);flex:1;min-width:0}
+.heur-sug{font-family:'Consolas',monospace;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;flex-shrink:0}
+.heur-use{padding:5px 12px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:var(--accent);color:#fff;flex-shrink:0}
+.heur-use:hover{background:var(--accent2)}
+.heur-desc{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6}
+.heur-detail{font-family:'Consolas',monospace;font-size:11px;color:#94a3b8;background:var(--surface2);padding:8px 10px;border-radius:6px;line-height:1.8}
+.heur-btn{width:100%;margin-bottom:10px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.35);color:#a5b4fc;border-radius:8px;padding:9px 14px;cursor:pointer;font-size:13px;font-weight:600;text-align:left;transition:all .15s}
+.heur-btn:hover{background:rgba(99,102,241,.22)}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<!-- Header -->
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>DPLL Interactive Tutorial</h1>
+    <p>Davis–Putnam–Logemann–Loveland algorithm &mdash; step by step exploration</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Formula Input -->
+  <div class="card">
+    <div class="card-title">Formula Input (CNF)</div>
+    <div class="input-row">
+      <input id="formulaInput" class="formula-input"
+        placeholder="e.g.: x1 | x2 | -x3, -x1 | x2, -x2 | -x3"
+        value="x1 | x2 | -x3, -x1 | x2, -x2 | -x3">
+      <button class="btn btn-primary" onclick="loadFormula()">Initialize</button>
+      <button class="btn btn-ghost" onclick="resetSolver()">Reset</button>
+    </div>
+    <div class="io-row">
+      <input type="file" id="cnfFileIn" accept=".cnf" style="display:none" onchange="onCNFFile(event)">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('cnfFileIn').click()">↑ Upload .cnf</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadCNF()">↓ Download .cnf</button>
+    </div>
+    <div class="input-hint">
+      Syntax: variables = any word (x1, p, alpha…) &nbsp;|&nbsp;
+      negation = <code>-</code> or <code>¬</code> or <code>!</code> &nbsp;|&nbsp;
+      OR within clause = <code>|</code> or <code>∨</code> &nbsp;|&nbsp;
+      AND between clauses = <code>,</code> or <code>&amp;</code> or newline
+    </div>
+    <div class="examples-row">
+      <span>Examples:</span>
+      <button class="ex-btn" onclick="loadExample('simple')">Simple SAT</button>
+      <button class="ex-btn" onclick="loadExample('unit')">Unit Prop Demo</button>
+      <button class="ex-btn" onclick="loadExample('backtrack')">Backtrack Demo</button>
+      <button class="ex-btn" onclick="loadExample('unsat')">UNSAT</button>
+      <button class="ex-btn" onclick="loadExample('medium')">3-variable</button>
+      <button class="ex-btn" onclick="loadExample('chain')">Chain Propagation</button>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+
+    <!-- LEFT: Actions + Hint -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+
+      <!-- Actions -->
+      <div class="card">
+        <div class="card-title">DPLL Actions</div>
+
+        <button id="btn-unit" class="action-btn ab-unit" onclick="tryAction('unit')">
+          <span class="a-name">Unit Propagate</span>
+          <span class="a-rule">∃C∈F, l∈C : C\{l} ⊆ ¬M, l∉M</span>
+          <span class="a-check">✓ Applicable now</span>
+          <span class="a-why">✗ Not applicable — click to see why</span>
+        </button>
+
+        <button id="btn-decide" class="action-btn ab-decide" onclick="tryDecide()">
+          <span class="a-name">Decide</span>
+          <span class="a-rule">∃l unassigned, no conflict</span>
+          <span class="a-check">✓ Applicable now</span>
+          <span class="a-why">✗ Not applicable — click to see why</span>
+        </button>
+
+        <button id="btn-back" class="action-btn ab-back" onclick="tryAction('backtrack')">
+          <span class="a-name">Backtrack</span>
+          <span class="a-rule">conflict ∧ D ≠ ∅</span>
+          <span class="a-check">✓ Applicable now</span>
+          <span class="a-why">✗ Not applicable — click to see why</span>
+        </button>
+
+        <button id="btn-fail" class="action-btn ab-fail" onclick="tryAction('fail')">
+          <span class="a-name">Fail (UNSAT)</span>
+          <span class="a-rule">conflict ∧ D = ∅</span>
+          <span class="a-check">✓ Applicable now</span>
+          <span class="a-why">✗ Not applicable — click to see why</span>
+        </button>
+      </div>
+
+      <!-- Hint -->
+      <div class="card">
+        <div class="card-title">What can I do?</div>
+        <div class="hint-box" id="hintBox">Load a formula to begin.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: State -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Formula -->
+      <div class="card">
+        <div class="card-title">
+          <span>Formula Clauses (F)</span>
+          <span id="fStatusBadge"></span>
+        </div>
+        <div id="formulaDisplay" class="formula-list">
+          <div style="color:var(--muted);font-style:italic;font-size:14px">Load a formula to see clauses here.</div>
+        </div>
+      </div>
+
+      <!-- Variables -->
+      <div class="card">
+        <div class="card-title">Variable Assignments</div>
+        <div id="varGrid" class="var-grid">
+          <div style="color:var(--muted);font-style:italic;font-size:13px">—</div>
+        </div>
+      </div>
+
+      <!-- Trail -->
+      <div class="card">
+        <div class="card-title">
+          <span>Assignment Trail (M)</span>
+          <div class="trail-legend">
+            <span><span style="display:inline-block;width:10px;height:10px;background:rgba(168,85,247,.4);border-radius:2px"></span> Decision</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:rgba(59,130,246,.3);border-radius:2px"></span> Propagated</span>
+          </div>
+        </div>
+        <div id="trailDisplay" class="trail">
+          <span class="trail-empty">M = ∅</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Explanation -->
+  <div class="card" id="explCard">
+    <div class="card-title">Rule Explanation</div>
+    <div id="explContent">
+      <p class="expl-text">Apply an action to see a detailed explanation of the DPLL rule that was used.</p>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <div class="card-title">
+      <span>Step History</span>
+      <div class="hist-controls">
+        <button class="btn btn-ghost btn-sm" onclick="undoStep()">← Undo</button>
+        <button class="btn btn-ghost btn-sm" onclick="autoSolve()">Auto-Solve →</button>
+      </div>
+    </div>
+    <div id="histTrack" class="hist-list"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="downloadHistory()">↓ Download History</button>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- Decide Modal -->
+<div class="overlay" id="decideOverlay">
+  <div class="modal" style="text-align:left">
+    <div class="modal-title">Choose a Literal to Decide</div>
+    <div class="modal-desc">
+      Select any unassigned variable and a value (TRUE or FALSE).<br>
+      A <b>decision</b> is a free choice — no rule forces it. It will be added to both M and D (decision set).
+    </div>
+    <button class="heur-btn" onclick="showHeuristicModal()">💡 Suggest a literal using a heuristic →</button>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">— or pick manually —</div>
+    <div id="litOptions" class="lit-options"></div>
+    <button class="btn btn-ghost" style="margin-top:14px;width:100%" onclick="closeDecide()">Cancel</button>
+  </div>
+</div>
+
+<!-- Unit Propagate Picker -->
+<div class="overlay" id="upOverlay">
+  <div class="modal" style="text-align:left">
+    <div class="modal-title">Choose a Unit to Propagate</div>
+    <div class="modal-desc" id="upModalDesc"></div>
+    <div id="upOptions" class="lit-options"></div>
+    <button class="btn btn-ghost" style="margin-top:14px;width:100%" onclick="closeUnitProp()">Cancel</button>
+  </div>
+</div>
+
+<!-- Heuristic Decision Modal -->
+<div class="overlay" id="heurOverlay">
+  <div class="modal" style="max-width:700px;width:95%;text-align:left">
+    <div class="modal-title">Decision Heuristics</div>
+    <div class="modal-desc">Each heuristic analyzes the current formula to suggest which literal to decide. Click <b>Decide →</b> to use the suggestion, or go back to pick manually.</div>
+    <div id="heurCards" style="display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto;padding-right:4px"></div>
+    <button class="btn btn-ghost" style="margin-top:14px;width:100%" onclick="closeHeuristic()">← Back to Manual Pick</button>
+  </div>
+</div>
+
+<!-- Result Overlay -->
+<div class="overlay" id="resultOverlay">
+  <div class="modal">
+    <div class="result-icon" id="resIcon"></div>
+    <div class="result-title" id="resTitle"></div>
+    <div class="result-desc" id="resDesc"></div>
+    <div class="assignment-box" id="resAssign"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-ghost" onclick="closeResult()">Continue Exploring</button>
+      <button class="btn btn-primary" onclick="resetSolver();closeResult()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let S = {
+  formula: [],    // [[lit, ...], ...]  integers
+  varNames: {},   // id -> name string
+  m: [],          // assignment trail (integers)
+  d: [],          // decision literals (subset of m)
+  history: [],    // array of snapshots for undo
+  step: 0,
+  status: 'idle', // 'idle' | 'running' | 'sat' | 'unsat'
+  lastExpl: ''
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXAMPLES
+// ─────────────────────────────────────────────────────────────────────────────
+const EXAMPLES = {
+  simple:    { f:'x1 | x2 | -x3, -x1 | x2, -x2 | -x3', d:'Try: Decide x1=T, then watch Unit Propagation on clause 2.' },
+  unit:      { f:'-x1 | -x2, x2 | x3, x1', d:'x1 is a unit clause → forced T immediately. Chain propagation demo.' },
+  backtrack: { f:'x1 | x2, -x1 | x2, x1 | -x2, -x1 | -x2', d:'Classic backtracking example — any single decision leads to a conflict.' },
+  unsat:     { f:'x1, -x1', d:'x1 AND ¬x1 cannot both hold — UNSAT formula. Unit prop forces conflict.' },
+  medium:    { f:'x1 | x2 | x3, -x1 | x2, -x2 | x3, -x3 | x1, -x1 | -x2 | -x3', d:'Three variables, requires multiple decisions.' },
+  chain:     { f:'x1 | x2, -x2 | x3, -x3 | x4, -x4, -x1 | x3', d:'Chain: decide x1=T, then watch cascade of unit propagations.' }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARSER
+// ─────────────────────────────────────────────────────────────────────────────
+function parseFormula(input) {
+  const nameToId = {}, idToName = {};
+  let nextId = 1;
+  function vid(name) {
+    if (!(name in nameToId)) { nameToId[name] = nextId; idToName[nextId] = name; nextId++; }
+    return nameToId[name];
+  }
+  // split clauses
+  const rawClauses = input
+    .replace(/\bAND\b/gi, ',').replace(/∧/g, ',')
+    .split(/[,;&\n]+/).map(s => s.trim()).filter(Boolean);
+
+  const formula = [];
+  for (const cs of rawClauses) {
+    const clean = cs.replace(/[()]/g, '').trim();
+    const hasPipe = /[|∨]|\bOR\b/i.test(clean);
+    const litStrs = hasPipe
+      ? clean.replace(/\bOR\b/gi,'|').replace(/∨/g,'|').split('|').map(s=>s.trim()).filter(Boolean)
+      : clean.split(/\s+/).filter(Boolean);
+    const clause = [];
+    for (const ls of litStrs) {
+      const neg = /^[¬!~\-]/.test(ls);
+      const raw = ls.replace(/^[¬!~\-]+/, '').trim();
+      if (!raw) continue;
+      // numeric DIMACS?
+      if (/^\d+$/.test(raw)) {
+        const n = parseInt(raw); if (n === 0) continue;
+        clause.push(neg ? -vid('x'+n) : vid('x'+n));
+      } else {
+        clause.push(neg ? -vid(raw) : vid(raw));
+      }
+    }
+    if (clause.length) formula.push(clause);
+  }
+  return { formula, varNames: idToName, numVars: nextId - 1 };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DPLL CORE LOGIC  (mirrors class-4 dpll-solver.py)
+// ─────────────────────────────────────────────────────────────────────────────
+function litStatus(lit, m) {
+  if (m.includes(lit))  return 'true';
+  if (m.includes(-lit)) return 'false';
+  return 'unset';
+}
+
+function clauseStatus(clause, m) {
+  if (clause.some(l => m.includes(l)))    return 'sat';
+  if (clause.every(l => m.includes(-l)))  return 'conflict';
+  const u = clause.filter(l => !m.includes(l) && !m.includes(-l));
+  if (u.length === 1) return 'unit';
+  return 'unresolved';
+}
+
+function hasConflict(f, m) { return f.some(c => clauseStatus(c, m) === 'conflict'); }
+function isSat(f, m)       { return f.every(c => clauseStatus(c, m) === 'sat'); }
+
+function findAllUnits(f, m) {
+  const results = [], seen = new Set();
+  for (const c of f) {
+    if (clauseStatus(c, m) === 'unit') {
+      const lit = c.find(l => !m.includes(l) && !m.includes(-l));
+      const key = `${lit}`;
+      if (!seen.has(key)) { seen.add(key); results.push({ clause: c, lit }); }
+    }
+  }
+  return results;
+}
+function findUnit(f, m) { return findAllUnits(f, m)[0] || null; }
+
+function allUnassigned(f, m) {
+  const seen = new Set();
+  const res = [];
+  for (const c of f) for (const l of c) {
+    const v = Math.abs(l);
+    if (!seen.has(v) && !m.includes(v) && !m.includes(-v)) { seen.add(v); res.push(v); }
+  }
+  return res;
+}
+
+function getApplicable() {
+  const { formula: f, m, d } = S;
+  const conflict = hasConflict(f, m);
+  return {
+    unit:      !conflict && findUnit(f, m) !== null,
+    decide:    !conflict && allUnassigned(f, m).length > 0,
+    backtrack: conflict && d.length > 0,
+    fail:      conflict && d.length === 0
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+function fmt(lit) {
+  const name = S.varNames[Math.abs(lit)] || ('x'+Math.abs(lit));
+  return lit > 0 ? name : '¬'+name;
+}
+function fmtClause(c) { return '(' + c.map(fmt).join(' ∨ ') + ')'; }
+
+function snapshot(action, detail) {
+  S.history.push({ m:[...S.m], d:[...S.d], step:S.step, expl:S.lastExpl,
+    action:action||'', detail:detail||'' });
+  S.step++;
+}
+
+function doUnitProp(clause, lit) {
+  if (!clause || lit === undefined) {
+    const found = findUnit(S.formula, S.m);
+    if (!found) return false;
+    clause = found.clause; lit = found.lit;
+  }
+  const falseOnes = clause.filter(l => S.m.includes(-l)).map(fmt);
+  const expl = `
+    <span class="expl-badge" style="background:rgba(245,158,11,.18);color:#fbbf24">Unit Propagate</span>
+    <p class="expl-text">
+      Clause <b>${fmtClause(clause)}</b> is a <b>unit clause</b>.<br>
+      All literals except <b>${fmt(lit)}</b> are <b>false</b> in M:
+      ${falseOnes.length ? '<b>'+falseOnes.join(', ')+'</b>' : '(no others)'}.
+      Therefore <b>${fmt(lit)}</b> <em>must</em> be TRUE — this is forced, not a choice.
+    </p>
+    <div class="rule-box">
+      M, F &nbsp;⊢&nbsp; M·<b>${fmt(lit)}</b>, F<br>
+      <span class="comment">// ∃ C = ${fmtClause(clause)} ∈ F : C∖{${fmt(lit)}} ⊆ {${falseOnes.map(x=>'¬'+x).join(', ')||'∅'}}</span><br>
+      <span class="comment">// ${fmt(lit)} is the unique unassigned literal in C</span>
+    </div>`;
+  snapshot('unit','force '+fmt(lit)+' from '+fmtClause(clause));
+  S.m = [...S.m, lit];
+  S.lastExpl = expl;
+  return true;
+}
+
+function doDecide(lit) {
+  if (lit === undefined || lit === null) {
+    const v = allUnassigned(S.formula, S.m)[0];
+    if (!v) return false;
+    lit = v; // default: assign positive
+  }
+  const vname = S.varNames[Math.abs(lit)];
+  const expl = `
+    <span class="expl-badge" style="background:rgba(99,102,241,.18);color:#a5b4fc">Decide</span>
+    <p class="expl-text">
+      Variable <b>${vname}</b> is unassigned. We <b>freely decide</b> to set
+      <b>${fmt(lit)}</b> (i.e., ${vname} = ${lit>0?'TRUE':'FALSE'}).<br>
+      There is no rule forcing this — it is a <em>heuristic choice</em>.
+      The literal is added to both M (trail) and D (decision set),
+      marking it as a <b>decision point</b> we can backtrack to if needed.
+    </p>
+    <div class="rule-box">
+      M, F, D &nbsp;⊢&nbsp; M·<b>${fmt(lit)}</b>, F, D·<b>${fmt(lit)}</b><br>
+      <span class="comment">// ${fmt(lit)} is unassigned, no conflict in M</span><br>
+      <span class="comment">// marked as decision: added to D</span>
+    </div>`;
+  snapshot('decide','chose '+fmt(lit));
+  S.m = [...S.m, lit];
+  S.d = [...S.d, lit];
+  S.lastExpl = expl;
+  return true;
+}
+
+function doBacktrack() {
+  if (!hasConflict(S.formula, S.m) || S.d.length === 0) return false;
+  const lastDec = S.d[S.d.length - 1];
+  const idx = S.m.lastIndexOf(lastDec);
+  const removed = S.m.slice(idx); // lastDec + propagated after it
+  const newM = [...S.m.slice(0, idx), -lastDec];
+  const newD = S.d.slice(0, -1);
+  const cc = S.formula.find(c => clauseStatus(c, S.m) === 'conflict');
+  const expl = `
+    <span class="expl-badge" style="background:rgba(249,115,22,.18);color:#fb923c">Backtrack</span>
+    <p class="expl-text">
+      ${cc ? 'Conflict in clause <b>'+fmtClause(cc)+'</b> — ' : ''}all its literals are false in M.<br>
+      Since D ≠ ∅, we can undo the last decision.
+    </p>
+    <p class="expl-text" style="margin-top:8px">
+      Last decision: <b>${fmt(lastDec)}</b><br>
+      Removed from M: <b>${removed.map(fmt).join(', ')}</b><br>
+      Flip: <b>${fmt(lastDec)}</b> → <b>${fmt(-lastDec)}</b> (now forced, not a decision)
+    </p>
+    <div class="rule-box">
+      M·<b>${fmt(lastDec)}</b>·M', F, D·<b>${fmt(lastDec)}</b> &nbsp;⊢&nbsp; M·<b>${fmt(-lastDec)}</b>, F, D<br>
+      <span class="comment">// conflict detected under M·${fmt(lastDec)}·M'</span><br>
+      <span class="comment">// flip last decision, discard everything after it</span>
+    </div>`;
+  snapshot('backtrack','flip '+fmt(lastDec)+' → '+fmt(-lastDec));
+  S.m = newM;
+  S.d = newD;
+  S.lastExpl = expl;
+  return true;
+}
+
+function doFail() {
+  if (!hasConflict(S.formula, S.m) || S.d.length > 0) return false;
+  const cc = S.formula.find(c => clauseStatus(c, S.m) === 'conflict');
+  const expl = `
+    <span class="expl-badge" style="background:rgba(239,68,68,.18);color:#fca5a5">Fail — UNSAT</span>
+    <p class="expl-text">
+      ${cc?'Conflict in clause <b>'+fmtClause(cc)+'</b>.':''}<br>
+      The decision set D = ∅: there are <b>no decisions left to backtrack</b>.<br>
+      Every possible assignment has been exhausted. The formula is <b>UNSATISFIABLE</b>.
+    </p>
+    <div class="rule-box">
+      M, F, ∅ &nbsp;⊢&nbsp; <b>UNSAT</b><br>
+      <span class="comment">// conflict in (M, F) and D = ∅</span><br>
+      <span class="comment">// no more backtracking possible</span>
+    </div>`;
+  snapshot('fail','UNSAT — D=∅');
+  S.lastExpl = expl;
+  S.status = 'unsat';
+  render();
+  showResult('unsat');
+  return true;
+}
+
+function checkSat() {
+  if (isSat(S.formula, S.m)) { S.status = 'sat'; render(); showResult('sat'); return true; }
+  return false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────────────────────
+function render() {
+  if (!S.formula.length) return;
+  const { formula: f, m, d, varNames } = S;
+  const app = getApplicable();
+
+  // Buttons
+  setBtn('btn-unit',  app.unit);
+  setBtn('btn-decide',app.decide);
+  setBtn('btn-back',  app.backtrack);
+  setBtn('btn-fail',  app.fail);
+
+
+  renderFormula();
+  renderVarGrid();
+  renderTrail();
+  if (S.lastExpl) document.getElementById('explContent').innerHTML = S.lastExpl;
+  renderHint(app);
+  renderHistory();
+}
+
+function setBtn(id, enabled) {
+  const el = document.getElementById(id);
+  el.disabled = false; // always clickable
+  el.classList.toggle('not-app', !enabled);
+}
+
+function renderFormula() {
+  const { formula: f, m, varNames } = S;
+  const el = document.getElementById('formulaDisplay');
+  el.innerHTML = '';
+  const badge = document.getElementById('fStatusBadge');
+
+  const conflict = hasConflict(f, m), sat = isSat(f, m);
+  badge.innerHTML = sat
+    ? '<span class="c-badge b-sat">All Satisfied ✓</span>'
+    : conflict
+    ? '<span class="c-badge b-conflict">⚡ Conflict</span>'
+    : '';
+
+  f.forEach((clause, i) => {
+    const cs = clauseStatus(clause, m);
+    const row = document.createElement('div');
+    row.className = 'clause-row slide-up ' + cs;
+
+    const idx = document.createElement('span');
+    idx.className = 'c-idx'; idx.textContent = 'C'+(i+1);
+    row.appendChild(idx);
+
+    const lits = document.createElement('div');
+    lits.className = 'c-lits';
+    clause.forEach((lit, j) => {
+      const ls = litStatus(lit, m);
+      const isUnit = cs === 'unit' && ls === 'unset';
+      const chip = document.createElement('span');
+      chip.className = 'lit ' + (isUnit ? 'l-unit' : 'l-'+ls);
+      chip.textContent = fmt(lit);
+      lits.appendChild(chip);
+      if (j < clause.length - 1) {
+        const sep = document.createElement('span');
+        sep.className = 'or-dot'; sep.textContent = '∨';
+        lits.appendChild(sep);
+      }
+    });
+    row.appendChild(lits);
+
+    const sb = document.createElement('span');
+    sb.className = 'c-badge b-'+cs;
+    sb.textContent = cs.charAt(0).toUpperCase()+cs.slice(1);
+    row.appendChild(sb);
+    el.appendChild(row);
+  });
+}
+
+function renderVarGrid() {
+  const { formula: f, m, d, varNames } = S;
+  const el = document.getElementById('varGrid');
+  el.innerHTML = '';
+  const seen = new Set();
+  for (const clause of f) for (const lit of clause) {
+    const v = Math.abs(lit);
+    if (seen.has(v)) continue; seen.add(v);
+    const name = varNames[v];
+    const isT = m.includes(v), isF = m.includes(-v);
+    const isDec = d.includes(v) || d.includes(-v);
+    const chip = document.createElement('span');
+    chip.className = 'vchip ' + (isT?'v-true':isF?'v-false':'v-unset');
+    chip.innerHTML = `<span class="vname">${name}</span>=<span class="vval">${isT?'T':isF?'F':'—'}</span>${isDec?'<span class="dec-tag">D</span>':''}`;
+    el.appendChild(chip);
+  }
+}
+
+function renderTrail() {
+  const { m, d, varNames } = S;
+  const el = document.getElementById('trailDisplay');
+  el.innerHTML = '';
+  if (!m.length) { el.innerHTML = '<span class="trail-empty">M = ∅ (empty)</span>'; return; }
+  m.forEach((lit, i) => {
+    if (i > 0) { const s=document.createElement('span'); s.className='trail-sep'; s.textContent='→'; el.appendChild(s); }
+    const isDec = d.includes(lit);
+    const isNew = i === m.length - 1;
+    const chip = document.createElement('span');
+    chip.className = 't-chip '+(isDec?'t-dec':'t-prop')+(isNew?' t-new':'');
+    chip.innerHTML = fmt(lit) + (isDec ? '<span class="t-dec-badge">D</span>' : '');
+    el.appendChild(chip);
+  });
+}
+
+const H_LABELS = {unit:'Unit Propagate',decide:'Decide',backtrack:'Backtrack',fail:'Fail'};
+function renderHistory() {
+  const el = document.getElementById('histTrack');
+  el.innerHTML = '';
+  const init = document.createElement('div');
+  init.className = 'hentry'+(S.history.length===0?' hcur':'');
+  init.innerHTML = '<span class="hnum">0</span><span class="hbadge hb-start">Start</span><span class="hdetail">formula loaded</span>';
+  el.appendChild(init);
+  S.history.forEach((h, i) => {
+    const isCur = (i === S.history.length - 1);
+    const row = document.createElement('div');
+    row.className = 'hentry' + (isCur ? ' hcur' : '');
+    const lbl = H_LABELS[h.action] || h.action || '?';
+    row.innerHTML = `<span class="hnum">${h.step+1}</span><span class="hbadge hb-${h.action}">${lbl}</span><span class="hdetail">${h.detail}</span>`;
+    el.appendChild(row);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderHint(app) {
+  const el = document.getElementById('hintBox');
+  if (S.status === 'sat')  { el.innerHTML = '✅ <b>SATISFIABLE</b> — all clauses are satisfied!'; return; }
+  if (S.status === 'unsat'){ el.innerHTML = '❌ <b>UNSATISFIABLE</b> — no satisfying assignment.'; return; }
+  const { formula: f, m, d } = S;
+  if (app.unit) {
+    const u = findUnit(f, m);
+    el.innerHTML = `💡 <b>Unit Propagation</b> is applicable:<br>
+      Clause ${fmtClause(u.clause)} is unit.<br>
+      Literal <b>${fmt(u.lit)}</b> will be forced.`;
+  } else if (app.backtrack) {
+    el.innerHTML = `⚡ <b>Conflict!</b> A clause is fully false.<br>
+      <b>Backtrack</b> on last decision <b>${fmt(d[d.length-1])}</b>.`;
+  } else if (app.fail) {
+    el.innerHTML = `❌ <b>Conflict with D = ∅</b><br>
+      Apply <b>Fail</b> to conclude the formula is UNSAT.`;
+  } else if (app.decide) {
+    const v = allUnassigned(f, m)[0];
+    el.innerHTML = `🔵 No unit clauses, no conflict.<br>
+      <b>Decide</b> a new variable. Suggestion: assign <b>${S.varNames[v]}</b>.`;
+  } else if (isSat(f, m)) {
+    el.innerHTML = '✅ All clauses satisfied — the formula is <b>SAT</b>!';
+  } else {
+    el.innerHTML = 'No action applicable.';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRECONDITION CHECKER
+// ─────────────────────────────────────────────────────────────────────────────
+function getPreconditions(type) {
+  const f = S.formula, m = S.m, d = S.d;
+  const conflict = hasConflict(f, m);
+  const unit = findUnit(f, m);
+  const unassigned = allUnassigned(f, m);
+  const conflictClause = conflict ? f.find(c => clauseStatus(c, m) === 'conflict') : null;
+
+  const cond = (label, met, whenMet, whenNot) => ({
+    label, met,
+    detail: met ? whenMet : whenNot
+  });
+
+  if (type === 'unit') return [
+    cond('No conflict in M (no clause is fully false)',
+      !conflict,
+      'No clause is fully false ✓',
+      `Conflict! Clause <b>${fmtClause(conflictClause)}</b> is fully false — resolve the conflict first`),
+    cond('∃ unit clause: one unassigned literal, all others false',
+      unit !== null,
+      `Clause <b>${fmtClause(unit.clause)}</b> is unit → forces <b>${fmt(unit.lit)}</b>`,
+      'No clause has exactly one unassigned literal with all others false')
+  ];
+
+  if (type === 'decide') return [
+    cond('No conflict in M',
+      !conflict,
+      'No clause is fully false ✓',
+      `Conflict in <b>${fmtClause(conflictClause)}</b> — resolve first (Backtrack or Fail)`),
+    cond('∃ at least one unassigned variable',
+      unassigned.length > 0,
+      `Unassigned: <b>${unassigned.map(v => S.varNames[v]).join(', ')}</b>`,
+      'All variables already assigned — check for SAT or conflict')
+  ];
+
+  if (type === 'backtrack') return [
+    cond('Conflict exists — some clause is fully false in M',
+      conflict,
+      `Conflict in <b>${fmtClause(conflictClause)}</b> ✓`,
+      'No clause is fully false — there is nothing to backtrack from'),
+    cond('D ≠ ∅ — at least one decision exists to undo',
+      d.length > 0,
+      `D = {${d.map(fmt).join(', ')}} — last decision: <b>${fmt(d[d.length-1])}</b>`,
+      'D = ∅ — no decisions made yet; if there is a conflict, use <b>Fail</b> instead')
+  ];
+
+  if (type === 'fail') return [
+    cond('Conflict exists — some clause is fully false in M',
+      conflict,
+      `Conflict in <b>${fmtClause(conflictClause)}</b> ✓`,
+      'No clause is fully false in M — nothing to fail on'),
+    cond('D = ∅ — no decisions left to backtrack',
+      d.length === 0,
+      'D = ∅ ✓',
+      `D = {${d.map(fmt).join(', ')}} — decisions remain; use <b>Backtrack</b> first`)
+  ];
+
+  return [];
+}
+
+function showPrecondsFail(type) {
+  const names = { unit:'Unit Propagate', decide:'Decide', backtrack:'Backtrack', fail:'Fail (UNSAT)' };
+  const colors = { unit:'#fbbf24', decide:'#a5b4fc', backtrack:'#fb923c', fail:'#fca5a5' };
+  const preconds = getPreconditions(type);
+
+  let html = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:18px">🚫</span>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">
+          Cannot apply: <span style="color:${colors[type]}">${names[type]}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Precondition check — see which conditions hold and which do not</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px">`;
+
+  for (const pc of preconds) {
+    const ok = pc.met;
+    html += `
+      <div style="padding:11px 14px;border-radius:9px;border:1px solid ${ok?'rgba(34,197,94,.28)':'rgba(239,68,68,.35)'};background:${ok?'rgba(34,197,94,.07)':'rgba(239,68,68,.08)'}">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:5px">
+          <span style="font-size:15px;font-weight:800;color:${ok?'#86efac':'#fca5a5'}">${ok?'✓':'✗'}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text)">${pc.label}</span>
+        </div>
+        <div style="font-size:12px;color:${ok?'#6ee7b7':'#fca5a5'};margin-left:24px;line-height:1.5">${pc.detail}</div>
+      </div>`;
+  }
+  html += '</div>';
+
+  const el = document.getElementById('explContent');
+  el.innerHTML = html;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI HANDLERS
+// ─────────────────────────────────────────────────────────────────────────────
+function tryAction(type) {
+  if (S.status !== 'running') return;
+  const app = getApplicable();
+  const canApply = (type === 'unit' && app.unit) ||
+                   (type === 'backtrack' && app.backtrack) ||
+                   (type === 'fail' && app.fail);
+  if (!canApply) { showPrecondsFail(type); return; }
+  if (type === 'unit') { showUnitPropModal(); return; }
+  let ok = false;
+  if (type === 'unit')      ok = doUnitProp();
+  else if (type === 'backtrack') ok = doBacktrack();
+  else if (type === 'fail')      ok = doFail();
+  if (ok) { if (type !== 'fail') checkSat(); render(); }
+}
+
+function tryDecide() {
+  if (S.status !== 'running') return;
+  if (!getApplicable().decide) { showPrecondsFail('decide'); return; }
+  showDecideModal();
+}
+
+function showDecideModal() {
+  if (S.status !== 'running') return;
+  const vars = allUnassigned(S.formula, S.m);
+  const el = document.getElementById('litOptions');
+  el.innerHTML = '';
+  vars.forEach(v => {
+    const name = S.varNames[v];
+    const row = document.createElement('div'); row.className = 'lit-opt-row';
+    const bt = document.createElement('button'); bt.className='lit-opt-btn pos';
+    bt.textContent = name+' = TRUE';
+    bt.onclick = () => { closeDecide(); doDecide(v); checkSat(); render(); };
+    const bf = document.createElement('button'); bf.className='lit-opt-btn neg';
+    bf.textContent = name+' = FALSE';
+    bf.onclick = () => { closeDecide(); doDecide(-v); checkSat(); render(); };
+    row.appendChild(bt); row.appendChild(bf); el.appendChild(row);
+  });
+  document.getElementById('decideOverlay').classList.add('show');
+}
+function closeDecide() { document.getElementById('decideOverlay').classList.remove('show'); }
+
+function showUnitPropModal() {
+  if (S.status !== 'running') return;
+  const units = findAllUnits(S.formula, S.m);
+  if (!units.length) return;
+  const desc = document.getElementById('upModalDesc');
+  const opts = document.getElementById('upOptions');
+  desc.innerHTML = `There ${units.length===1?'is':'are'} <b>${units.length}</b> unit clause${units.length===1?'':'s'}. Select which literal to force:`;
+  opts.innerHTML = '';
+  units.forEach(({ clause, lit }) => {
+    const falseOnes = clause.filter(l => S.m.includes(-l)).map(fmt);
+    const row = document.createElement('div'); row.className = 'lit-opt-row';
+    const clauseHtml = clause.map(l => {
+      if (l === lit) return `<span style="color:#fbbf24;font-weight:700">${fmt(l)}</span>`;
+      return `<span style="color:#f87171;text-decoration:line-through">${fmt(l)}</span>`;
+    }).join(' ∨ ');
+    const btn = document.createElement('button'); btn.className = 'lit-opt-btn pos';
+    btn.style.gridColumn = '1 / -1';
+    btn.innerHTML = `Force <b>${fmt(lit)}</b><br><small style="font-weight:400;opacity:.8;font-family:monospace">${fmtClause(clause)}</small>`;
+    btn.onclick = () => { closeUnitProp(); doUnitProp(clause, lit); checkSat(); render(); };
+    row.appendChild(btn);
+    const info = document.createElement('div');
+    info.style.cssText = 'font-size:11px;color:var(--muted);padding:2px 4px';
+    info.innerHTML = clauseHtml + (falseOnes.length ? `<br>False: ${falseOnes.join(', ')}` : '');
+    row.appendChild(info);
+    opts.appendChild(row);
+  });
+  document.getElementById('upOverlay').classList.add('show');
+}
+function closeUnitProp() { document.getElementById('upOverlay').classList.remove('show'); }
+
+// ── HEURISTICS ────────────────────────────────────────────────────────────────
+function computeHeuristics(){
+  const f=S.formula, m=S.m;
+  const active=f.filter(c=>!c.some(l=>m.includes(l)));
+  const unassVars=new Set();
+  for(const c of f) for(const l of c){const v=Math.abs(l);if(!m.includes(v)&&!m.includes(-v)) unassVars.add(v);}
+  if(!unassVars.size) return [];
+
+  const vn=v=>S.varNames[Math.abs(v)]||('x'+Math.abs(v));
+  const hi=(on)=>on?'background:rgba(99,102,241,.2);border-radius:4px;color:#a5b4fc;font-weight:700;margin:1px 0':'';
+  const lbl=(t)=>`<div style="color:var(--muted);font-size:10px;margin-bottom:3px">${t}</div>`;
+  const row=(txt,chosen)=>`<div style="padding:1px 6px;${hi(chosen)}">${txt}</div>`;
+  const litRows=(sc,best,n=5)=>lbl('Variable = polarity : score')+
+    Object.entries(sc).filter(([l])=>unassVars.has(Math.abs(parseInt(l))))
+      .sort((a,b)=>b[1]-a[1]).slice(0,n)
+      .map(([l,s])=>{const lit=parseInt(l);const sc2=typeof s==='number'&&s<1?s.toFixed(3):s;
+        return row(`${vn(lit)} = ${lit>0?'TRUE':'FALSE'}: ${sc2}`,lit===best);}).join('');
+  const varRows=(sc,bestV,n=5,extra=()=>'')=>
+    Object.entries(sc).filter(([v])=>unassVars.has(parseInt(v)))
+      .sort((a,b)=>b[1]-a[1]).slice(0,n)
+      .map(([v,s])=>{const vi=parseInt(v);const sc2=typeof s==='number'&&s<1?s.toFixed(4):s;
+        return row(`${vn(vi)}: ${sc2}${extra(vi)}`,vi===bestV);}).join('');
+  const note=(t)=>`<div style="color:var(--muted);margin-top:4px">${t}</div>`;
+
+  const res=[];
+
+  // ── DLIS ──
+  {const sc={};
+  for(const c of active) for(const l of c){if(!unassVars.has(Math.abs(l)))continue;sc[l]=(sc[l]||0)+1;}
+  if(Object.keys(sc).length){
+    const best=parseInt(Object.keys(sc).reduce((a,b)=>sc[a]>sc[b]?a:b));
+    res.push({id:'dlis',name:'DLIS',full:'Dynamic Largest Individual Sum',color:'#38bdf8',bg:'rgba(56,189,248,.15)',
+      desc:'Select the literal with the most appearances in currently unsatisfied clauses. One decision simultaneously satisfies the maximum number of active constraints.',
+      lit:best,detail:litRows(sc,best)});
+  }}
+
+  // ── DLCS ──
+  {const pos={},neg={};
+  for(const c of active) for(const l of c){const v=Math.abs(l);if(!unassVars.has(v))continue;(l>0?pos:neg)[v]=((l>0?pos:neg)[v]||0)+1;}
+  let bv=null,bs=-1;
+  for(const v of unassVars){const t=(pos[v]||0)+(neg[v]||0);if(t>bs){bs=t;bv=v;}}
+  if(bv!==null){
+    const lit=(pos[bv]||0)>=(neg[bv]||0)?bv:-bv;
+    const tot={};for(const v of unassVars)tot[v]=(pos[v]||0)+(neg[v]||0);
+    res.push({id:'dlcs',name:'DLCS',full:'Dynamic Largest Combined Sum',color:'#a78bfa',bg:'rgba(167,139,250,.15)',
+      desc:'Count positive and negative occurrences of each variable in unsatisfied clauses and sum them. Pick the variable with the highest combined count; assign TRUE if positive count ≥ negative count, FALSE otherwise.',
+      lit,detail:lbl('Variable : total (+pos / −neg)')+varRows(tot,bv,5,v=>`  (+${pos[v]||0} / −${neg[v]||0})`)+note(`Assign ${lit>0?'TRUE':'FALSE'} (higher polarity count)`)});
+  }}
+
+  // ── RDLIS ──
+  {const sc={};
+  for(const c of active) for(const l of c){if(!unassVars.has(Math.abs(l)))continue;sc[l]=(sc[l]||0)+1;}
+  if(Object.keys(sc).length){
+    const varScore={};
+    for(const [l,s] of Object.entries(sc)){const v=Math.abs(parseInt(l));varScore[v]=(varScore[v]||0)+s;}
+    const bv=parseInt(Object.keys(varScore).reduce((a,b)=>varScore[a]>varScore[b]?a:b));
+    const lit=Math.random()<0.5?bv:-bv;
+    res.push({id:'rdlis',name:'RDLIS',full:'Random DLIS',color:'#fb923c',bg:'rgba(251,146,60,.12)',
+      desc:'DLIS selects the best variable but the polarity (TRUE/FALSE) is chosen randomly. Reduces greedy over-commitment to a specific polarity — can escape local optima that pure DLIS falls into.',
+      lit,detail:lbl('Variable DLIS scores (sum of both polarities)')+varRows(varScore,bv)+note(`Polarity: RANDOM → ${lit>0?'TRUE':'FALSE'} &nbsp;(re-open for different result)`)});
+  }}
+
+  // ── RDLCS ──
+  {const pos={},neg={};
+  for(const c of active) for(const l of c){const v=Math.abs(l);if(!unassVars.has(v))continue;(l>0?pos:neg)[v]=((l>0?pos:neg)[v]||0)+1;}
+  let bv=null,bs=-1;
+  for(const v of unassVars){const t=(pos[v]||0)+(neg[v]||0);if(t>bs){bs=t;bv=v;}}
+  if(bv!==null){
+    const lit=Math.random()<0.5?bv:-bv;
+    const tot={};for(const v of unassVars)tot[v]=(pos[v]||0)+(neg[v]||0);
+    res.push({id:'rdlcs',name:'RDLCS',full:'Random DLCS',color:'#f472b6',bg:'rgba(244,114,182,.12)',
+      desc:'DLCS selects the variable with the highest combined count but the polarity is assigned randomly. Balances variable selection quality with polarity diversity to avoid systematic greedy errors.',
+      lit,detail:lbl('Variable : total (+pos / −neg)')+varRows(tot,bv,5,v=>`  (+${pos[v]||0} / −${neg[v]||0})`)+note(`Polarity: RANDOM → ${lit>0?'TRUE':'FALSE'} &nbsp;(re-open for different result)`)});
+  }}
+
+  // ── JW one-sided ──
+  {const J={};
+  for(const c of active) for(const l of c){if(!unassVars.has(Math.abs(l)))continue;J[l]=(J[l]||0)+Math.pow(2,-c.length);}
+  if(Object.keys(J).length){
+    const best=parseInt(Object.keys(J).reduce((a,b)=>J[a]>J[b]?a:b));
+    res.push({id:'jw',name:'JW',full:'Jeroslow-Wang (One-Sided)',color:'#34d399',bg:'rgba(52,211,153,.12)',
+      desc:'J(l) = Σ 2^(−|c|) over all unsatisfied clauses c containing literal l. Shorter (more constrained) clauses receive exponentially higher weight. Pick the single literal maximizing J(l).',
+      lit:best,detail:litRows(J,best)});
+  }}
+
+  // ── JW two-sided ──
+  {const Jp={},Jn={};
+  for(const c of active) for(const l of c){const v=Math.abs(l),w=Math.pow(2,-c.length);if(!unassVars.has(v))continue;(l>0?Jp:Jn)[v]=((l>0?Jp:Jn)[v]||0)+w;}
+  let bv=null,bs=-1;
+  for(const v of unassVars){const t=(Jp[v]||0)+(Jn[v]||0);if(t>bs){bs=t;bv=v;}}
+  if(bv!==null){
+    const lit=(Jp[bv]||0)>=(Jn[bv]||0)?bv:-bv;
+    const Jsum={};for(const v of unassVars)Jsum[v]=(Jp[v]||0)+(Jn[v]||0);
+    res.push({id:'jw2',name:'JW₂',full:'Jeroslow-Wang (Two-Sided)',color:'#6ee7b7',bg:'rgba(110,231,183,.12)',
+      desc:'J(x) = J(x⁺) + J(x⁻): combine both polarities per variable. Pick the variable maximizing the two-sided sum; assign the polarity with the larger individual J value. More balanced than one-sided JW.',
+      lit,detail:lbl('Variable : J-sum  (J(+) / J(−))')+varRows(Jsum,bv,5,v=>`  (${(Jp[v]||0).toFixed(3)} / ${(Jn[v]||0).toFixed(3)})`)+note(`Assign ${lit>0?'TRUE':'FALSE'} (higher polarity J)`)});
+  }}
+
+  // ── BOHM ──
+  {const bohm={},pc={},nc={};
+  for(const v of unassVars){
+    const hp={},hn={};
+    for(const c of active){const sz=c.length;if(c.includes(v))hp[sz]=(hp[sz]||0)+1;if(c.includes(-v))hn[sz]=(hn[sz]||0)+1;}
+    const allSz=[...new Set([...Object.keys(hp),...Object.keys(hn)].map(Number))];
+    let sc=0;for(const sz of allSz){const h=hp[sz]||0,n=hn[sz]||0;sc+=Math.pow(2,-sz)*(Math.max(h,n)+2*Math.min(h,n));}
+    bohm[v]=sc;pc[v]=Object.values(hp).reduce((a,b)=>a+b,0);nc[v]=Object.values(hn).reduce((a,b)=>a+b,0);
+  }
+  let bv=null,bs=-1;
+  for(const v of unassVars){if(bohm[v]>bs){bs=bohm[v];bv=v;}}
+  if(bv!==null){
+    const lit=(pc[bv]||0)>=(nc[bv]||0)?bv:-bv;
+    res.push({id:'bohm',name:'BOHM',full:'BOHM Heuristic',color:'#fbbf24',bg:'rgba(251,191,36,.12)',
+      desc:'H(x) = Σᵢ 2^(−i)·(max(hᵢ⁺,hᵢ⁻) + 2·min(hᵢ⁺,hᵢ⁻)), where hᵢ(l) = number of unsatisfied clauses of size i containing literal l. Weights shorter clauses more; rewards variables that appear in both polarities in small clauses.',
+      lit,detail:lbl('Variable : BOHM score  (+pos / −neg)')+varRows(bohm,bv,5,v=>`  (+${pc[v]||0} / −${nc[v]||0})`)+note(`Assign ${lit>0?'TRUE':'FALSE'} (higher polarity count)`)});
+  }}
+
+  return res;
+}
+
+function showHeuristicModal(){
+  if(S.status!=='running') return;
+  const heurs=computeHeuristics();
+  const cards=document.getElementById('heurCards');
+  cards.innerHTML='';
+  heurs.forEach(h=>{
+    const card=document.createElement('div');
+    card.className='heur-card';
+    const vname=S.varNames[Math.abs(h.lit)]||('x'+Math.abs(h.lit));
+    const sugText=`${vname} = ${h.lit>0?'TRUE':'FALSE'}`;
+    card.innerHTML=`
+      <div class="heur-hdr">
+        <span class="heur-badge" style="background:${h.bg};color:${h.color}">${h.name}</span>
+        <span class="heur-full">${h.full}</span>
+        <span class="heur-sug" style="background:${h.bg};color:${h.color}">${sugText}</span>
+        <button class="heur-use" onclick="useHeuristic(${h.lit})">Decide →</button>
+      </div>
+      <div class="heur-desc">${h.desc}</div>
+      ${h.detail?`<div class="heur-detail">${h.detail}</div>`:''}`;
+    cards.appendChild(card);
+  });
+  document.getElementById('heurOverlay').classList.add('show');
+}
+function closeHeuristic(){ document.getElementById('heurOverlay').classList.remove('show'); }
+function useHeuristic(lit){ closeHeuristic(); closeDecide(); doDecide(lit); checkSat(); render(); }
+
+function showResult(type) {
+  const { formula: f, m, varNames } = S;
+  document.getElementById('resIcon').textContent  = type==='sat' ? '🎉' : '💥';
+  document.getElementById('resTitle').textContent = type==='sat' ? 'SATISFIABLE' : 'UNSATISFIABLE';
+  document.getElementById('resTitle').className   = 'result-title '+type;
+  document.getElementById('resDesc').textContent  = type==='sat'
+    ? 'All clauses are satisfied. Here is a satisfying assignment:'
+    : 'No assignment can satisfy all clauses simultaneously.';
+  if (type === 'sat') {
+    const seen = new Set(), lines = [];
+    for (const c of f) for (const l of c) {
+      const v=Math.abs(l); if (seen.has(v)) continue; seen.add(v);
+      const val = m.includes(v)?'TRUE':m.includes(-v)?'FALSE':'ANY';
+      lines.push(`<span style="color:${val==='TRUE'?'#86efac':'#fca5a5'}">${varNames[v]} = ${val}</span>`);
+    }
+    document.getElementById('resAssign').innerHTML = lines.join('<br>');
+  } else {
+    document.getElementById('resAssign').textContent = 'No satisfying assignment exists.';
+  }
+  document.getElementById('resultOverlay').classList.add('show');
+}
+function closeResult() { document.getElementById('resultOverlay').classList.remove('show'); }
+
+// ── CNF upload / download / history export ────────────────────────────────────
+function parseCNF(text) {
+  const clauses = [];
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (!t || t[0]==='c' || t[0]==='p' || t[0]==='%') continue;
+    const lits = [];
+    for (const tok of t.split(/\s+/)) {
+      const n = parseInt(tok);
+      if (isNaN(n) || n === 0) break;
+      lits.push(n > 0 ? 'x'+n : '-x'+Math.abs(n));
+    }
+    if (lits.length) clauses.push(lits.join(' | '));
+  }
+  return clauses.join(', ');
+}
+
+function onCNFFile(evt) {
+  const file = evt.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const formula = parseCNF(e.target.result);
+    if (!formula) { alert('No valid clauses found in CNF file.'); return; }
+    document.getElementById('formulaInput').value = formula;
+    loadFormula();
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+
+function downloadCNF() {
+  let formula = S.formula, varNames = S.varNames;
+  if (!formula.length) {
+    const txt = document.getElementById('formulaInput').value.trim();
+    if (!txt) { alert('No formula to download.'); return; }
+    try { const p = parseFormula(txt); formula = p.formula; varNames = p.varNames; }
+    catch(e) { alert('Parse error: '+e.message); return; }
+  }
+  const allIds = [...new Set(formula.flat().map(l=>Math.abs(l)))].sort((a,b)=>a-b);
+  const numVars = allIds.length ? Math.max(...allIds) : 0;
+  const lines = [];
+  for (const id of allIds) {
+    const name = varNames[id]||('x'+id);
+    if (name !== 'x'+id) lines.push('c '+id+' '+name);
+  }
+  lines.push('p cnf '+numVars+' '+formula.length);
+  for (const c of formula) lines.push(c.join(' ')+' 0');
+  const blob = new Blob([lines.join('\n')+'\n'], {type:'text/plain'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'formula.cnf'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function downloadHistory() {
+  if (!S.formula.length) { alert('No formula loaded.'); return; }
+  const vn = v => S.varNames[Math.abs(v)]||('x'+Math.abs(v));
+  const fl = l => (l>0?'':'-')+vn(l);
+  const fs = arr => arr&&arr.length ? arr.map(fl).join(', ') : '∅';
+  const formulaStr = S.formula.map(c=>c.map(fl).join(' ∨ ')).join(', ');
+  const LABS = {unit:'Unit Propagate',decide:'Decide',backtrack:'Backtrack',fail:'Fail'};
+  const lines = ['=== DPLL Step History ===','Formula: '+formulaStr,''];
+  lines.push('Step 0 | Start');
+  lines.push('  M = ∅ | D = ∅');
+  lines.push('');
+  S.history.forEach((h,i) => {
+    const next = (i+1<S.history.length) ? S.history[i+1] : S;
+    lines.push('Step '+(i+1)+' | '+(LABS[h.action]||h.action)+' | '+h.detail);
+    lines.push('  M = '+fs(next.m)+' | D = '+fs(next.d));
+    lines.push('');
+  });
+  if (S.status==='sat') lines.push('Result: SATISFIABLE');
+  else if (S.status==='unsat') lines.push('Result: UNSATISFIABLE');
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'dpll_history.txt'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function loadFormula() {
+  const txt = document.getElementById('formulaInput').value.trim();
+  if (!txt) return;
+  try {
+    const p = parseFormula(txt);
+    if (!p.formula.length) { alert('No valid clauses found.'); return; }
+    S = { formula:p.formula, varNames:p.varNames, m:[], d:[], history:[], step:0, status:'running', lastExpl:'' };
+    render();
+    document.getElementById('explContent').innerHTML =
+      '<p class="expl-text">Formula loaded! Use the action buttons on the left to explore DPLL step by step.</p>';
+  } catch(e) { alert('Parse error: '+e.message); }
+}
+
+function resetSolver() {
+  S.m=[]; S.d=[]; S.history=[]; S.step=0; S.status='running'; S.lastExpl='';
+  render();
+  document.getElementById('explContent').innerHTML =
+    '<p class="expl-text">Reset to initial state. Start applying DPLL rules.</p>';
+}
+
+function undoStep() {
+  if (!S.history.length) return;
+  const prev = S.history.pop();
+  S.m=prev.m; S.d=prev.d; S.step=prev.step; S.lastExpl=prev.expl; S.status='running';
+  render();
+  if (S.lastExpl) document.getElementById('explContent').innerHTML = S.lastExpl;
+}
+
+function autoSolve() {
+  if (S.status !== 'running') return;
+  // Follow class-4 priority: UnitProp → Backtrack → Decide → Fail
+  for (let i = 0; i < 200 && S.status === 'running'; i++) {
+    const app = getApplicable();
+    if (app.unit)       { doUnitProp();  }
+    else if (app.backtrack){ doBacktrack(); }
+    else if (app.decide){ doDecide();  }
+    else if (app.fail)  { doFail(); break; }
+    else break;
+    if (checkSat()) break;
+  }
+  render();
+}
+
+function loadExample(name) {
+  const ex = EXAMPLES[name];
+  document.getElementById('formulaInput').value = ex.f;
+  loadFormula();
+  document.getElementById('explContent').innerHTML =
+    `<p class="expl-text"><b>Example:</b> ${ex.d}</p>`;
+}
+
+// Keyboard: Enter to load
+document.getElementById('formulaInput').addEventListener('keydown', e => { if(e.key==='Enter') loadFormula(); });
+// Backdrop close
+document.getElementById('decideOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeDecide(); });
+document.getElementById('upOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeUnitProp(); });
+document.getElementById('heurOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeHeuristic(); });
+document.getElementById('resultOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeResult(); });
+
+// Boot
+loadExample('simple');
+</script>
+</body>
+</html>

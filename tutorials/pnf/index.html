@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prenex Normal Form — Interactive Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --em:#10b981;--em2:#34d399;--em3:#6ee7b7;
+  --blue:#3b82f6;--blue2:#60a5fa;
+  --cyan:#06b6d4;--cyan2:#22d3ee;
+  --green:#4ade80;--green2:#86efac;
+  --orange:#f97316;--orange2:#fb923c;
+  --red:#ef4444;--red2:#f87171;
+  --violet:#8b5cf6;--violet2:#a78bfa;
+  --green-bg:rgba(16,185,129,.12);--green-bd:rgba(16,185,129,.35);
+  --amber:#f59e0b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#022c22 0%,#064e3b 40%,#065f46 70%,#022c22 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#a7f3d0,#6ee7b7,#34d399);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);
+  color:var(--em2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+
+.wrap{max-width:1400px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+  border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-em{background:linear-gradient(135deg,var(--em),#064e3b);color:#fff}
+.btn-em:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--em);color:var(--em2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s
+}
+.formula-input:focus{border-color:var(--em)}
+.input-row{display:flex;gap:10px;align-items:stretch}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700}
+.badge-em{background:rgba(16,185,129,.2);color:var(--em2);border:1px solid rgba(16,185,129,.3)}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue2);border:1px solid rgba(59,130,246,.3)}
+.badge-orange{background:rgba(249,115,22,.15);color:var(--orange2);border:1px solid rgba(249,115,22,.3)}
+.badge-violet{background:rgba(139,92,246,.2);color:var(--violet2);border:1px solid rgba(139,92,246,.3)}
+.badge-cyan{background:rgba(6,182,212,.15);color:var(--cyan2);border:1px solid rgba(6,182,212,.3)}
+
+/* Algorithm flow */
+.flow-step{border:2px solid var(--border);border-radius:10px;padding:10px 14px;
+  font-size:11px;font-weight:600;text-align:center;transition:all .3s;color:var(--muted);line-height:1.5}
+.flow-step.active{border-color:var(--em);background:rgba(16,185,129,.15);color:var(--em2)}
+.flow-step.done{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.07);color:var(--green)}
+.flow-arrow{text-align:center;color:var(--border);font-size:16px;margin:3px 0;line-height:1}
+
+/* Formula display */
+.fml-box{
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  padding:18px 20px;font-family:'Consolas','Courier New',monospace;font-size:15px;
+  line-height:2;min-height:80px;word-break:break-word
+}
+.fml-box.pnf-result{border-color:var(--em);background:rgba(16,185,129,.04)}
+.pnf-prefix{margin-bottom:6px;font-size:16px;font-weight:700}
+.pnf-matrix{color:var(--text)}
+
+/* Formula coloring tokens */
+.r-q  {color:var(--cyan2);font-weight:700}   /* ∀ ∃ */
+.r-v  {color:var(--green);font-weight:600}    /* bound variable */
+.r-d  {color:var(--muted)}                    /* . */
+.r-neg{color:var(--orange2);font-weight:600}  /* ¬ */
+.r-c  {color:var(--muted)}                    /* ∧ ∨ */
+.r-p  {color:#4a5568}                         /* ( ) */
+.r-pred{color:var(--text);font-weight:600}    /* P Q R */
+.r-var{color:var(--green2)}                   /* term args x,y */
+.r-chg{background:rgba(16,185,129,.25);border-radius:3px;padding:0 2px} /* changed */
+.r-new{color:var(--em2);font-weight:700}      /* newly added */
+
+/* Rules list */
+.rule-list{list-style:none;display:flex;flex-direction:column;gap:7px}
+.rule-item{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-size:12px}
+.rule-item .r-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px}
+.rule-item .r-formula{font-family:'Consolas',monospace;font-size:12px;color:var(--text)}
+.rule-item.r-none{color:var(--muted);font-style:italic;font-size:12px;padding:6px 11px}
+.rule-item.r-ok{border-color:var(--green-bd);background:var(--green-bg)}
+
+/* Info panel */
+.info-section{margin-bottom:12px}
+.info-section-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.info-text{font-size:13px;color:var(--muted);line-height:1.7}
+.info-text b{color:var(--text)}
+.info-text code{background:var(--surface2);padding:1px 4px;border-radius:3px;font-family:'Consolas',monospace;font-size:11px;color:var(--cyan2)}
+
+/* Controls */
+.ctrl-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* History */
+.hist-list{display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto}
+.hist-item{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 11px;font-size:12px}
+.hist-item .h-step{font-size:10px;color:var(--muted);margin-bottom:2px}
+.hist-item .h-text{font-family:'Consolas',monospace;font-size:11px;line-height:1.4;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.hist-item.h-em{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.06)}
+.hist-item.h-bl{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.06)}
+.hist-item.h-or{border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.06)}
+.hist-item.h-vi{border-color:rgba(139,92,246,.3);background:rgba(139,92,246,.06)}
+.hist-item.h-cy{border-color:rgba(6,182,212,.3);background:rgba(6,182,212,.06)}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>Prenex Normal Form (PNF)</h1>
+    <p>Move all quantifiers to the front of a first-order logic formula</p>
+  </div>
+  <span class="hdr-badge">FOL → PNF</span>
+</div>
+
+<div class="wrap">
+
+<!-- Input -->
+<div class="card">
+  <div class="card-title">Formula Input</div>
+  <div class="input-row">
+    <input class="formula-input" id="formulaInput"
+           placeholder="e.g.  @x.((P(x) -> Q(x)) & #x.Q(x) & !#z.P(z) & #z.(Q(z) -> R(x)))"
+           onkeydown="if(event.key==='Enter')runPNF()">
+    <button class="btn btn-em" onclick="runPNF()">Run ▶</button>
+  </div>
+  <div class="io-row" id="exampleBtns"></div>
+  <div class="input-hint">
+    Quantifiers: <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">@x.</code> = ∀x &nbsp;
+    <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">#x.</code> = ∃x &nbsp;&nbsp;
+    Connectives: <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">! &amp; | -> &lt;-></code>&nbsp;&nbsp;
+    Predicates: <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">P(x,y)</code>&nbsp;
+    Prop vars: any single letter. Quantifier body requires <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">( )</code> if compound.
+  </div>
+</div>
+
+<!-- 3-column grid -->
+<div style="display:grid;grid-template-columns:190px 1fr 370px;gap:18px;align-items:start">
+
+  <!-- Col 1: Algorithm flow -->
+  <div class="card">
+    <div class="card-title">Prenex Algorithm</div>
+    <div class="flow-step" id="fs-input">φ — Input</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-s1">Step 1<br>Eliminate →  ↔</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-s2">Step 2<br>Push ¬ inward</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-s3">Step 3<br>Rename variables</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-s4">Step 4<br>Pull quantifiers out</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-done">PNF Result</div>
+  </div>
+
+  <!-- Col 2: Formula display -->
+  <div class="card">
+    <div class="card-title">
+      <span id="fmlTitle">Formula</span>
+      <span id="fmlBadge"></span>
+    </div>
+    <div class="fml-box" id="fmlBox">
+      <span style="color:var(--muted)">Enter a formula and click Run ▶</span>
+    </div>
+    <div id="rulesDiv" style="margin-top:14px"></div>
+  </div>
+
+  <!-- Col 3: Info panel -->
+  <div class="card" id="infoCard" style="position:sticky;top:18px">
+    <div class="card-title">
+      <span id="infoTitle">Explanation</span>
+      <span id="infoBadge"></span>
+    </div>
+    <div id="infoBody">
+      <p class="info-text">Enter a formula and click <b>Run ▶</b> to start,<br>then step through the algorithm.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav controls -->
+<div class="card" id="ctrlCard" style="display:none">
+  <div class="ctrl-row">
+    <button class="btn btn-ghost btn-sm" id="prevBtn" onclick="prevStep()" disabled>← Prev</button>
+    <button class="btn btn-ghost btn-sm" id="autoBtn" onclick="toggleAuto()">▶ Auto</button>
+    <button class="btn btn-em btn-sm"    id="nextBtn" onclick="nextStep()" disabled>Next →</button>
+    <span id="stepCounter" style="font-size:12px;color:var(--muted);margin-left:8px"></span>
+  </div>
+</div>
+
+<!-- Step history -->
+<div class="card" id="histCard" style="display:none">
+  <div class="card-title">
+    <span>Step History</span>
+    <span style="display:flex;align-items:center;gap:10px">
+      <span id="resultBadge" style="display:none"></span>
+      <button class="btn btn-ghost btn-sm" onclick="downloadHistory()">↓ history.txt</button>
+    </span>
+  </div>
+  <div class="hist-list" id="histList"></div>
+</div>
+
+</div><!-- wrap -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// TOKENIZER
+// ═══════════════════════════════════════════════════════════════
+function tokenize(src){
+  const toks=[];let i=0;
+  while(i<src.length){
+    if(/\s/.test(src[i])){i++;continue;}
+    if(src.slice(i,i+4)==='<->'){toks.push({t:'IFF'});i+=4;continue;}
+    if(src.slice(i,i+2)==='->'){ toks.push({t:'IMP'});i+=2;continue;}
+    if(src.slice(i,i+2)==='!='){toks.push({t:'NEQ'});i+=2;continue;}
+    if(src[i]==='!'||src[i]==='~'){toks.push({t:'NOT'});i++;continue;}
+    if(src[i]==='&'){toks.push({t:'AND'});i++;if(src[i]==='&')i++;continue;}
+    if(src[i]==='|'){toks.push({t:'OR'});i++;if(src[i]==='|')i++;continue;}
+    if(src[i]==='@'){toks.push({t:'FORALL'});i++;continue;}
+    if(src[i]==='#'){toks.push({t:'EXISTS'});i++;continue;}
+    if(src[i]==='.'){toks.push({t:'DOT'});i++;continue;}
+    if('(),'.includes(src[i])){toks.push({t:src[i]});i++;continue;}
+    if(/[A-Za-z_]/.test(src[i])){
+      let j=i;while(j<src.length&&/[A-Za-z0-9_]/.test(src[j]))j++;
+      const w=src.slice(i,j);i=j;
+      if(w==='forall'||w==='all'){toks.push({t:'FORALL'});continue;}
+      if(w==='exists'||w==='ex'){toks.push({t:'EXISTS'});continue;}
+      toks.push({t:'NAME',v:w});continue;
+    }
+    throw new Error('Unknown char: '+src[i]);
+  }
+  toks.push({t:'EOF'});return toks;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PARSER  (precedence: IFF < IMP < OR < AND < NOT < quantifier < primary)
+// ═══════════════════════════════════════════════════════════════
+let _T,_I;
+function pk(){return _T[_I];}
+function nx(){return _T[_I++];}
+function exp(t){const k=nx();if(k.t!==t)throw new Error('Expected '+t+' got '+k.t+' ('+JSON.stringify(k)+')');return k;}
+
+function parseFormula(src){_T=tokenize(src);_I=0;const a=parseIFF();if(pk().t!=='EOF')throw new Error('Unexpected token: '+pk().t);return a;}
+
+function parseIFF(){
+  let l=parseIMP();
+  while(pk().t==='IFF'){nx();l={type:'iff',left:l,right:parseIMP()};}
+  return l;
+}
+function parseIMP(){
+  const l=parseOR();
+  if(pk().t==='IMP'){nx();return{type:'imp',left:l,right:parseIMP()};}
+  return l;
+}
+function parseOR(){
+  const parts=[parseAND()];
+  while(pk().t==='OR'){nx();parts.push(parseAND());}
+  return parts.length===1?parts[0]:{type:'or',children:parts};
+}
+function parseAND(){
+  const parts=[parseNOT()];
+  while(pk().t==='AND'){nx();parts.push(parseNOT());}
+  return parts.length===1?parts[0]:{type:'and',children:parts};
+}
+function parseNOT(){
+  if(pk().t==='NOT'){nx();return{type:'not',child:parseNOT()};}
+  return parsePrimary();
+}
+function parsePrimary(){
+  // Quantifier
+  if(pk().t==='FORALL'||pk().t==='EXISTS'){
+    const qt=nx().t;
+    const v=exp('NAME').v;
+    if(pk().t==='DOT')nx(); // consume optional .
+    const body=parsePrimary(); // body is a primary (atom or parenthesized)
+    return{type:qt==='FORALL'?'forall':'exists',var:v,body};
+  }
+  // Parenthesized
+  if(pk().t==='('){nx();const e=parseIFF();exp(')');return e;}
+  // Predicate / propositional variable
+  if(pk().t==='NAME'){
+    const name=nx().v;
+    if(pk().t==='('){
+      nx();
+      const args=[];
+      if(pk().t!==')')args.push(exp('NAME').v);
+      while(pk().t===','){nx();args.push(exp('NAME').v);}
+      exp(')');
+      return{type:'pred',name,args};
+    }
+    return{type:'prop',name};
+  }
+  throw new Error('Expected formula, got '+pk().t);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLAIN-TEXT PRINTER
+// ═══════════════════════════════════════════════════════════════
+function toText(ast,w){
+  let s;
+  switch(ast.type){
+    case'forall': s=`∀${ast.var}.${toText(ast.body)}`;break;
+    case'exists': s=`∃${ast.var}.${toText(ast.body)}`;break;
+    case'and':    s=ast.children.map(c=>toText(c,true)).join(' ∧ ');break;
+    case'or':     s=ast.children.map(c=>toText(c,true)).join(' ∨ ');break;
+    case'not':    s='¬'+toText(ast.child,true);break;
+    case'imp':    s=toText(ast.left,true)+' → '+toText(ast.right,true);break;
+    case'iff':    s=toText(ast.left,true)+' ↔ '+toText(ast.right,true);break;
+    case'pred':   s=ast.name+(ast.args.length?'('+ast.args.join(',')+')'  :'');break;
+    case'prop':   s=ast.name;break;
+    default:      s='?';
+  }
+  if(w&&['and','or','imp','iff','forall','exists'].includes(ast.type))s='('+s+')';
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HTML PRINTER  (colored spans)
+// ═══════════════════════════════════════════════════════════════
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toHTML(ast,w){
+  let s;
+  switch(ast.type){
+    case'forall': s=`<span class="r-q">∀</span><span class="r-v">${esc(ast.var)}</span><span class="r-d">.</span>${toHTML(ast.body,false)}`;break;
+    case'exists': s=`<span class="r-q">∃</span><span class="r-v">${esc(ast.var)}</span><span class="r-d">.</span>${toHTML(ast.body,false)}`;break;
+    case'and':    s=ast.children.map((c,i)=>(i?'<span class="r-c"> ∧ </span>':'')+toHTML(c,true)).join('');break;
+    case'or':     s=ast.children.map((c,i)=>(i?'<span class="r-c"> ∨ </span>':'')+toHTML(c,true)).join('');break;
+    case'not':    s=`<span class="r-neg">¬</span>${toHTML(ast.child,true)}`;break;
+    case'imp':    s=toHTML(ast.left,true)+'<span class="r-c"> → </span>'+toHTML(ast.right,true);break;
+    case'iff':    s=toHTML(ast.left,true)+'<span class="r-c"> ↔ </span>'+toHTML(ast.right,true);break;
+    case'pred':   s=`<span class="r-pred">${esc(ast.name)}</span>`;
+      if(ast.args.length)s+=`<span class="r-p">(</span><span class="r-var">${ast.args.map(esc).join('<span class="r-p">,</span>')}</span><span class="r-p">)</span>`;
+      break;
+    case'prop':   s=`<span class="r-pred">${esc(ast.name)}</span>`;break;
+    default:      s='?';
+  }
+  if(w&&['and','or','imp','iff'].includes(ast.type))s=`<span class="r-p">(</span>${s}<span class="r-p">)</span>`;
+  return s;
+}
+
+// PNF HTML: separate quantifier prefix from matrix
+function toPNFHTML(ast){
+  const qs=[];let cur=ast;
+  while(cur.type==='forall'||cur.type==='exists'){qs.push(cur);cur=cur.body;}
+  const prefix=qs.map(q=>`<span class="r-q">${q.type==='forall'?'∀':'∃'}</span><span class="r-v">${esc(q.var)}</span><span class="r-d">. </span>`).join('');
+  return prefix?`<div class="pnf-prefix">${prefix}</div><div class="pnf-matrix">${toHTML(cur,false)}</div>`:toHTML(ast,false);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PNF CHECK
+// ═══════════════════════════════════════════════════════════════
+function isQFree(ast){
+  if(ast.type==='forall'||ast.type==='exists')return false;
+  if(ast.type==='and'||ast.type==='or')return ast.children.every(isQFree);
+  if(ast.type==='not')return isQFree(ast.child);
+  if(ast.type==='imp'||ast.type==='iff')return isQFree(ast.left)&&isQFree(ast.right);
+  return true;
+}
+function isPNF(ast){
+  let c=ast;
+  while(c.type==='forall'||c.type==='exists')c=c.body;
+  return isQFree(c);
+}
+function hasImpIff(ast){
+  if(ast.type==='imp'||ast.type==='iff')return true;
+  if(ast.type==='forall'||ast.type==='exists')return hasImpIff(ast.body);
+  if(ast.type==='and'||ast.type==='or')return ast.children.some(hasImpIff);
+  if(ast.type==='not')return hasImpIff(ast.child);
+  return false;
+}
+function hasNegIssue(ast){
+  // negation directly on quantifier or compound (not yet fully pushed in)
+  if(ast.type==='not'){
+    const c=ast.child;
+    if(c.type==='forall'||c.type==='exists'||c.type==='and'||c.type==='or'||c.type==='not')return true;
+  }
+  if(ast.type==='forall'||ast.type==='exists')return hasNegIssue(ast.body);
+  if(ast.type==='and'||ast.type==='or')return ast.children.some(hasNegIssue);
+  if(ast.type==='not')return hasNegIssue(ast.child);
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 1: Eliminate → and ↔
+// ═══════════════════════════════════════════════════════════════
+function step1(ast){
+  const changes=[];
+  function walk(node){
+    if(node.type==='imp'){
+      const orig=toText(node);
+      const l=walk(node.left),r=walk(node.right);
+      const res={type:'or',children:[{type:'not',child:l},r]};
+      changes.push({rule:'P → Q  ≡  ¬P ∨ Q',note:orig});
+      return res;
+    }
+    if(node.type==='iff'){
+      const orig=toText(node);
+      const l=walk(node.left),r=walk(node.right);
+      // deep copy for both sides
+      const l2=JSON.parse(JSON.stringify(l)),r2=JSON.parse(JSON.stringify(r));
+      const res={type:'and',children:[
+        {type:'or',children:[{type:'not',child:l},r]},
+        {type:'or',children:[l2,{type:'not',child:r2}]}
+      ]};
+      changes.push({rule:'P ↔ Q  ≡  (¬P ∨ Q) ∧ (P ∨ ¬Q)',note:orig});
+      return res;
+    }
+    if(node.type==='forall'||node.type==='exists')return{...node,body:walk(node.body)};
+    if(node.type==='and'||node.type==='or')return{...node,children:node.children.map(walk)};
+    if(node.type==='not')return{type:'not',child:walk(node.child)};
+    return node;
+  }
+  return{result:walk(ast),changes};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 2: Push negations inward
+// ═══════════════════════════════════════════════════════════════
+function step2(ast){
+  const changes=[];
+  function pushNeg(node){
+    // node is the child of a ¬
+    if(node.type==='not'){
+      changes.push({rule:'¬¬φ  ≡  φ',note:'Double negation eliminated'});
+      return walk(node.child);
+    }
+    if(node.type==='forall'){
+      changes.push({rule:'¬∀'+node.var+'.φ  ≡  ∃'+node.var+'.¬φ',note:'Quantifier flipped: ∀ → ∃'});
+      return{type:'exists',var:node.var,body:walk({type:'not',child:node.body})};
+    }
+    if(node.type==='exists'){
+      changes.push({rule:'¬∃'+node.var+'.φ  ≡  ∀'+node.var+'.¬φ',note:'Quantifier flipped: ∃ → ∀'});
+      return{type:'forall',var:node.var,body:walk({type:'not',child:node.body})};
+    }
+    if(node.type==='and'){
+      changes.push({rule:'¬(P ∧ Q)  ≡  ¬P ∨ ¬Q',note:'De Morgan'});
+      return{type:'or',children:node.children.map(c=>walk({type:'not',child:c}))};
+    }
+    if(node.type==='or'){
+      changes.push({rule:'¬(P ∨ Q)  ≡  ¬P ∧ ¬Q',note:'De Morgan'});
+      return{type:'and',children:node.children.map(c=>walk({type:'not',child:c}))};
+    }
+    // atom: leave ¬ in place
+    return{type:'not',child:walk(node)};
+  }
+  function walk(node){
+    if(node.type==='not')return pushNeg(node.child);
+    if(node.type==='forall'||node.type==='exists')return{...node,body:walk(node.body)};
+    if(node.type==='and'||node.type==='or')return{...node,children:node.children.map(walk)};
+    return node;
+  }
+  // deduplicate changes by rule name
+  const result=walk(ast);
+  const seen=new Set();
+  const uniq=changes.filter(c=>{if(seen.has(c.rule))return false;seen.add(c.rule);return true;});
+  return{result,changes:uniq,allChanges:changes};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 3: Rename conflicting bound variables
+// ═══════════════════════════════════════════════════════════════
+function step3(ast){
+  const seenBound=new Set(); // all vars that have been bound so far
+  const changes=[];
+  const cnt={};
+  function fresh(orig){
+    cnt[orig]=(cnt[orig]||0)+1;
+    const subs=['₀','₁','₂','₃','₄','₅','₆','₇','₈','₉'];
+    const n=String(cnt[orig]);
+    return orig+n.split('').map(c=>subs[+c]).join('');
+  }
+  function walk(node,ren){
+    if(node.type==='forall'||node.type==='exists'){
+      let v=ren[node.var]||node.var;
+      if(seenBound.has(v)){
+        const nv=fresh(node.var);
+        changes.push({from:v,to:nv,note:`∃/∀${v} → ${node.type==='forall'?'∀':'∃'}${nv}`});
+        ren={...ren,[node.var]:nv};
+        v=nv;
+      }
+      seenBound.add(v);
+      return{type:node.type,var:v,body:walk(node.body,ren)};
+    }
+    if(node.type==='and'||node.type==='or')return{...node,children:node.children.map(c=>walk(c,ren))};
+    if(node.type==='not')return{type:'not',child:walk(node.child,ren)};
+    if(node.type==='pred')return{type:'pred',name:node.name,args:node.args.map(a=>ren[a]||a)};
+    if(node.type==='prop')return{type:'prop',name:ren[node.name]||node.name};
+    return node;
+  }
+  const result=walk(ast,{});
+  return{result,changes};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STEP 4: Pull all quantifiers to the front
+// ═══════════════════════════════════════════════════════════════
+function step4(ast){
+  const qs=[];
+  function extract(node){
+    if(node.type==='forall'||node.type==='exists'){
+      qs.push({type:node.type,var:node.var});
+      return extract(node.body);
+    }
+    if(node.type==='and'||node.type==='or')return{...node,children:node.children.map(extract)};
+    if(node.type==='not')return{type:'not',child:extract(node.child)};
+    return node;
+  }
+  const matrix=extract(ast);
+  let result=matrix;
+  for(let i=qs.length-1;i>=0;i--)result={type:qs[i].type,var:qs[i].var,body:result};
+  return{result,quantifiers:qs,matrix};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FRAME GENERATION
+// ═══════════════════════════════════════════════════════════════
+const EXAMPLES=[
+  {label:'Slide example 1 (Lecture 13)',
+   formula:'@x.((P(x) -> Q(x)) & #x.Q(x) & !#z.P(z) & #z.(Q(z) -> R(x)))'},
+  {label:'Slide example 2 (nested ¬∃)',
+   formula:'!#x.(!#y.((y -> x) & (!x | y) & !@y.((y & x) | (!x | !y))))'},
+  {label:'Slide example 3 (→ then rename)',
+   formula:'@x.(((#y.R(x,y)) & (@y.!S(x,y))) -> !(#y.R(x,y) & P))'},
+  {label:'Simple: ∀∧∃ (renaming needed)',
+   formula:'@x.P(x) & #x.Q(x)'},
+  {label:'Already in PNF',
+   formula:'@x.#y.(P(x) & Q(y))'},
+  {label:'No quantifiers (trivial)',
+   formula:'P -> Q'},
+];
+
+function buildExamples(){
+  const row=document.getElementById('exampleBtns');
+  EXAMPLES.forEach(e=>{
+    const b=document.createElement('button');
+    b.className='btn btn-ghost btn-sm';b.textContent=e.label;
+    b.onclick=()=>{document.getElementById('formulaInput').value=e.formula;runPNF();};
+    row.appendChild(b);
+  });
+}
+
+let G={frames:[],current:-1,autoTimer:null};
+
+function runPNF(){
+  if(G.autoTimer){clearInterval(G.autoTimer);G.autoTimer=null;}
+  const src=document.getElementById('formulaInput').value.trim();
+  if(!src)return;
+  let ast;
+  try{ast=parseFormula(src);}catch(e){alert('Parse error: '+e.message);return;}
+
+  const frames=[];
+
+  function mkRulesHTML(changes,emptyMsg){
+    if(!changes.length)return`<div class="rule-list"><div class="rule-item r-none">${emptyMsg||'No changes needed — step skipped.'}</div></div>`;
+    return`<div class="rule-list">${changes.map(c=>`<div class="rule-item"><div class="r-name">${esc(c.rule||c.note||'')}</div><div class="r-formula">${c.rule?esc(c.note||''):''}${c.from?`${esc(c.from)} → ${esc(c.to)}`:''}</div></div>`).join('')}</div>`;
+  }
+
+  function addFrame(flowStep,title,badge,badgeClass,fmlHTML,isPnfBox,rulesHTML,infoHTML,histText,histClass){
+    frames.push({flowStep,title,badge,badgeClass,fmlHTML,isPnfBox,rulesHTML,infoHTML,histText,histClass});
+  }
+
+  // ── Frame 0: Input ──
+  const alreadyPNF=isPNF(ast);
+  addFrame('input','Input Formula','INPUT','badge-blue',
+    toHTML(ast,false),false,'',
+    `<div class="info-section"><div class="info-section-title">Prenex Normal Form</div></div>`+
+    `<div class="info-text"><b>Definition:</b> A formula is in PNF if it has the form<br><code>Q₁x₁ … Qₙxₙ B</code><br>where each Qᵢ ∈ {∀, ∃} and <b>B is quantifier-free</b>.<br><br><b>Algorithm (4 steps):</b><br>1. Eliminate → and ↔<br>2. Push ¬ inward past quantifiers<br>3. Rename conflicting bound variables<br>4. Pull all quantifiers to the front<br><br>${alreadyPNF?'<b style="color:var(--em2)">✓ Already in PNF!</b>':'Formula needs transformation.'}`,
+    'Input: '+toText(ast),'h-bl');
+
+  // ── Frame 1: Step 1 ──
+  const r1=step1(ast);
+  addFrame('s1','Step 1 — Eliminate → and ↔','STEP 1','badge-orange',
+    toHTML(r1.result,false),false,mkRulesHTML(r1.changes,'No → or ↔ found — formula unchanged.'),
+    `<div class="info-text"><b>Step 1:</b> Replace all implications and biconditionals using:<br><br>`+
+    `<code>P → Q  ≡  ¬P ∨ Q</code><br><code>P ↔ Q  ≡  (¬P ∨ Q) ∧ (P ∨ ¬Q)</code><br><br>`+
+    (r1.changes.length?`Applied ${r1.changes.length} replacement(s).`:'No replacements needed.'),
+    'Step 1: '+(r1.changes.length?r1.changes.map(c=>c.note).join('; '):'unchanged'),'h-or');
+
+  // ── Frame 2: Step 2 ──
+  const r2=step2(r1.result);
+  addFrame('s2','Step 2 — Push ¬ Inward','STEP 2','badge-violet',
+    toHTML(r2.result,false),false,mkRulesHTML(r2.changes,'No negations to push — step skipped.'),
+    `<div class="info-text"><b>Step 2:</b> Move all ¬ past quantifiers and connectives:<br><br>`+
+    `<code>¬¬φ       ≡  φ</code><br><code>¬∀x.φ    ≡  ∃x.¬φ</code><br><code>¬∃x.φ    ≡  ∀x.¬φ</code><br><code>¬(P ∧ Q) ≡  ¬P ∨ ¬Q</code><br><code>¬(P ∨ Q) ≡  ¬P ∧ ¬Q</code><br><br>`+
+    `After this step, ¬ only appears directly before atoms.`+
+    (r2.allChanges&&r2.allChanges.length?`<br><br>Applied ${r2.allChanges.length} rewrite(s).`:''),
+    'Step 2: '+(r2.changes.length?r2.changes.map(c=>c.rule).join('; '):'unchanged'),'h-vi');
+
+  // ── Frame 3: Step 3 ──
+  const r3=step3(r2.result);
+  addFrame('s3','Step 3 — Rename Variables','STEP 3','badge-cyan',
+    toHTML(r3.result,false),false,
+    r3.changes.length
+      ?`<div class="rule-list">${r3.changes.map(c=>`<div class="rule-item"><div class="r-name">Rename</div><div class="r-formula"><span class="r-q">bound var</span> <span class="r-v">${esc(c.from)}</span> → <span class="r-v">${esc(c.to)}</span></div></div>`).join('')}</div>`
+      :`<div class="rule-list"><div class="rule-item r-none">No naming conflicts — all bound variables are already unique.</div></div>`,
+    `<div class="info-text"><b>Step 3:</b> Each quantifier must bind a <b>unique variable name</b>.<br><br>If variable <code>x</code> is bound by two different quantifiers, rename the second occurrence to a fresh name (e.g., <code>x₁</code>).<br><br>This ensures that in Step 4 we can safely pull quantifiers out without variable capture.<br><br>`+
+    (r3.changes.length?`Renamed: `+r3.changes.map(c=>esc(c.from)+' → '+esc(c.to)).join(', '):'No renaming needed.'),
+    'Step 3: '+(r3.changes.length?r3.changes.map(c=>c.from+'→'+c.to).join(', '):'no rename needed'),'h-cy');
+
+  // ── Frame 4: Step 4 ──
+  const r4=step4(r3.result);
+  const qprefix=r4.quantifiers.map(q=>(q.type==='forall'?'∀':'∃')+q.var+'.').join(' ');
+  addFrame('s4','Step 4 — Pull Quantifiers Out','STEP 4','badge-em',
+    toPNFHTML(r4.result),true,
+    r4.quantifiers.length
+      ?`<div class="rule-list">${r4.quantifiers.map((q,i)=>`<div class="rule-item"><div class="r-name">Quantifier ${i+1}</div><div class="r-formula"><span class="r-q">${q.type==='forall'?'∀':'∃'}</span><span class="r-v">${esc(q.var)}</span></div></div>`).join('')}</div>`
+      :`<div class="rule-list"><div class="rule-item r-none">No quantifiers to move.</div></div>`,
+    `<div class="info-text"><b>Step 4:</b> Use the equivalences:<br><br>`+
+    `<code>φ ∧ Qx.ψ  ≡  Qx.(φ ∧ ψ)</code>  (x not free in φ)<br>`+
+    `<code>φ ∨ Qx.ψ  ≡  Qx.(φ ∨ ψ)</code>  (x not free in φ)<br><br>`+
+    `After Step 3 all variables are unique, so the side condition is automatically satisfied.<br><br>`+
+    (r4.quantifiers.length?`Quantifier prefix: <b>${esc(qprefix)}</b>`:'No quantifiers — matrix is already quantifier-free.'),
+    'Step 4: prefix = '+qprefix,'h-em');
+
+  // ── Frame 5: PNF Result ──
+  addFrame('done','PNF Result','PNF','badge-em',
+    toPNFHTML(r4.result),true,'',
+    `<div class="info-section"><div class="info-section-title">PNF achieved</div></div>`+
+    `<div class="info-text"><b>Quantifier prefix:</b><br><code>${esc(qprefix||'(none)')}</code><br><br>`+
+    `<b>Quantifier-free matrix:</b><br><code>${esc(toText(r4.matrix))}</code><br><br>`+
+    `The formula is now in <b>Prenex Normal Form</b>. All quantifiers appear at the beginning, followed by a quantifier-free matrix.<br><br>`+
+    `This form is required for many first-order logic procedures, including <b>Skolemization</b> and <b>Herbrand's theorem</b>.`,
+    'PNF: '+toText(r4.result),'h-em');
+
+  G.frames=frames;G.current=-1;
+  document.getElementById('ctrlCard').style.display='';
+  document.getElementById('histCard').style.display='';
+  document.getElementById('histList').innerHTML='';
+  document.getElementById('resultBadge').style.display='none';
+  document.getElementById('nextBtn').disabled=false;
+  document.getElementById('prevBtn').disabled=true;
+  nextStep();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+const FLOW_ORDER=['input','s1','s2','s3','s4','done'];
+
+function renderAll(){
+  const f=G.frames[G.current];if(!f)return;
+
+  // Algorithm flow
+  const ci=FLOW_ORDER.indexOf(f.flowStep);
+  FLOW_ORDER.forEach((s,i)=>{
+    const el=document.getElementById('fs-'+s);
+    el.className='flow-step'+(i===ci?' active':i<ci?' done':'');
+  });
+
+  // Formula box
+  const fb=document.getElementById('fmlBox');
+  fb.innerHTML=f.fmlHTML;
+  fb.className='fml-box'+(f.isPnfBox?' pnf-result':'');
+
+  // Rules
+  document.getElementById('rulesDiv').innerHTML=f.rulesHTML;
+
+  // Title / badge
+  document.getElementById('fmlTitle').textContent=f.title;
+  const fb2=document.getElementById('fmlBadge');
+  fb2.className='badge '+f.badgeClass;fb2.textContent=f.badge;
+
+  // Info panel
+  document.getElementById('infoTitle').textContent=f.title;
+  const ib=document.getElementById('infoBadge');
+  ib.className='badge '+f.badgeClass;ib.textContent=f.badge;
+  document.getElementById('infoBody').innerHTML=f.infoHTML;
+
+  // History list
+  const list=document.getElementById('histList');list.innerHTML='';
+  G.frames.slice(0,G.current+1).forEach((fr,i)=>{
+    const div=document.createElement('div');
+    div.className='hist-item '+fr.histClass;
+    div.innerHTML=`<div class="h-step">Step ${i+1} — ${fr.title}</div><div class="h-text">${esc(fr.histText)}</div>`;
+    list.appendChild(div);
+  });
+  list.scrollTop=list.scrollHeight;
+
+  // Result badge
+  if(G.current===G.frames.length-1){
+    const rb=document.getElementById('resultBadge');
+    rb.style.display='';rb.className='badge badge-em';rb.textContent='PNF';
+  }
+
+  document.getElementById('stepCounter').textContent=`Step ${G.current+1} / ${G.frames.length}`;
+  document.getElementById('prevBtn').disabled=G.current<=0;
+  document.getElementById('nextBtn').disabled=G.current>=G.frames.length-1;
+}
+
+function nextStep(){if(G.current<G.frames.length-1){G.current++;renderAll();}}
+function prevStep(){if(G.current>0){G.current--;renderAll();}}
+function toggleAuto(){
+  if(G.autoTimer){
+    clearInterval(G.autoTimer);G.autoTimer=null;
+    document.getElementById('autoBtn').textContent='▶ Auto';
+  }else{
+    document.getElementById('autoBtn').textContent='⏸ Pause';
+    G.autoTimer=setInterval(()=>{
+      if(G.current>=G.frames.length-1){
+        clearInterval(G.autoTimer);G.autoTimer=null;
+        document.getElementById('autoBtn').textContent='▶ Auto';return;
+      }
+      nextStep();
+    },1800);
+  }
+}
+
+function downloadHistory(){
+  if(!G.frames.length){alert('No steps yet.');return;}
+  const src=document.getElementById('formulaInput').value.trim();
+  let out=`Prenex Normal Form Step History\nInput: ${src}\n${'='.repeat(60)}\n\n`;
+  G.frames.forEach((f,i)=>{out+=`Step ${i+1}: ${f.title}\n${'-'.repeat(40)}\n${f.histText}\n\n`;});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));
+  a.download='pnf-history.txt';a.click();URL.revokeObjectURL(a.href);
+}
+
+buildExamples();
+</script>
+</body>
+</html>

@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Term Flattening — Interactive Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --indigo:#6366f1;--indigo2:#818cf8;--violet:#a855f7;--violet2:#c084fc;
+  --green:#22c55e;--green-bg:rgba(34,197,94,0.12);--green-border:rgba(34,197,94,0.3);
+  --red:#ef4444;--red-bg:rgba(239,68,68,0.12);--red-border:rgba(239,68,68,0.35);
+  --yellow:#f59e0b;--yellow-bg:rgba(245,158,11,0.12);--yellow-border:rgba(245,158,11,0.35);
+  --orange:#f97316;--orange-bg:rgba(249,115,22,0.12);--orange-border:rgba(249,115,22,0.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#1a1040 0%,#2d1b69 40%,#3b1d7a 70%,#1a1040 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#a5b4fc,#c084fc,#e879f9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);
+  color:var(--indigo2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+
+.wrap{max-width:1400px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+.input-row{display:flex;gap:10px;align-items:stretch}
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s
+}
+.formula-input:focus{border-color:var(--indigo)}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.examples-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.examples-row span{font-size:12px;color:var(--muted);margin-right:2px}
+.ex-btn{
+  padding:4px 11px;font-size:12px;border-radius:20px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;
+  font-family:'Consolas',monospace
+}
+.ex-btn:hover{border-color:var(--indigo);color:var(--indigo2)}
+
+.btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--indigo);color:#fff}
+.btn-primary:hover{background:var(--indigo2)}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--border)}
+.btn-sm{padding:7px 13px;font-size:12px}
+.btn-violet{background:var(--violet);color:#fff}
+.btn-violet:hover{background:var(--violet2)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover{filter:brightness(1.1)}
+
+.main-grid{display:grid;grid-template-columns:300px 1fr;gap:18px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+
+/* Literal list */
+.lit-list{display:flex;flex-direction:column;gap:7px}
+.lit-row{
+  display:flex;align-items:center;gap:10px;padding:11px 15px;
+  border-radius:10px;border:1px solid var(--border);background:var(--bg);
+  transition:all .25s;cursor:default
+}
+.lit-row.is-flat{background:var(--green-bg);border-color:var(--green-border)}
+.lit-row.not-flat{border-color:var(--yellow-border);background:var(--yellow-bg);cursor:pointer}
+.lit-row.not-flat:hover{border-color:var(--yellow);box-shadow:0 0 12px rgba(245,158,11,.2)}
+.lit-str{font-family:'Consolas',monospace;font-size:14px;flex:1;font-weight:600}
+.lit-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0;white-space:nowrap}
+.badge-flat{background:rgba(34,197,94,.2);color:#86efac}
+.badge-notflat{background:rgba(245,158,11,.2);color:#fbbf24}
+.lit-rule{font-size:11px;color:var(--muted);font-family:'Consolas',monospace}
+.lit-click-hint{font-size:11px;color:var(--yellow);font-style:italic;margin-left:4px}
+
+/* Fresh vars panel */
+.fresh-grid{display:flex;flex-direction:column;gap:7px}
+.fresh-row{display:flex;align-items:baseline;gap:8px;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border)}
+.fresh-name{font-family:'Consolas',monospace;font-weight:700;color:var(--violet2);font-size:14px}
+.fresh-eq{color:var(--muted);font-size:13px}
+.fresh-for{font-family:'Consolas',monospace;font-size:13px;color:var(--indigo2)}
+.fresh-empty{color:var(--muted);font-style:italic;font-size:13px}
+
+/* History */
+.hist-list{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto}
+.hist-list::-webkit-scrollbar{width:4px}.hist-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.hentry{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;background:var(--bg);border:1px solid var(--border);font-size:12px}
+.hentry.hcur{border-color:var(--indigo);background:rgba(99,102,241,.08)}
+.hnum{font-size:10px;font-weight:700;color:var(--muted);min-width:18px;text-align:right}
+.hdetail{color:var(--muted);font-family:'Consolas',monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+
+/* Success banner */
+.success-banner{
+  background:var(--green-bg);border:1px solid var(--green-border);
+  border-radius:12px;padding:20px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap
+}
+.success-icon{font-size:32px;flex-shrink:0}
+.success-text{flex:1;min-width:0}
+.success-text h3{font-size:16px;font-weight:700;color:#86efac;margin-bottom:4px}
+.success-text p{font-size:13px;color:var(--muted)}
+
+/* Not-flat warning */
+.warn-banner{display:none;background:var(--yellow-bg);border:1px solid var(--yellow-border);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+.warn-banner.show{display:block}
+
+/* Overlay / Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;max-width:640px;width:92%;max-height:88vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.modal-desc{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6}
+
+.pick-option{
+  padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg);
+  cursor:pointer;transition:all .2s;margin-bottom:8px
+}
+.pick-option:hover{border-color:var(--indigo);background:rgba(99,102,241,.08)}
+.pick-option-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pick-lit{font-family:'Consolas',monospace;font-size:13px;font-weight:700;flex:1}
+.pick-rule{font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;background:rgba(99,102,241,.2);color:var(--indigo2);text-transform:uppercase;letter-spacing:.04em}
+.pick-fresh{font-size:12px;color:var(--violet2);font-family:'Consolas',monospace}
+.pick-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pick-preview-chip{
+  padding:4px 10px;border-radius:6px;font-family:'Consolas',monospace;font-size:12px;
+  background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);color:var(--indigo2)
+}
+.pick-preview-label{font-size:11px;color:var(--muted);align-self:center}
+.pick-replace-arrow{color:var(--muted);font-size:12px;align-self:center}
+
+/* abtn style matching other tutorials */
+.abtn{width:100%;padding:12px 14px;border-radius:10px;border:2px solid transparent;cursor:pointer;text-align:left;transition:all .2s;margin-bottom:8px;display:flex;flex-direction:column;gap:2px}
+.abtn .an{font-size:14px;font-weight:700}
+.abtn .ar{font-size:10px;font-family:'Consolas',monospace;opacity:.75;margin-top:1px}
+.abtn.not-app{opacity:.35}
+.abtn.not-app:hover{opacity:.58;cursor:help}
+.abtn:not(.not-app) .ac{display:block;font-size:10px;font-weight:700;margin-top:3px;opacity:.9}
+.abtn.not-app .ac{display:none}
+.abtn:not(.not-app) .aw{display:none}
+.abtn.not-app .aw{display:block;font-size:10px;margin-top:3px;opacity:.7}
+.ab-apply{background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.3);color:var(--indigo2)}
+.ab-apply:not(.not-app):hover{background:rgba(99,102,241,.2);border-color:var(--indigo)}
+.ab-auto{background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.3);color:var(--violet2)}
+.ab-auto:not(.not-app):hover{background:rgba(168,85,247,.2);border-color:var(--violet)}
+
+/* Hint box */
+.hint-box{font-size:13px;line-height:1.6;color:var(--text);padding:10px 0}
+
+/* Explanation */
+.expl-text{font-size:13px;line-height:1.65;color:var(--text);margin:6px 0}
+.expl-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-bottom:8px}
+.rule-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Consolas',monospace;font-size:12px;color:#a5b4fc;margin-top:8px;line-height:1.8}
+
+/* History badges */
+.hbadge{font-size:11px;font-weight:700;min-width:105px;flex-shrink:0}
+.hb-start{color:var(--muted)}
+.hb-equal_rule,.hb-not_s_rule,.hb-not_t_rule{color:#a5b4fc}
+.hb-function_rule,.hb-predicat_rule,.hb-not_predicat_rule{color:#c084fc}
+.hb-done{color:#86efac}
+
+/* Animations */
+@keyframes pop-in{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes slide-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flash-new{0%{box-shadow:0 0 0 rgba(99,102,241,0)}50%{box-shadow:0 0 16px rgba(99,102,241,.45)}100%{box-shadow:0 0 0 rgba(99,102,241,0)}}
+.slide-up{animation:slide-up .25s ease-out}
+.flash-new{animation:flash-new .8s ease-out}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>Term Flattening</h1>
+    <p>EUF pre-processing &mdash; transform a cube into an equisatisfiable flat cube, one rule at a time</p>
+  </div>
+  <div class="hdr-badge">EUF / Pre-processing</div>
+</div>
+
+<div class="wrap">
+
+  <!-- Input Card -->
+  <div class="card">
+    <div class="card-title">Cube Input (literals)</div>
+    <div class="input-row">
+      <input id="formulaInput" class="formula-input"
+        placeholder="e.g.: f(g(x)) = y, x != z"
+        value="f(g(x)) = y">
+      <button class="btn btn-primary" onclick="initializeCube()">Initialize</button>
+      <button class="btn btn-ghost" onclick="resetAll()">Reset</button>
+    </div>
+    <div class="io-row">
+      <input type="file" id="smt2FileIn" accept=".smt2" style="display:none" onchange="onFileUpload(event)">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('smt2FileIn').click()">&#8593; Upload .smt2</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadSMT2()">&#8595; Download .smt2</button>
+    </div>
+    <div class="input-hint">
+      Syntax: <code>=</code> equality &nbsp;|&nbsp; <code>!=</code> or <code>&#8800;</code> disequality &nbsp;|&nbsp;
+      <code>!</code> or <code>¬</code> or <code>~</code> negation &nbsp;|&nbsp;
+      <code>f(x,y)</code> function application &nbsp;|&nbsp; <code>P(x)</code> predicate &nbsp;|&nbsp;
+      literals separated by <code>,</code>
+    </div>
+    <div class="examples-row">
+      <span>Examples:</span>
+      <button class="ex-btn" onclick="loadExample('nested')">Nested function</button>
+      <button class="ex-btn" onclick="loadExample('funcarg')">Function arg</button>
+      <button class="ex-btn" onclick="loadExample('diseq')">Disequality</button>
+      <button class="ex-btn" onclick="loadExample('pred')">Predicate</button>
+      <button class="ex-btn" onclick="loadExample('complex')">Complex</button>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- LEFT: Actions + Hint -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title">Flattening Rules</div>
+
+        <button id="btn-equal_rule" class="abtn ab-apply not-app" onclick="tryAct('equal_rule')">
+          <span class="an">equal_rule</span>
+          <span class="ar">t = s &nbsp;where t is not a variable</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-not_s_rule" class="abtn ab-apply not-app" onclick="tryAct('not_s_rule')">
+          <span class="an">not_s_rule</span>
+          <span class="ar">¬(t = s) &nbsp;where t is not a variable</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-not_t_rule" class="abtn ab-apply not-app" onclick="tryAct('not_t_rule')">
+          <span class="an">not_t_rule</span>
+          <span class="ar">¬(s = t) &nbsp;where s is var, t is not</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-function_rule" class="abtn ab-auto not-app" onclick="tryAct('function_rule')">
+          <span class="an">function_rule</span>
+          <span class="ar">s = f(…,t,…) &nbsp;where arg t is not a var</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-predicat_rule" class="abtn ab-auto not-app" onclick="tryAct('predicat_rule')">
+          <span class="an">predicat_rule</span>
+          <span class="ar">P(…,t,…) &nbsp;where arg t is not a var</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-not_predicat_rule" class="abtn ab-auto not-app" onclick="tryAct('not_predicat_rule')">
+          <span class="an">not_predicat_rule</span>
+          <span class="ar">¬P(…,t,…) &nbsp;where arg t is not a var</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">What can I do?</div>
+        <div class="hint-box" id="hintBox">Load a cube to begin.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Cube + Fresh vars -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Cube display -->
+      <div class="card">
+        <div class="card-title">
+          <span>Current Cube</span>
+          <span id="cubeStatusBadge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px"></span>
+        </div>
+        <div id="successBanner" style="display:none;margin-bottom:14px">
+          <div class="success-banner">
+            <div class="success-icon">&#10003;</div>
+            <div class="success-text">
+              <h3>Formula is flat!</h3>
+              <p>All literals satisfy the flatness conditions. Ready to run Congruence Closure.</p>
+            </div>
+            <button class="btn btn-green" onclick="openInCC()">Open in CC Tutorial &#8594;</button>
+          </div>
+        </div>
+        <div id="litList" class="lit-list">
+          <div style="color:var(--muted);font-style:italic;font-size:14px">Load a cube to begin.</div>
+        </div>
+      </div>
+
+      <!-- Fresh variables panel -->
+      <div class="card">
+        <div class="card-title">
+          <span>Fresh Variables</span>
+        </div>
+        <div id="freshPanel" class="fresh-grid">
+          <div class="fresh-empty">No fresh variables introduced yet.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="downloadFlatSMT2()">&#8595; Download flat result as .smt2</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Step Explanation -->
+  <div class="card">
+    <div class="card-title">Step Explanation</div>
+    <div id="explContent"><p class="expl-text">Apply a flattening rule to see a step-by-step explanation.</p></div>
+  </div>
+
+  <!-- Step History -->
+  <div class="card">
+    <div class="card-title">
+      <span>Step History</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="undoStep()">&#8592; Undo</button>
+        <button class="btn btn-ghost btn-sm" onclick="autoFlatten()">Auto-Flatten &#8594;</button>
+      </div>
+    </div>
+    <div id="histList" class="hist-list"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="downloadHistory()">&#8595; Download History</button>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- Apply Rule Picker Modal -->
+<div class="overlay" id="applyOverlay">
+  <div class="modal">
+    <div class="modal-title">Apply Flattening Rule</div>
+    <div class="modal-desc">
+      Choose a non-flat literal. The corresponding rule will be applied, introducing a fresh variable.
+    </div>
+    <div id="pickOptions"></div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('applyOverlay')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let S = {
+  cube: [],
+  original: [],
+  freshCount: 0,
+  freshVars: [],
+  history: [],
+  step: 0,
+  status: 'idle'
+};
+
+const EXAMPLES = {
+  nested:  'f(g(x)) = y',
+  funcarg: 'x = f(g(y), z)',
+  diseq:   'f(x) != y, x != g(a)',
+  pred:    'P(f(x), y), !Q(g(z))',
+  complex: 'f(g(x)) = h(y), P(f(a))'
+};
+
+function loadExample(key){
+  document.getElementById('formulaInput').value = EXAMPLES[key];
+}
+
+// ═══════════════════════════════════════
+// PARSER
+// ═══════════════════════════════════════
+function termStr(t){ return t.k==='v' ? t.n : `${t.n}(${t.a.map(termStr).join(', ')})`; }
+function litStr(lit){
+  if(lit.k==='eq')    return `${termStr(lit.l)} = ${termStr(lit.r)}`;
+  if(lit.k==='neq')   return `${termStr(lit.l)} \u2260 ${termStr(lit.r)}`;
+  if(lit.k==='pred')  return `${lit.n}(${lit.a.map(termStr).join(', ')})`;
+  if(lit.k==='npred') return `\u00AC${lit.n}(${lit.a.map(termStr).join(', ')})`;
+  return '?';
+}
+function isVar(t){ return t.k==='v'; }
+function isFlat(lit){
+  if(lit.k==='eq')    return isVar(lit.l) && (isVar(lit.r)||(lit.r.k==='f'&&lit.r.a.every(isVar)));
+  if(lit.k==='neq')   return isVar(lit.l) && isVar(lit.r);
+  if(lit.k==='pred')  return lit.a.every(isVar);
+  if(lit.k==='npred') return lit.a.every(isVar);
+  return false;
+}
+
+// Tokenizer
+function tokenize(src){
+  const tokens = [];
+  let i = 0;
+  while(i < src.length){
+    if(/\s/.test(src[i])){ i++; continue; }
+    if(src.slice(i,i+2)==='!='||src.slice(i,i+2)==='<>'){tokens.push({t:'NEQ',v:'!='});i+=2;continue;}
+    if(src[i]==='=' ){tokens.push({t:'EQ',v:'='});i++;continue;}
+    if(src[i]==='\u2260'){tokens.push({t:'NEQ',v:'!='});i++;continue;}
+    if(src[i]==='!'||src[i]==='¬'||src[i]==='~'){tokens.push({t:'NEG',v:'!'});i++;continue;}
+    if(src.slice(i,i+4).toLowerCase()==='not '){tokens.push({t:'NEG',v:'!'});i+=4;continue;}
+    if(src[i]==='('){tokens.push({t:'LP',v:'('});i++;continue;}
+    if(src[i]===')'){tokens.push({t:'RP',v:')'});i++;continue;}
+    if(src[i]===','){tokens.push({t:'COMMA',v:','});i++;continue;}
+    if(/[a-zA-Z_]/.test(src[i])){
+      let j=i; while(j<src.length&&/[a-zA-Z0-9_']/.test(src[j])) j++;
+      tokens.push({t:'ID',v:src.slice(i,j)}); i=j; continue;
+    }
+    i++;
+  }
+  return tokens;
+}
+
+function parseCube(src){
+  // Split on top-level commas
+  const tokens = tokenize(src);
+  const lits = [];
+  let depth = 0, start = 0;
+  for(let i=0;i<tokens.length;i++){
+    if(tokens[i].t==='LP') depth++;
+    else if(tokens[i].t==='RP') depth--;
+    else if(tokens[i].t==='COMMA' && depth===0){
+      lits.push(parseLitTokens(tokens.slice(start,i)));
+      start = i+1;
+    }
+  }
+  if(start < tokens.length) lits.push(parseLitTokens(tokens.slice(start)));
+  return lits.filter(Boolean);
+}
+
+function parseLitTokens(toks){
+  if(!toks.length) return null;
+  let i=0;
+  let negated = false;
+  if(toks[i]&&toks[i].t==='NEG'){ negated=true; i++; }
+  // Parse left term
+  const {term:lterm, end:e1} = parseTerm(toks, i);
+  i = e1;
+  // What follows?
+  if(i >= toks.length){
+    // standalone term — must be predicate
+    if(lterm.k==='f') return negated ? {k:'npred',n:lterm.n,a:lterm.a} : {k:'pred',n:lterm.n,a:lterm.a};
+    // bare variable as predicate?
+    return negated ? {k:'npred',n:lterm.n,a:[]} : {k:'pred',n:lterm.n,a:[]};
+  }
+  if(toks[i]&&toks[i].t==='EQ'){
+    i++;
+    const {term:rterm, end:e2} = parseTerm(toks, i);
+    if(negated){
+      // !(x=y) treated as neq
+      return {k:'neq',l:lterm,r:rterm};
+    }
+    return {k:'eq',l:lterm,r:rterm};
+  }
+  if(toks[i]&&toks[i].t==='NEQ'){
+    i++;
+    const {term:rterm, end:e2} = parseTerm(toks, i);
+    return {k:'neq',l:lterm,r:rterm};
+  }
+  // fallback: predicate
+  if(lterm.k==='f') return negated ? {k:'npred',n:lterm.n,a:lterm.a} : {k:'pred',n:lterm.n,a:lterm.a};
+  return negated ? {k:'npred',n:lterm.n,a:[]} : {k:'pred',n:lterm.n,a:[]};
+}
+
+function parseTerm(toks, i){
+  if(i >= toks.length) throw new Error('Unexpected end');
+  if(toks[i].t !== 'ID') throw new Error('Expected identifier at position ' + i);
+  const name = toks[i].v;
+  i++;
+  if(i < toks.length && toks[i].t==='LP'){
+    // function application
+    i++; // consume (
+    const args = [];
+    while(i < toks.length && toks[i].t !== 'RP'){
+      const {term, end} = parseTerm(toks, i);
+      args.push(term);
+      i = end;
+      if(i < toks.length && toks[i].t==='COMMA') i++;
+    }
+    if(i < toks.length) i++; // consume )
+    return {term:{k:'f',n:name,a:args}, end:i};
+  }
+  return {term:{k:'v',n:name}, end:i};
+}
+
+// ═══════════════════════════════════════
+// FLATTENING RULES
+// ═══════════════════════════════════════
+function freshName(count){ return 'z' + (count+1); }
+
+function findFlattenRules(cube, freshCount){
+  const options = [];
+  for(let litIdx=0; litIdx<cube.length; litIdx++){
+    const lit = cube[litIdx];
+    if(isFlat(lit)) continue;
+    const fn = freshName(freshCount);
+
+    // equal_rule: t = s where lhs t is NOT a var
+    if(lit.k==='eq' && !isVar(lit.l)){
+      const z = {k:'v',n:fn};
+      const newLits = [{k:'eq',l:z,r:lit.r}, {k:'eq',l:z,r:lit.l}];
+      const newCube = [...cube.slice(0,litIdx), ...newLits, ...cube.slice(litIdx+1)];
+      options.push({rule:'equal_rule', litIdx, oldLit:lit, freshName:fn,
+        newCube, nextFresh:freshCount+1,
+        preview:newLits.map(litStr),
+        standsFor: termStr(lit.l)});
+      continue;
+    }
+
+    // not_s_rule: ¬(t = s) where lhs t is NOT a var
+    if(lit.k==='neq' && !isVar(lit.l)){
+      const z = {k:'v',n:fn};
+      const newLits = [{k:'neq',l:z,r:lit.r}, {k:'eq',l:z,r:lit.l}];
+      const newCube = [...cube.slice(0,litIdx), ...newLits, ...cube.slice(litIdx+1)];
+      options.push({rule:'not_s_rule', litIdx, oldLit:lit, freshName:fn,
+        newCube, nextFresh:freshCount+1,
+        preview:newLits.map(litStr),
+        standsFor: termStr(lit.l)});
+      continue;
+    }
+
+    // not_t_rule: ¬(s = t) where lhs is var but rhs t is NOT a var
+    if(lit.k==='neq' && isVar(lit.l) && !isVar(lit.r)){
+      const z = {k:'v',n:fn};
+      const newLits = [{k:'neq',l:lit.l,r:z}, {k:'eq',l:z,r:lit.r}];
+      const newCube = [...cube.slice(0,litIdx), ...newLits, ...cube.slice(litIdx+1)];
+      options.push({rule:'not_t_rule', litIdx, oldLit:lit, freshName:fn,
+        newCube, nextFresh:freshCount+1,
+        preview:newLits.map(litStr),
+        standsFor: termStr(lit.r)});
+      continue;
+    }
+
+    // function_rule: s = f(...,t,...) where s is var, some arg t is NOT var
+    if(lit.k==='eq' && isVar(lit.l) && lit.r.k==='f'){
+      const nonVarArgIdx = lit.r.a.findIndex(a=>!isVar(a));
+      if(nonVarArgIdx >= 0){
+        const oldArg = lit.r.a[nonVarArgIdx];
+        const z = {k:'v',n:fn};
+        const newArgs = lit.r.a.map((a,i)=> i===nonVarArgIdx ? z : a);
+        const newFunc = {k:'f',n:lit.r.n,a:newArgs};
+        const newEq = {k:'eq',l:lit.l,r:newFunc};
+        const newLits = [newEq, {k:'eq',l:z,r:oldArg}];
+        const newCube = [...cube.slice(0,litIdx), ...newLits, ...cube.slice(litIdx+1)];
+        options.push({rule:'function_rule', litIdx, oldLit:lit, freshName:fn,
+          newCube, nextFresh:freshCount+1,
+          preview:newLits.map(litStr),
+          standsFor: termStr(oldArg)});
+        continue;
+      }
+    }
+
+    // predicat_rule: P(...,t,...) where some arg t is NOT var
+    if(lit.k==='pred'){
+      const nonVarArgIdx = lit.a.findIndex(a=>!isVar(a));
+      if(nonVarArgIdx >= 0){
+        const oldArg = lit.a[nonVarArgIdx];
+        const z = {k:'v',n:fn};
+        const newArgs = lit.a.map((a,i)=> i===nonVarArgIdx ? z : a);
+        const newPred = {k:'pred',n:lit.n,a:newArgs};
+        const newLits = [newPred, {k:'eq',l:z,r:oldArg}];
+        const newCube = [...cube.slice(0,litIdx), ...newLits, ...cube.slice(litIdx+1)];
+        options.push({rule:'predicat_rule', litIdx, oldLit:lit, freshName:fn,
+          newCube, nextFresh:freshCount+1,
+          preview:newLits.map(litStr),
+          standsFor: termStr(oldArg)});
+        continue;
+      }
+    }
+
+    // not_predicat_rule: ¬P(...,t,...) same
+    if(lit.k==='npred'){
+      const nonVarArgIdx = lit.a.findIndex(a=>!isVar(a));
+      if(nonVarArgIdx >= 0){
+        const oldArg = lit.a[nonVarArgIdx];
+        const z = {k:'v',n:fn};
+        const newArgs = lit.a.map((a,i)=> i===nonVarArgIdx ? z : a);
+        const newPred = {k:'npred',n:lit.n,a:newArgs};
+        const newLits = [newPred, {k:'eq',l:z,r:oldArg}];
+        const newCube = [...cube.slice(0,litIdx), ...newLits, ...cube.slice(litIdx+1)];
+        options.push({rule:'not_predicat_rule', litIdx, oldLit:lit, freshName:fn,
+          newCube, nextFresh:freshCount+1,
+          preview:newLits.map(litStr),
+          standsFor: termStr(oldArg)});
+        continue;
+      }
+    }
+  }
+  return options;
+}
+
+function allFlat(cube){ return cube.every(isFlat); }
+
+// ═══════════════════════════════════════
+// INITIALIZE / RESET
+// ═══════════════════════════════════════
+function initializeCube(){
+  const raw = document.getElementById('formulaInput').value.trim();
+  if(!raw){ alert('Please enter a cube.'); return; }
+  let cube;
+  try { cube = parseCube(raw); }
+  catch(e){ alert('Parse error: ' + e.message); return; }
+  if(!cube.length){ alert('No literals parsed.'); return; }
+
+  S.cube = cube;
+  S.original = JSON.parse(JSON.stringify(cube));
+  S.freshCount = 0;
+  S.freshVars = [];
+  S.history = [{cube:JSON.parse(JSON.stringify(cube)), freshCount:0, freshVars:[], rule:'start', expl:'Initialized'}];
+  S.step = 0;
+  S.status = allFlat(cube) ? 'done' : 'running';
+
+  document.getElementById('explContent').innerHTML =
+    allFlat(cube)
+      ? '<p class="expl-text">Cube loaded — <b>already flat!</b> All literals satisfy the flatness conditions.</p>'
+      : `<p class="expl-text">Cube loaded with <b>${cube.filter(l=>!isFlat(l)).length} non-flat</b> literal(s). Apply a flattening rule to begin.</p>`;
+
+  renderAll();
+}
+
+function resetAll(){
+  S = {cube:[],original:[],freshCount:0,freshVars:[],history:[],step:0,status:'idle'};
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+// APPLY RULE
+// ═══════════════════════════════════════
+function applyOption(opt){
+  S.cube = opt.newCube;
+  S.freshCount = opt.nextFresh;
+  S.freshVars = [...S.freshVars, {name:opt.freshName, standsFor:opt.standsFor}];
+  S.step++;
+  S.history.push({
+    cube: JSON.parse(JSON.stringify(S.cube)),
+    freshCount: S.freshCount,
+    freshVars: JSON.parse(JSON.stringify(S.freshVars)),
+    rule: opt.rule,
+    fresh: opt.freshName,
+    standsFor: opt.standsFor,
+    expl: `${opt.rule}: introduced ${opt.freshName} for ${opt.standsFor}`
+  });
+  if(allFlat(S.cube)) S.status = 'done';
+  closeModal('applyOverlay');
+
+  // Write step explanation
+  const expl = document.getElementById('explContent');
+  const ruleColors = {
+    equal_rule:'rgba(99,102,241,.2)', not_s_rule:'rgba(99,102,241,.2)', not_t_rule:'rgba(99,102,241,.2)',
+    function_rule:'rgba(168,85,247,.2)', predicat_rule:'rgba(168,85,247,.2)', not_predicat_rule:'rgba(168,85,247,.2)'
+  };
+  const ruleTextColors = {
+    equal_rule:'#a5b4fc', not_s_rule:'#a5b4fc', not_t_rule:'#a5b4fc',
+    function_rule:'#c084fc', predicat_rule:'#c084fc', not_predicat_rule:'#c084fc'
+  };
+  expl.innerHTML = `
+    <span class="expl-badge" style="background:${ruleColors[opt.rule]||'rgba(99,102,241,.2)'};color:${ruleTextColors[opt.rule]||'#a5b4fc'}">${opt.rule}</span>
+    <p class="expl-text">
+      Applied <b>${opt.rule}</b> to literal <b>${escHtml(litStr(opt.oldLit))}</b>.<br>
+      Introduced fresh variable <b>${opt.freshName}</b> standing for <b>${escHtml(opt.standsFor)}</b>.<br>
+      Replaced with: ${opt.preview.map(p=>`<b>${escHtml(p)}</b>`).join(' and ')}.
+    </p>
+    <div class="rule-box">
+      ${opt.rule}:<br>
+      Remove: ${escHtml(litStr(opt.oldLit))}<br>
+      Add: ${opt.preview.map(p=>escHtml(p)).join(', ')}<br>
+      <span style="color:var(--muted)">// fresh: ${opt.freshName} ≡ ${escHtml(opt.standsFor)}</span>
+    </div>`;
+
+  renderAll();
+}
+
+function applyDirect(litIdx){
+  const opts = findFlattenRules(S.cube, S.freshCount);
+  const opt = opts.find(o=>o.litIdx===litIdx);
+  if(!opt) return;
+  applyOption(opt);
+}
+
+function undoStep(){
+  if(S.history.length <= 1) return;
+  S.history.pop();
+  const prev = S.history[S.history.length-1];
+  S.cube = JSON.parse(JSON.stringify(prev.cube));
+  S.freshCount = prev.freshCount;
+  S.freshVars = JSON.parse(JSON.stringify(prev.freshVars));
+  S.step = Math.max(0, S.step-1);
+  S.status = allFlat(S.cube) ? 'done' : (S.cube.length ? 'running' : 'idle');
+  renderAll();
+}
+
+function autoFlatten(){
+  if(S.status !== 'running') return;
+  let steps = 0;
+  const MAX = 200;
+  while(!allFlat(S.cube) && steps < MAX){
+    const opts = findFlattenRules(S.cube, S.freshCount);
+    if(!opts.length) break;
+    const opt = opts[0];
+    S.cube = opt.newCube;
+    S.freshCount = opt.nextFresh;
+    S.freshVars = [...S.freshVars, {name:opt.freshName, standsFor:opt.standsFor}];
+    S.step++;
+    S.history.push({
+      cube: JSON.parse(JSON.stringify(S.cube)),
+      freshCount: S.freshCount,
+      freshVars: JSON.parse(JSON.stringify(S.freshVars)),
+      rule: opt.rule,
+      fresh: opt.freshName,
+      standsFor: opt.standsFor,
+      expl: `${opt.rule}: introduced ${opt.freshName} for ${opt.standsFor}`
+    });
+    steps++;
+  }
+  if(allFlat(S.cube)) S.status = 'done';
+  const expl = document.getElementById('explContent');
+  expl.innerHTML = `
+    <span class="expl-badge" style="background:rgba(168,85,247,.2);color:#c084fc">Auto-Flatten</span>
+    <p class="expl-text">
+      Applied <b>${steps}</b> rule${steps===1?'':'s'} to reach the flat form.<br>
+      ${steps > 0 ? `Fresh variables introduced: <b>${S.freshVars.slice(-steps).map(fv=>fv.name).join(', ')}</b>.` : 'Formula was already flat.'}
+    </p>`;
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════
+
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function renderAll(){
+  renderCube();
+  renderFreshVars();
+  renderHistory();
+  renderButtons();
+  renderHint();
+}
+
+function renderCube(){
+  const list = document.getElementById('litList');
+  const banner = document.getElementById('successBanner');
+  const badge = document.getElementById('cubeStatusBadge');
+
+  if(!S.cube.length){
+    list.innerHTML = '<div style="color:var(--muted);font-style:italic;font-size:14px">Load a cube to begin.</div>';
+    banner.style.display = 'none';
+    badge.textContent = '';
+    return;
+  }
+
+  const flat = allFlat(S.cube);
+  if(flat){
+    banner.style.display = 'block';
+    badge.textContent = 'Flat';
+    badge.style.background = 'rgba(34,197,94,.2)';
+    badge.style.color = '#86efac';
+  } else {
+    banner.style.display = 'none';
+    const nf = S.cube.filter(l=>!isFlat(l)).length;
+    badge.textContent = `${nf} non-flat`;
+    badge.style.background = 'rgba(245,158,11,.2)';
+    badge.style.color = '#fbbf24';
+  }
+
+  const opts = findFlattenRules(S.cube, S.freshCount);
+  const litIdxToRule = {};
+  opts.forEach(o=>{ litIdxToRule[o.litIdx] = o.rule; });
+
+  list.innerHTML = '';
+  S.cube.forEach((lit, idx)=>{
+    const flat_lit = isFlat(lit);
+    const row = document.createElement('div');
+    row.className = 'lit-row ' + (flat_lit ? 'is-flat' : 'not-flat');
+    const rule = litIdxToRule[idx];
+    row.innerHTML = `
+      <span class="lit-str">${escHtml(litStr(lit))}</span>
+      ${flat_lit
+        ? `<span class="lit-badge badge-flat">Flat &#10003;</span>`
+        : `<span class="lit-badge badge-notflat">Not flat &mdash; ${rule||'?'}</span>
+           <span class="lit-click-hint">(click)</span>`
+      }
+    `;
+    if(!flat_lit) row.onclick = ()=>applyDirect(idx);
+    list.appendChild(row);
+  });
+}
+
+function renderFreshVars(){
+  const panel = document.getElementById('freshPanel');
+  if(!S.freshVars.length){
+    panel.innerHTML = '<div class="fresh-empty">No fresh variables introduced yet.</div>';
+    return;
+  }
+  panel.innerHTML = S.freshVars.map(fv=>`
+    <div class="fresh-row">
+      <span class="fresh-name">${escHtml(fv.name)}</span>
+      <span class="fresh-eq">&equiv;</span>
+      <span class="fresh-for">${escHtml(fv.standsFor)}</span>
+    </div>
+  `).join('');
+}
+
+function renderHistory(){
+  const el = document.getElementById('histList');
+  el.innerHTML = '';
+  // Start entry
+  const init = document.createElement('div');
+  init.className = 'hentry' + (S.history.length <= 1 ? ' hcur' : '');
+  init.innerHTML = '<span class="hnum">0</span><span class="hbadge hb-start">Start</span><span class="hdetail">cube loaded</span>';
+  el.appendChild(init);
+  S.history.slice(1).forEach((h, i) => {
+    const isCur = (i === S.history.length - 2);
+    const row = document.createElement('div');
+    row.className = 'hentry' + (isCur ? ' hcur' : '');
+    const ruleName = h.rule || '?';
+    const detail = h.fresh ? `${h.fresh} ≡ ${h.standsFor}` : (h.expl || '');
+    row.innerHTML = `<span class="hnum">${i+1}</span><span class="hbadge hb-${ruleName}">${ruleName}</span><span class="hdetail">${escHtml(detail)}</span>`;
+    el.appendChild(row);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+function setBtn(id, applicable){
+  document.getElementById(id).classList.toggle('not-app', !applicable);
+}
+
+const RULE_NAMES = ['equal_rule','not_s_rule','not_t_rule','function_rule','predicat_rule','not_predicat_rule'];
+
+function renderButtons(){
+  const running = S.status === 'running';
+  if(!running){
+    RULE_NAMES.forEach(r => setBtn('btn-'+r, false));
+    return;
+  }
+  const opts = findFlattenRules(S.cube, S.freshCount);
+  const applicable = new Set(opts.map(o => o.rule));
+  RULE_NAMES.forEach(r => setBtn('btn-'+r, applicable.has(r)));
+}
+
+function renderHint(){
+  const el = document.getElementById('hintBox');
+  if(S.status === 'idle'){ el.innerHTML = 'Load a cube to begin.'; return; }
+  if(S.status === 'done'){ el.innerHTML = '✅ <b>Formula is flat!</b> All literals satisfy flatness conditions. Proceed to <b>Congruence Closure</b>.'; return; }
+  const opts = findFlattenRules(S.cube, S.freshCount);
+  const applicable = [...new Set(opts.map(o => o.rule))];
+  el.innerHTML = `💡 <b>${opts.length} applicable rule${opts.length===1?'':'s'}</b> on <b>${applicable.length}</b> rule type${applicable.length===1?'':'s'}: ${applicable.map(r=>`<b style="color:#a5b4fc">${r}</b>`).join(', ')}. Click a rule button or a <span style="color:#fbbf24">yellow</span> literal.`;
+}
+
+function tryAct(type){
+  // type is a rule name
+  if(S.status !== 'running'){ showNotApplicable(type); return; }
+  const opts = findFlattenRules(S.cube, S.freshCount).filter(o => o.rule === type);
+  if(!opts.length){ showNotApplicable(type); return; }
+  openRulePicker(type, opts);
+}
+
+function showNotApplicable(type){
+  const el = document.getElementById('explContent');
+  let reason = '';
+  if(S.status === 'idle') reason = 'No cube has been loaded yet — click <b>Initialize</b> first.';
+  else if(S.status === 'done') reason = 'The formula is already flat — no rules apply.';
+  else reason = `No literal in the current cube requires <b>${type}</b>.`;
+
+  const condMap = {
+    equal_rule:       't = s where t is not a variable',
+    not_s_rule:       '¬(t = s) where t is not a variable',
+    not_t_rule:       '¬(s = t) where s is var but t is not',
+    function_rule:    's = f(…,t,…) where some arg t is not a variable',
+    predicat_rule:    'P(…,t,…) where some arg t is not a variable',
+    not_predicat_rule:'¬P(…,t,…) where some arg t is not a variable',
+    auto:             '∃ any non-flat literal in cube'
+  };
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:18px">🚫</span>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">Cannot apply: <span style="color:var(--indigo2)">${type}</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Precondition check</div>
+      </div>
+    </div>
+    <div style="padding:11px 14px;border-radius:9px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.08)">
+      <div style="font-size:13px;font-weight:600;color:#fca5a5;margin-bottom:4px">✗ Requires: ${condMap[type]||''}</div>
+      <div style="font-size:12px;color:#fca5a5;margin-left:2px">${reason}</div>
+    </div>`;
+  el.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function openRulePicker(ruleName, opts){
+  const container = document.getElementById('pickOptions');
+  container.innerHTML = '';
+  document.querySelector('#applyOverlay .modal-title').textContent = `Apply: ${ruleName}`;
+  document.querySelector('#applyOverlay .modal-desc').textContent =
+    `${opts.length} literal${opts.length===1?'':'s'} require this rule. Choose which one to flatten:`;
+  opts.forEach(opt => {
+    const div = document.createElement('div');
+    div.className = 'pick-option';
+    div.innerHTML = `
+      <div class="pick-option-header">
+        <span class="pick-lit">${escHtml(litStr(opt.oldLit))}</span>
+        <span class="pick-rule">${opt.rule}</span>
+      </div>
+      <div class="pick-fresh">Fresh variable: <b>${opt.freshName}</b> stands for <b>${escHtml(opt.standsFor)}</b></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted);margin-bottom:4px">Replaces with:</div>
+      <div class="pick-preview">
+        ${opt.preview.map(p=>`<span class="pick-preview-chip">${escHtml(p)}</span>`).join('<span class="pick-replace-arrow">+</span>')}
+      </div>`;
+    div.onclick = () => applyOption(opt);
+    container.appendChild(div);
+  });
+  document.getElementById('applyOverlay').classList.add('show');
+}
+
+// ═══════════════════════════════════════
+// CC NAVIGATION
+// ═══════════════════════════════════════
+function openInCC(){
+  const cubeStr = S.cube.map(litStr).join(', ');
+  localStorage.setItem('cc_formula', cubeStr);
+  window.location.href = '../cc/';
+}
+
+// ═══════════════════════════════════════
+// FILE I/O
+// ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// SMT2 PARSE / SERIALIZE
+// ═══════════════════════════════════════
+function tokenizeSMT2(text){
+  const toks=[]; let i=0;
+  while(i<text.length){
+    if(text[i]===';'){while(i<text.length&&text[i]!=='\n')i++;continue;}
+    if(/\s/.test(text[i])){i++;continue;}
+    if(text[i]==='('||text[i]===')'){toks.push(text[i]);i++;continue;}
+    let j=i; while(j<text.length&&!/[\s()]/.test(text[j]))j++;
+    toks.push(text.slice(i,j)); i=j;
+  }
+  return toks;
+}
+function parseSexps(toks){
+  let p=0;
+  function read(){
+    if(toks[p]==='('){
+      p++;
+      const items=[];
+      while(p<toks.length&&toks[p]!==')')items.push(read());
+      p++; return items;
+    }
+    return toks[p++];
+  }
+  const out=[];
+  while(p<toks.length)out.push(read());
+  return out;
+}
+function smt2ToLits(text){
+  const sexps=parseSexps(tokenizeSMT2(text));
+  const declared={}; // name->{arity,bool}
+  const lits=[];
+  function mkTerm(s){
+    if(!Array.isArray(s)) return {k:'v',n:s};
+    return {k:'f',n:s[0],a:s.slice(1).map(mkTerm)};
+  }
+  function mkLit(s){
+    if(!Array.isArray(s)) return null;
+    const h=s[0];
+    if(h==='=')     return {k:'eq', l:mkTerm(s[1]),r:mkTerm(s[2])};
+    if(h==='distinct') return {k:'neq',l:mkTerm(s[1]),r:mkTerm(s[2])};
+    if(h==='not'){
+      const inner=s[1];
+      if(Array.isArray(inner)&&inner[0]==='=')
+        return {k:'neq',l:mkTerm(inner[1]),r:mkTerm(inner[2])};
+      if(Array.isArray(inner))
+        return {k:'npred',n:inner[0],a:inner.slice(1).map(mkTerm)};
+      return {k:'npred',n:inner,a:[]};
+    }
+    // predicate application
+    return {k:'pred',n:h,a:s.slice(1).map(mkTerm)};
+  }
+  for(const sx of sexps){
+    if(!Array.isArray(sx)) continue;
+    if(sx[0]==='declare-fun') declared[sx[1]]={arity:(sx[2]||[]).length,bool:sx[3]==='Bool'};
+    if(sx[0]==='assert'){const l=mkLit(sx[1]);if(l)lits.push(l);}
+  }
+  // Fix: nullary functions (arity 0, sort S) → variables
+  function fixTerm(t){
+    if(t.k==='f'&&t.a.length===0&&declared[t.n]&&!declared[t.n].bool)
+      return {k:'v',n:t.n};
+    if(t.k==='f') return {k:'f',n:t.n,a:t.a.map(fixTerm)};
+    return t;
+  }
+  function fixLit(lit){
+    if(lit.k==='eq'||lit.k==='neq') return {...lit,l:fixTerm(lit.l),r:fixTerm(lit.r)};
+    if(lit.k==='pred'||lit.k==='npred') return {...lit,a:lit.a.map(fixTerm)};
+    return lit;
+  }
+  return lits.map(fixLit);
+}
+
+function litsToSMT2(lits, filename){
+  // Collect vars and funcs/preds
+  const vars=new Set(), funcs={};
+  function visitT(t){
+    if(t.k==='v'){vars.add(t.n);}
+    else{funcs[t.n]={arity:t.a.length,bool:false};t.a.forEach(visitT);}
+  }
+  lits.forEach(lit=>{
+    if(lit.k==='eq'||lit.k==='neq'){visitT(lit.l);visitT(lit.r);}
+    else if(lit.k==='pred'){funcs[lit.n]={arity:lit.a.length,bool:true};lit.a.forEach(visitT);}
+    else if(lit.k==='npred'){funcs[lit.n]={arity:lit.a.length,bool:true};lit.a.forEach(visitT);}
+  });
+  // Remove vars that are also funcs
+  Object.keys(funcs).forEach(n=>vars.delete(n));
+  function ts(t){ return t.k==='v'?t.n:`(${t.n} ${t.a.map(ts).join(' ')})`; }
+  const lines=['(set-logic QF_UF)','(declare-sort S 0)'];
+  Object.entries(funcs).forEach(([n,{arity,bool}])=>{
+    lines.push(`(declare-fun ${n} (${Array(arity).fill('S').join(' ')}) ${bool?'Bool':'S'})`);
+  });
+  vars.forEach(n=>lines.push(`(declare-fun ${n} () S)`));
+  lits.forEach(lit=>{
+    if(lit.k==='eq')    lines.push(`(assert (= ${ts(lit.l)} ${ts(lit.r)}))`);
+    if(lit.k==='neq')   lines.push(`(assert (distinct ${ts(lit.l)} ${ts(lit.r)}))`);
+    if(lit.k==='pred')  lines.push(`(assert (${[lit.n,...lit.a.map(ts)].join(' ')}))`);
+    if(lit.k==='npred') lines.push(`(assert (not (${[lit.n,...lit.a.map(ts)].join(' ')})))`);
+  });
+  lines.push('(check-sat)');
+  return lines.join('\n');
+}
+
+// Download the formula currently in the input box (original, before flattening)
+function downloadSMT2(){
+  let cube;
+  try{ cube=parseCube(document.getElementById('formulaInput').value.trim()); }catch(e){ alert('Parse error: '+e.message); return; }
+  if(!cube.length){ alert('No formula in input.'); return; }
+  const blob=new Blob([litsToSMT2(cube)],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='input.smt2';a.click();URL.revokeObjectURL(a.href);
+}
+
+// Download the current flat cube (result of flattening)
+function downloadFlatSMT2(){
+  if(!S.cube.length){ alert('No flattened cube to download.'); return; }
+  const blob=new Blob([litsToSMT2(S.cube)],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='flat.smt2';a.click();URL.revokeObjectURL(a.href);
+}
+
+function onFileUpload(evt){
+  const file=evt.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const lits=smt2ToLits(e.target.result);
+      if(!lits.length){alert('No assertions found in .smt2 file.');return;}
+      document.getElementById('formulaInput').value=lits.map(litStr).join(', ');
+      initializeCube();
+    }catch(err){alert('Failed to parse .smt2 file: '+err.message);}
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+}
+
+function downloadHistory(){
+  const lines = S.history.map((h,i)=>`Step ${i}: ${h.expl}\n  Cube: ${h.cube.map(litStr).join(', ')}`);
+  const blob = new Blob([lines.join('\n\n')],{type:'text/plain'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='flatten-history.txt'; a.click();
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Close modal on overlay click
+document.getElementById('applyOverlay').addEventListener('click', function(e){
+  if(e.target===this) closeModal('applyOverlay');
+});
+
+// ═══════════════════════════════════════
+// ON LOAD: check URL param ?f=
+// ═══════════════════════════════════════
+(function onLoad(){
+  const params = new URLSearchParams(window.location.search);
+  const f = params.get('f') || localStorage.getItem('flatten_formula');
+  if(f){
+    document.getElementById('formulaInput').value = decodeURIComponent(f);
+    localStorage.removeItem('flatten_formula');
+  }
+  renderAll();
+})();
+</script>
+</body>
+</html>

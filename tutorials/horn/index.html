@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horn Clause Solver Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#818cf8;
+  --green:#22c55e;--green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.3);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.12);--red-bd:rgba(239,68,68,.35);
+  --yellow:#f59e0b;--yellow-bg:rgba(245,158,11,.12);--yellow-bd:rgba(245,158,11,.35);
+  --teal:#14b8a6;--teal-bg:rgba(20,184,166,.12);--teal-bd:rgba(20,184,166,.3);
+  --lime:#84cc16;--lime-bg:rgba(132,204,22,.12);--lime-bd:rgba(132,204,22,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#0f172a 0%,#14261a 40%,#0f1e2a 100%);
+  padding:26px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr h1{
+  font-size:26px;font-weight:800;
+  background:linear-gradient(90deg,#86efac,#4ade80,#a3e635);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-badge{background:var(--lime-bg);border:1px solid var(--lime-bd);color:#bef264;font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px}
+
+.algo-bar{background:rgba(132,204,22,.07);border:1px solid rgba(132,204,22,.18);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--muted);line-height:1.8}
+.algo-bar b{color:var(--text)}
+.algo-bar code{background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:12px;color:#bef264}
+
+.wrap{max-width:1300px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+
+/* Input */
+.input-row{display:flex;gap:10px}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.finput{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Consolas',monospace;font-size:14px;padding:10px 14px;outline:none;transition:border-color .2s}
+.finput:focus{border-color:var(--accent)}
+.ihint{font-size:12px;color:var(--muted);margin-top:7px}
+.exrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:9px}
+.exrow span{font-size:12px;color:var(--muted)}
+.exbtn{padding:4px 11px;font-size:12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'Consolas',monospace}
+.exbtn:hover{border-color:var(--lime);color:#bef264}
+
+.btn{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:var(--accent2)}
+.btn-g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-g:hover{background:var(--border)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-lime{background:rgba(132,204,22,.2);color:#bef264;border:1px solid var(--lime-bd)}.btn-lime:hover{background:rgba(132,204,22,.3)}
+
+/* Layout */
+.main-grid{display:grid;grid-template-columns:260px 1fr;gap:16px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+
+/* Action buttons */
+.abtn{width:100%;padding:12px 14px;border-radius:10px;border:2px solid transparent;cursor:pointer;text-align:left;transition:all .2s;margin-bottom:8px;display:flex;flex-direction:column;gap:2px}
+.abtn .an{font-size:14px;font-weight:700}
+.abtn .ar{font-size:10px;font-family:'Consolas',monospace;opacity:.75;margin-top:1px}
+.abtn.not-app{opacity:.35}
+.abtn.not-app:hover{opacity:.58;cursor:help}
+.abtn:not(.not-app) .ac{display:block;font-size:10px;font-weight:700;margin-top:3px;opacity:.9}
+.abtn.not-app .ac{display:none}
+.abtn.not-app .aw{display:block;font-size:10px;margin-top:3px;opacity:.7}
+.abtn:not(.not-app) .aw{display:none}
+
+.ab-prop{background:var(--lime-bg);border-color:var(--lime-bd);color:#bef264}
+.ab-prop:not(.not-app):hover{background:rgba(132,204,22,.22);border-color:var(--lime)}
+.ab-sat{background:var(--green-bg);border-color:var(--green-bd);color:#86efac}
+.ab-sat:not(.not-app):hover{background:rgba(34,197,94,.2);border-color:var(--green)}
+.ab-unsat{background:var(--red-bg);border-color:var(--red-bd);color:#fca5a5}
+.ab-unsat:not(.not-app):hover{background:rgba(239,68,68,.2);border-color:var(--red)}
+
+/* Formula display */
+.formula-list{display:flex;flex-direction:column;gap:6px}
+.crow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid transparent;transition:all .3s}
+.crow.sat{background:var(--green-bg);border-color:var(--green-bd);opacity:.5}
+.crow.active{background:var(--surface2);border-color:var(--border)}
+.crow.unit{background:var(--lime-bg);border-color:var(--lime-bd)}
+.crow.conflict{background:var(--red-bg);border-color:var(--red-bd);animation:flash-red 1s infinite}
+.crow.empty-removed{background:var(--red-bg);border-color:var(--red-bd);opacity:.7}
+@keyframes flash-red{0%,100%{border-color:rgba(239,68,68,.35)}50%{border-color:#ef4444}}
+
+.cidx{font-size:11px;font-family:'Consolas',monospace;color:var(--muted);min-width:28px}
+.clits{display:flex;align-items:center;gap:5px;flex:1;flex-wrap:wrap}
+.lit{padding:2px 8px;border-radius:5px;font-family:'Consolas',monospace;font-size:13px;font-weight:600}
+.lt{background:var(--green-bg);color:#86efac}
+.lf{background:var(--red-bg);color:#fca5a5;text-decoration:line-through;opacity:.6}
+.lu{background:var(--surface2);color:var(--text)}
+.lunit{background:var(--lime-bg);color:#bef264;border:1px solid var(--lime-bd)}
+.or-d{color:var(--muted);font-size:12px}
+
+.cbadge{padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700}
+.b-sat{background:var(--green-bg);color:#86efac;border:1px solid var(--green-bd)}
+.b-unit{background:var(--lime-bg);color:#bef264;border:1px solid var(--lime-bd)}
+.b-active{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.b-conflict{background:var(--red-bg);color:#fca5a5;border:1px solid var(--red-bd)}
+
+/* Variable grid */
+.vgrid{display:flex;flex-wrap:wrap;gap:7px}
+.vchip{padding:4px 10px;border-radius:8px;font-size:12px;font-family:'Consolas',monospace;display:flex;align-items:center;gap:4px}
+.vt{background:var(--green-bg);border:1px solid var(--green-bd);color:#86efac}
+.vf{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.vu{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.vn{font-weight:700}
+.vv{opacity:.8}
+
+/* Hint box */
+.hint-box{font-size:13px;line-height:1.6;color:var(--text);padding:10px 0}
+
+/* Explanation */
+.expl-text{font-size:13px;line-height:1.65;color:var(--text);margin:6px 0}
+.expl-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-bottom:8px}
+.rule-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Consolas',monospace;font-size:12px;color:#a5b4fc;margin-top:8px;line-height:1.8}
+.cm{color:var(--muted)}
+
+/* History */
+.hist-list{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto}
+.hentry{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;font-size:12px}
+.hentry.hcur{background:var(--surface2);border:1px solid var(--border)}
+.hnum{min-width:22px;color:var(--muted);font-size:11px;font-family:'Consolas',monospace}
+.hbadge{font-size:11px;font-weight:700;min-width:90px}
+.hdetail{color:var(--muted);font-family:'Consolas',monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb-start{color:var(--muted)}
+.hb-prop{color:#bef264}
+.hb-sat{color:#86efac}
+.hb-unsat{color:#fca5a5}
+
+/* Precondition checker */
+.prec-card{padding:11px 14px;border-radius:9px;border:1px solid;display:flex;flex-direction:column;gap:5px}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:580px;width:95%;max-height:85vh;overflow-y:auto}
+.modal-t{font-size:18px;font-weight:700;margin-bottom:8px}
+.modal-d{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+
+/* Propagate picker */
+.prop-opts{display:flex;flex-direction:column;gap:8px}
+.prop-opt{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;text-align:left;transition:all .15s;width:100%}
+.prop-opt:hover{border-color:var(--lime);background:rgba(132,204,22,.06)}
+.prop-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.prop-var{font-size:15px;font-weight:700;color:#bef264;font-family:'Consolas',monospace}
+.prop-rows{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.prop-row{display:flex;gap:8px;align-items:flex-start}
+.prop-label{min-width:80px;font-weight:600;color:var(--muted);flex-shrink:0}
+.prop-val{color:var(--text);font-family:'Consolas',monospace;line-height:1.5}
+
+/* Result modal */
+.result-icon{font-size:52px;margin-bottom:12px}
+.result-title{font-size:26px;font-weight:800;margin-bottom:8px}
+.rt-sat{color:#86efac}
+.rt-unsat{color:#fca5a5}
+.result-desc{font-size:14px;color:var(--muted);margin-bottom:16px}
+.assign-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;font-family:'Consolas',monospace;font-size:13px;line-height:1.8;margin-bottom:16px;text-align:left}
+.modal-btns{display:flex;gap:10px;justify-content:center}
+
+/* Not-horn error */
+.horn-error{background:rgba(239,68,68,.14);border:2px solid var(--red-bd);border-radius:12px;padding:20px 24px;color:#fca5a5;font-size:15px;line-height:1.9;margin-top:12px}
+.horn-error .horn-error-title{font-size:19px;font-weight:800;color:#ef4444;display:block;margin-bottom:10px}
+.horn-error code{background:rgba(239,68,68,.18);padding:3px 8px;border-radius:4px;font-size:14px;display:inline-block;margin:2px 0}
+
+/* Clauses dimmed when empty clause detected */
+.crow.unsat-dim{opacity:.3;filter:grayscale(.5)}
+.crow.unsat-dim .lit{text-decoration:line-through}
+.crow.conflict{background:rgba(239,68,68,.22);border:2px solid #ef4444;animation:flash-red 0.8s infinite;transform:scale(1.02);z-index:1;position:relative}
+.crow.conflict .cidx{color:#fca5a5;font-weight:800}
+.crow.conflict .cbadge{font-size:12px;padding:4px 12px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>Horn Clause Solver Tutorial</h1>
+    <p>Linear-time satisfiability for Horn CNF formulas — step-by-step exploration</p>
+  </div>
+  <span class="hdr-badge">Horn SAT in O(n)</span>
+</div>
+
+<div class="wrap">
+
+  <!-- Algorithm summary -->
+  <div class="algo-bar">
+    <b>Horn clause</b>: a CNF clause with <b>at most one positive literal</b>.
+    &nbsp;·&nbsp;
+    Types: <code>fact</code> single positive <code>(p)</code> &nbsp;·&nbsp;
+    <code>rule</code> one positive + negatives <code>(-a ∨ -b ∨ c)</code> &nbsp;·&nbsp;
+    <code>goal</code> all negatives <code>(-a ∨ -b)</code>
+    <br>
+    <b>Algorithm</b>: while ∃ unit positive clause <code>(p)</code> →
+    set p=TRUE · remove satisfied clauses · simplify (remove ¬p) · check for empty clause → UNSAT.
+    When no more unit positives remain → <b>SAT</b>.
+  </div>
+
+  <!-- Input -->
+  <div class="card">
+    <div class="card-title">Formula Input (CNF)</div>
+    <div class="input-row">
+      <input id="fi" class="finput" placeholder="e.g.: p, -p | q, -q | r, -r"
+             value="p, -p | q, -q | r, -r">
+      <button class="btn btn-p" onclick="loadFormula()">Initialize</button>
+      <button class="btn btn-g" onclick="resetSolver()">Reset</button>
+    </div>
+    <div class="io-row">
+      <input type="file" id="cnfFileIn" accept=".cnf" style="display:none" onchange="onCNFFile(event)">
+      <button class="btn btn-g btn-sm" onclick="document.getElementById('cnfFileIn').click()">↑ Upload .cnf</button>
+      <button class="btn btn-g btn-sm" onclick="downloadCNF()">↓ Download .cnf</button>
+    </div>
+    <div id="hornError" style="display:none"></div>
+    <div class="ihint">Syntax: <code>|</code> between literals · <code>,</code> between clauses · <code>-</code> for negation</div>
+    <div class="exrow">
+      <span>Examples:</span>
+      <button class="exbtn" onclick="loadEx('chain')">Chain SAT</button>
+      <button class="exbtn" onclick="loadEx('unsat')">UNSAT</button>
+      <button class="exbtn" onclick="loadEx('facts')">Facts only</button>
+      <button class="exbtn" onclick="loadEx('rules')">Rules &amp; goals</button>
+      <button class="exbtn" onclick="loadEx('not_horn')">Not Horn (error)</button>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- LEFT: actions + hint -->
+    <div style="display:flex;flex-direction:column;gap:13px">
+
+      <div class="card">
+        <div class="card-title">Horn Solver Actions</div>
+
+        <button id="btn-prop" class="abtn ab-prop" onclick="tryAct('prop')">
+          <span class="an">Propagate</span>
+          <span class="ar">∃ unit positive clause (p)</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-sat" class="abtn ab-sat" onclick="tryAct('sat')">
+          <span class="an">Conclude SAT</span>
+          <span class="ar">No unit positive clause, no empty clause</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+        <button id="btn-unsat" class="abtn ab-unsat" onclick="tryAct('unsat')">
+          <span class="an">Conclude UNSAT</span>
+          <span class="ar">∃ empty clause</span>
+          <span class="ac">✓ Applicable</span>
+          <span class="aw">✗ Not applicable — click to see why</span>
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">What can I do?</div>
+        <div class="hint-box" id="hintBox">Load a Horn formula to begin.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: formula + variables -->
+    <div style="display:flex;flex-direction:column;gap:13px">
+
+      <!-- Formula -->
+      <div class="card">
+        <div class="card-title">
+          <span>Formula (F) &nbsp;<span id="statsLabel" style="color:var(--muted);font-size:10px"></span></span>
+          <span id="fBadge"></span>
+        </div>
+        <div id="formulaDisplay" class="formula-list">
+          <div style="color:var(--muted);font-style:italic;font-size:14px">Load a formula to see clauses.</div>
+        </div>
+      </div>
+
+      <!-- Variables -->
+      <div class="card">
+        <div class="card-title">Variable Assignments</div>
+        <div id="varGrid" class="vgrid"><div style="color:var(--muted);font-style:italic;font-size:13px">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Explanation -->
+  <div class="card">
+    <div class="card-title">Step Explanation</div>
+    <div id="explContent"><p class="expl-text">Apply an action to see a step-by-step explanation.</p></div>
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <div class="card-title">
+      <span>Step History</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-g btn-sm" onclick="undoStep()">← Undo</button>
+        <button class="btn btn-g btn-sm" onclick="autoSolve()">Auto-Solve →</button>
+      </div>
+    </div>
+    <div id="histTrack" class="hist-list"></div>
+    <button class="btn btn-g btn-sm" style="margin-top:10px;width:100%" onclick="downloadHistory()">↓ Download History</button>
+  </div>
+</div>
+
+<!-- Propagate Picker Modal -->
+<div class="overlay" id="propOv">
+  <div class="modal">
+    <div class="modal-t">Choose a Unit Clause to Propagate</div>
+    <div class="modal-d" id="propModalDesc"></div>
+    <div id="propOpts" class="prop-opts"></div>
+    <button class="btn btn-g" style="margin-top:14px;width:100%" onclick="closeProp()">Cancel</button>
+  </div>
+</div>
+
+<!-- Result Modal -->
+<div class="overlay" id="resultOv">
+  <div class="modal" style="text-align:center;max-width:520px">
+    <div class="result-icon" id="resIcon"></div>
+    <div class="result-title" id="resTitle"></div>
+    <div class="result-desc" id="resDesc"></div>
+    <div class="assign-box" id="resAssign"></div>
+    <div class="modal-btns">
+      <button class="btn btn-g" onclick="closeResult()">Continue</button>
+      <button class="btn btn-p" onclick="resetSolver();closeResult()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let S = {
+  formula:[],      // current active clauses [[int,...],...]  (mutates each step)
+  original:[],     // original clauses (for display reference)
+  varNames:{},     // id -> name
+  trueVars:[],     // variable ids set to TRUE so far
+  history:[],
+  step:0,
+  status:'idle',
+  lastExpl:''
+};
+
+// ── EXAMPLES ──────────────────────────────────────────────────────────────────
+const EX = {
+  chain:{
+    f:'p, -p | q, -q | r, -r | s',
+    d:'Chain SAT: fact p propagates to q, then r, then s. All clauses satisfied.'
+  },
+  unsat:{
+    f:'p, -p | q, -q',
+    d:'UNSAT: p forces q, then -q becomes empty clause — contradiction.'
+  },
+  facts:{
+    f:'a, b, c, -a | -b | d',
+    d:'Facts only: a, b, c are unit positives. Propagate each — rule -a|-b|d becomes satisfied.'
+  },
+  rules:{
+    f:'x, -x | y, -x | z, -y | -z | w, -w',
+    d:'Rules & goals: x is the only fact. Propagating cascades through rules to w, then -w is the goal clause — UNSAT.'
+  },
+  not_horn:{
+    f:'p | q, -p | r',
+    d:'Not a Horn formula: clause (p ∨ q) has two positive literals. Initialize will fail.'
+  }
+};
+
+// ── PARSER ────────────────────────────────────────────────────────────────────
+function parseFormula(input) {
+  const n2i={}, i2n={}; let nxt=1;
+  function vid(name){ if(!(name in n2i)){n2i[name]=nxt;i2n[nxt]=name;nxt++;} return n2i[name]; }
+  const raw = input.replace(/\bAND\b/gi,',').replace(/∧/g,',')
+    .split(/[,;&\n]+/).map(s=>s.trim()).filter(Boolean);
+  const formula=[];
+  for(const cs of raw){
+    const clean=cs.replace(/[()]/g,'').trim();
+    const hasPipe=/[|∨]|\bOR\b/i.test(clean);
+    const ls=hasPipe
+      ? clean.replace(/\bOR\b/gi,'|').replace(/∨/g,'|').split('|').map(s=>s.trim()).filter(Boolean)
+      : clean.split(/\s+/).filter(Boolean);
+    const clause=[];
+    for(const s of ls){
+      const neg=/^[¬!~\-]/.test(s);
+      const raw2=s.replace(/^[¬!~\-]+/,'').trim();
+      if(!raw2) continue;
+      if(/^\d+$/.test(raw2)){const n=parseInt(raw2);if(!n)continue;clause.push(neg?-vid('x'+n):vid('x'+n));}
+      else clause.push(neg?-vid(raw2):vid(raw2));
+    }
+    if(clause.length) formula.push(clause);
+  }
+  return {formula, varNames:i2n, numVars:nxt-1};
+}
+
+// ── HORN CHECK ────────────────────────────────────────────────────────────────
+function isHornClause(clause){ return clause.filter(l=>l>0).length <= 1; }
+function isHornFormula(formula){ return formula.every(isHornClause); }
+
+function findNonHornClauses(formula){
+  return formula.map((c,i)=>({clause:c,idx:i})).filter(({clause})=>!isHornClause(clause));
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fmt(lit){ const n=S.varNames[Math.abs(lit)]||('x'+Math.abs(lit)); return lit>0?n:'¬'+n; }
+function fmtC(c){ return '('+c.map(fmt).join(' ∨ ')+')'; }
+
+function findAllUnitPositives(){
+  // Unit positive clause: length 1 AND the single literal is positive
+  return S.formula.filter(c=>c.length===1&&c[0]>0);
+}
+
+function hasEmptyClause(){ return S.formula.some(c=>c.length===0); }
+
+function getApplicable(){
+  const units=findAllUnitPositives();
+  const empty=hasEmptyClause();
+  return {
+    prop:  units.length>0 && !empty,
+    sat:   units.length===0 && !empty,
+    unsat: empty
+  };
+}
+
+// ── SNAP / UNDO ───────────────────────────────────────────────────────────────
+function snap(action,detail){
+  S.history.push({
+    formula:S.formula.map(c=>[...c]),
+    trueVars:[...S.trueVars],
+    step:S.step, expl:S.lastExpl,
+    action:action||'', detail:detail||''
+  });
+  S.step++;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────────
+function doPropagate(lit){
+  if(lit===undefined){ const u=findAllUnitPositives(); if(!u.length) return false; lit=u[0][0]; }
+
+  const oldFormula=S.formula.map(c=>[...c]);
+
+  // Step 2: satisfied clauses (contain lit)
+  const satisfied=S.formula.filter(c=>c.includes(lit));
+  // Step 3: simplified clauses (contain -lit)
+  const toSimplify=S.formula.filter(c=>!c.includes(lit)&&c.includes(-lit));
+
+  const expl=`
+    <span class="expl-badge" style="background:rgba(132,204,22,.18);color:#bef264">Propagate</span>
+    <p class="expl-text">
+      Unit positive clause <b>${fmtC([lit])}</b> forces variable <b>${fmt(lit)}</b> = TRUE.<br>
+      <b>Step 2:</b> Remove ${satisfied.length} satisfied clause${satisfied.length===1?'':'s'} containing <b>${fmt(lit)}</b>:
+      ${satisfied.length?satisfied.map(fmtC).join(', '):'(none)'}.<br>
+      <b>Step 3:</b> Simplify ${toSimplify.length} clause${toSimplify.length===1?'':'s'} by removing <b>${fmt(-lit)}</b>:
+      ${toSimplify.length?toSimplify.map(c=>`${fmtC(c)} → ${fmtC(c.filter(l=>l!==-lit))}`).join(', '):'(none)'}.
+    </p>
+    <div class="rule-box">
+      Set <b>${fmt(lit)}</b> = TRUE<br>
+      Remove: ${satisfied.map(fmtC).join(', ')||'∅'}<br>
+      Simplify (remove ${fmt(-lit)}): ${toSimplify.map(fmtC).join(', ')||'∅'}<br>
+      <span class="cm">// After: check for empty clause</span>
+    </div>`;
+
+  snap('prop', fmt(lit)+'=T');
+  S.trueVars=[...S.trueVars, Math.abs(lit)];
+
+  // Apply: remove satisfied, simplify rest
+  S.formula = S.formula
+    .filter(c=>!c.includes(lit))
+    .map(c=>c.filter(l=>l!==-lit));
+
+  S.lastExpl=expl;
+  return true;
+}
+
+function doConcludeSAT(){
+  const units=findAllUnitPositives();
+  const empty=hasEmptyClause();
+  if(units.length>0||empty) return false;
+
+  // Build satisfying assignment: trueVars=TRUE, rest=FALSE
+  const allVars=new Set();
+  S.original.forEach(c=>c.forEach(l=>allVars.add(Math.abs(l))));
+
+  const expl=`
+    <span class="expl-badge" style="background:rgba(34,197,94,.18);color:#86efac">SAT</span>
+    <p class="expl-text">
+      No unit positive clause remains in F, and no empty clause.<br>
+      The algorithm terminates: <b>SATISFIABLE</b>.<br>
+      Variables set to TRUE: <b>${S.trueVars.length?S.trueVars.map(v=>S.varNames[v]).join(', '):'(none)'}</b>.<br>
+      All remaining unset variables can be set to FALSE — any remaining clauses are negative clauses (all-negative literals), satisfied when their variables are FALSE.
+    </p>
+    <div class="rule-box">
+      No unit positive clause in F, no empty clause<br>
+      <span class="cm">// → SATISFIABLE</span><br>
+      Assignment: ${[...allVars].map(v=>`${S.varNames[v]}=${S.trueVars.includes(v)?'T':'F'}`).join(', ')}
+    </div>`;
+
+  snap('sat','SAT'); S.lastExpl=expl; S.status='sat'; render(); showResult('sat'); return true;
+}
+
+function doConcludeUNSAT(){
+  if(!hasEmptyClause()) return false;
+  const emptyClauses=S.formula.filter(c=>c.length===0);
+
+  const expl=`
+    <span class="expl-badge" style="background:rgba(239,68,68,.18);color:#fca5a5">UNSAT</span>
+    <p class="expl-text">
+      An <b>empty clause</b> appeared after propagation — all its literals were removed.<br>
+      An empty clause is always FALSE (∅ = ⊥), making the formula <b>UNSATISFIABLE</b>.
+    </p>
+    <div class="rule-box">
+      ∃ empty clause (⊥) in F<br>
+      <span class="cm">// → UNSATISFIABLE</span>
+    </div>`;
+
+  snap('unsat','UNSAT — empty clause'); S.lastExpl=expl; S.status='unsat'; render(); showResult('unsat'); return true;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  if(!S.original.length) return;
+  const app=getApplicable();
+  setB('btn-prop',  app.prop);
+  setB('btn-sat',   app.sat);
+  setB('btn-unsat', app.unsat);
+  renderFormula();
+  renderVarGrid();
+  if(S.lastExpl) document.getElementById('explContent').innerHTML=S.lastExpl;
+  renderHint(app);
+  renderHistory();
+}
+
+function setB(id,en){
+  const el=document.getElementById(id);
+  el.disabled=false;
+  el.classList.toggle('not-app',!en);
+}
+
+function renderFormula(){
+  const el=document.getElementById('formulaDisplay');
+  el.innerHTML='';
+  const badge=document.getElementById('fBadge');
+  const stats=document.getElementById('statsLabel');
+
+  const app=getApplicable();
+  if(app.unsat) badge.innerHTML='<span class="cbadge b-conflict">⚡ Empty Clause</span>';
+  else if(app.sat&&S.status!=='running') badge.innerHTML='<span class="cbadge b-sat">SAT ✓</span>';
+  else badge.innerHTML='';
+
+  // Show original clauses with current status
+  // [].every() is vacuously true — so we must exclude empty clauses from the subset search,
+  // then allocate empty clauses to unmatched originals (those were simplified to empty, not satisfied).
+  const emptyCount=S.formula.filter(c=>c.length===0).length;
+  let emptiesAssigned=0;
+
+  S.original.forEach((origClause,i)=>{
+    // Find a non-empty current clause that is a subset of this original (simplified version)
+    const inCurrent=S.formula.find(c=>c.length>0&&c.every(l=>origClause.includes(l)));
+
+    const row=document.createElement('div');
+    let st, currentClause;
+
+    if(inCurrent!==undefined){
+      currentClause=inCurrent;
+      if(currentClause.length===1&&currentClause[0]>0) st='unit';
+      else st='active';
+    } else if(emptiesAssigned<emptyCount){
+      // This original was simplified down to an empty clause
+      currentClause=[];
+      st='conflict';
+      emptiesAssigned++;
+    } else {
+      // Removed (satisfied — contained a propagated literal)
+      currentClause=origClause;
+      st='sat';
+    }
+
+    row.className='crow '+st+(app.unsat&&st!=='conflict'?' unsat-dim':'');
+    const idx=document.createElement('span');
+    idx.className='cidx'; idx.textContent='C'+(i+1);
+    row.appendChild(idx);
+
+    const lits=document.createElement('div');
+    lits.className='clits';
+    if(st==='conflict'){
+      lits.innerHTML='<span style="color:#ef4444;font-family:Consolas,monospace;font-weight:800;font-size:16px">⊥ empty clause!</span>';
+    } else {
+      origClause.forEach((lit,j)=>{
+        const removedBySimplify = currentClause.length>0 && !currentClause.includes(lit) && st!=='sat';
+        const isUnit = st==='unit'&&currentClause.includes(lit);
+        const chip=document.createElement('span');
+        if(removedBySimplify){
+          chip.className='lit lf'; chip.textContent=fmt(lit);
+        } else if(isUnit){
+          chip.className='lit lunit'; chip.textContent=fmt(lit);
+        } else if(S.trueVars.includes(Math.abs(lit))&&lit>0){
+          chip.className='lit lt'; chip.textContent=fmt(lit);
+        } else {
+          chip.className='lit lu'; chip.textContent=fmt(lit);
+        }
+        lits.appendChild(chip);
+        if(j<origClause.length-1){const s=document.createElement('span');s.className='or-d';s.textContent='∨';lits.appendChild(s);}
+      });
+    }
+    row.appendChild(lits);
+
+    const sb=document.createElement('span');
+    const labels={sat:'Satisfied',unit:'Unit ✓',active:'Active',conflict:'Empty!'};
+    const bclasses={sat:'b-sat',unit:'b-unit',active:'b-active',conflict:'b-conflict'};
+    sb.className='cbadge '+(bclasses[st]||'b-active');
+    sb.textContent=labels[st]||st;
+    row.appendChild(sb);
+    el.appendChild(row);
+  });
+
+  const total=S.original.length;
+  const satisfied=total-S.formula.length;
+  stats.textContent=`${satisfied}/${total} satisfied`;
+}
+
+function renderVarGrid(){
+  const el=document.getElementById('varGrid');
+  el.innerHTML='';
+  const seen=new Set();
+  for(const c of S.original) for(const l of c){
+    const v=Math.abs(l); if(seen.has(v)) continue; seen.add(v);
+    const isT=S.trueVars.includes(v);
+    const chip=document.createElement('span');
+    chip.className='vchip '+(isT?'vt':'vu');
+    chip.innerHTML=`<span class="vn">${S.varNames[v]}</span>=<span class="vv">${isT?'TRUE':'?'}</span>`;
+    el.appendChild(chip);
+  }
+}
+
+function renderHint(app){
+  const el=document.getElementById('hintBox');
+  if(S.status==='sat'){el.innerHTML='✅ <b>SATISFIABLE</b> — no more unit positive clauses!';return;}
+  if(S.status==='unsat'){el.innerHTML='❌ <b>UNSATISFIABLE</b> — empty clause detected.';return;}
+  if(app.unsat){
+    el.innerHTML='❌ <b>Empty clause</b> detected — apply <b>Conclude UNSAT</b>.';
+  } else if(app.prop){
+    const units=findAllUnitPositives();
+    el.innerHTML=`💡 <b>${units.length} unit positive clause${units.length===1?'':'s'}</b> available. Apply <b>Propagate</b> to set a variable TRUE.`;
+  } else if(app.sat){
+    el.innerHTML='✅ No unit positive clauses remain, no conflicts. Apply <b>Conclude SAT</b>.';
+  } else {
+    el.innerHTML='No action applicable.';
+  }
+}
+
+const H_LABELS={prop:'Propagate',sat:'SAT',unsat:'UNSAT'};
+function renderHistory(){
+  const el=document.getElementById('histTrack');
+  el.innerHTML='';
+  const init=document.createElement('div');
+  init.className='hentry'+(S.history.length===0?' hcur':'');
+  init.innerHTML='<span class="hnum">0</span><span class="hbadge hb-start">Start</span><span class="hdetail">formula loaded</span>';
+  el.appendChild(init);
+  S.history.forEach((h,i)=>{
+    const isCur=(i===S.history.length-1);
+    const row=document.createElement('div');
+    row.className='hentry'+(isCur?' hcur':'');
+    const lbl=H_LABELS[h.action]||h.action||'?';
+    row.innerHTML=`<span class="hnum">${h.step+1}</span><span class="hbadge hb-${h.action}">${lbl}</span><span class="hdetail">${h.detail}</span>`;
+    el.appendChild(row);
+  });
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── PRECONDITION CHECKER ──────────────────────────────────────────────────────
+function getPreconditions(type){
+  const units=findAllUnitPositives();
+  const empty=hasEmptyClause();
+  const cond=(label,met,whenMet,whenNot)=>({label,met,detail:met?whenMet:whenNot});
+
+  if(type==='prop') return [
+    cond('No empty clause (no contradiction yet)',
+      !empty, 'No empty clause ✓',
+      'Empty clause exists — apply Conclude UNSAT first'),
+    cond('∃ unit positive clause: a clause of the form (p) with p positive',
+      units.length>0,
+      `Unit positive clause${units.length===1?'':'s'}: ${units.map(fmtC).join(', ')}`,
+      'No clause has exactly one literal that is positive — algorithm terminates (apply Conclude SAT)')
+  ];
+
+  if(type==='sat') return [
+    cond('No empty clause in F',
+      !empty, 'No empty clause ✓',
+      'Empty clause exists — apply Conclude UNSAT'),
+    cond('No unit positive clause in F (while loop has terminated)',
+      units.length===0,
+      'No unit positive clauses remain ✓',
+      `${units.length} unit positive clause${units.length===1?'':'s'} still exist: ${units.map(fmtC).join(', ')} — propagate first`)
+  ];
+
+  if(type==='unsat') return [
+    cond('∃ empty clause (⊥) in F',
+      empty, 'Empty clause found ✓',
+      'No empty clause — formula not yet proven UNSAT')
+  ];
+
+  return [];
+}
+
+function showPrecondsFail(type){
+  const names={prop:'Propagate',sat:'Conclude SAT',unsat:'Conclude UNSAT'};
+  const colors={prop:'#bef264',sat:'#86efac',unsat:'#fca5a5'};
+  const preconds=getPreconditions(type);
+  let html=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:18px">🚫</span>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">Cannot apply: <span style="color:${colors[type]}">${names[type]}</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Precondition check</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px">`;
+  for(const pc of preconds){
+    html+=`
+      <div style="padding:11px 14px;border-radius:9px;border:1px solid ${pc.met?'rgba(34,197,94,.28)':'rgba(239,68,68,.35)'};background:${pc.met?'rgba(34,197,94,.07)':'rgba(239,68,68,.08)'}">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:5px">
+          <span style="font-size:15px;font-weight:800;color:${pc.met?'#86efac':'#fca5a5'}">${pc.met?'✓':'✗'}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text)">${pc.label}</span>
+        </div>
+        <div style="font-size:12px;color:${pc.met?'#6ee7b7':'#fca5a5'};margin-left:24px;line-height:1.5">${pc.detail}</div>
+      </div>`;
+  }
+  html+='</div>';
+  const el=document.getElementById('explContent');
+  el.innerHTML=html;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── UI HANDLERS ───────────────────────────────────────────────────────────────
+function tryAct(type){
+  if(S.status!=='running') return;
+  const app=getApplicable();
+  const canApply={prop:app.prop,sat:app.sat,unsat:app.unsat}[type];
+  if(!canApply){ showPrecondsFail(type); return; }
+  if(type==='prop'){ showPropModal(); return; }
+  act(type);
+}
+
+function act(type){
+  if(S.status!=='running') return;
+  let ok=false;
+  if(type==='prop')  ok=doPropagate();
+  else if(type==='sat')   ok=doConcludeSAT();
+  else if(type==='unsat') ok=doConcludeUNSAT();
+  if(ok&&type!=='sat'&&type!=='unsat'){ render(); }
+}
+
+function showPropModal(){
+  if(S.status!=='running') return;
+  const units=findAllUnitPositives();
+  if(!units.length) return;
+  document.getElementById('propModalDesc').innerHTML=
+    `There ${units.length===1?'is':'are'} <b>${units.length}</b> unit positive clause${units.length===1?'':'s'}. Choose which variable to set TRUE:`;
+  const opts=document.getElementById('propOpts');
+  opts.innerHTML='';
+  units.forEach(clause=>{
+    const lit=clause[0];
+    const vname=S.varNames[Math.abs(lit)]||('x'+Math.abs(lit));
+    // Preview effects
+    const satisfied=S.formula.filter(c=>c.includes(lit));
+    const simplified=S.formula.filter(c=>!c.includes(lit)&&c.includes(-lit));
+    const btn=document.createElement('button');
+    btn.className='prop-opt';
+    btn.innerHTML=`
+      <div class="prop-hdr">
+        <span class="prop-var">${vname} = TRUE</span>
+        <span style="font-size:11px;color:var(--muted)">from clause ${fmtC(clause)}</span>
+      </div>
+      <div class="prop-rows">
+        <div class="prop-row">
+          <span class="prop-label">Satisfies:</span>
+          <span class="prop-val">${satisfied.length?satisfied.map(fmtC).join(', '):'(none)'}</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Simplifies:</span>
+          <span class="prop-val">${simplified.length?simplified.map(c=>`${fmtC(c)} (remove ${fmt(-lit)})`).join(', '):'(none)'}</span>
+        </div>
+        ${simplified.some(c=>c.filter(l=>l!==-lit).length===0)?
+          `<div class="prop-row"><span class="prop-label" style="color:#fca5a5">⚠ Warning:</span><span class="prop-val" style="color:#fca5a5">Will create empty clause → UNSAT</span></div>`
+          :''}
+      </div>`;
+    btn.onclick=()=>{ closeProp(); doPropagate(lit); render(); };
+    opts.appendChild(btn);
+  });
+  document.getElementById('propOv').classList.add('show');
+}
+function closeProp(){ document.getElementById('propOv').classList.remove('show'); }
+
+function showResult(type){
+  document.getElementById('resIcon').textContent=type==='sat'?'🎉':'💥';
+  document.getElementById('resTitle').textContent=type==='sat'?'SATISFIABLE':'UNSATISFIABLE';
+  document.getElementById('resTitle').className='result-title rt-'+type;
+  document.getElementById('resDesc').textContent=type==='sat'
+    ?'No unit positive clauses remain and no empty clause.':'An empty clause was produced during propagation.';
+  if(type==='sat'){
+    const seen=new Set(), lines=[];
+    for(const c of S.original) for(const l of c){
+      const v=Math.abs(l); if(seen.has(v)) continue; seen.add(v);
+      const val=S.trueVars.includes(v)?'TRUE':'FALSE';
+      lines.push(`<span style="color:${val==='TRUE'?'#86efac':'#fca5a5'}">${S.varNames[v]} = ${val}</span>`);
+    }
+    document.getElementById('resAssign').innerHTML=lines.join('<br>');
+  } else {
+    document.getElementById('resAssign').textContent='No satisfying assignment exists.';
+  }
+  document.getElementById('resultOv').classList.add('show');
+}
+function closeResult(){ document.getElementById('resultOv').classList.remove('show'); }
+
+// ── CNF UPLOAD / DOWNLOAD / HISTORY ──────────────────────────────────────────
+function parseCNF(text){
+  const clauses=[];
+  for(const line of text.split('\n')){
+    const t=line.trim();
+    if(!t||t[0]==='c'||t[0]==='p'||t[0]==='%') continue;
+    const lits=[];
+    for(const tok of t.split(/\s+/)){const n=parseInt(tok);if(isNaN(n)||n===0)break;lits.push(n>0?'x'+n:'-x'+Math.abs(n));}
+    if(lits.length) clauses.push(lits.join(' | '));
+  }
+  return clauses.join(', ');
+}
+
+function onCNFFile(evt){
+  const file=evt.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const formula=parseCNF(e.target.result);
+    if(!formula){alert('No valid clauses found in CNF file.');return;}
+    document.getElementById('fi').value=formula; loadFormula();
+  };
+  reader.readAsText(file); evt.target.value='';
+}
+
+function downloadCNF(){
+  let formula=S.original, varNames=S.varNames;
+  if(!formula.length){
+    const txt=document.getElementById('fi').value.trim();
+    if(!txt){alert('No formula to download.');return;}
+    try{const p=parseFormula(txt);formula=p.formula;varNames=p.varNames;}catch(e){alert('Parse error: '+e.message);return;}
+  }
+  const allIds=[...new Set(formula.flat().map(l=>Math.abs(l)))].sort((a,b)=>a-b);
+  const numVars=allIds.length?Math.max(...allIds):0;
+  const lines=[];
+  for(const id of allIds){const name=varNames[id]||('x'+id);if(name!=='x'+id)lines.push('c '+id+' '+name);}
+  lines.push('p cnf '+numVars+' '+formula.length);
+  for(const c of formula) lines.push(c.join(' ')+' 0');
+  const blob=new Blob([lines.join('\n')+'\n'],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='formula.cnf';a.click();URL.revokeObjectURL(a.href);
+}
+
+function downloadHistory(){
+  if(!S.original.length){alert('No formula loaded.');return;}
+  const vn=v=>S.varNames[Math.abs(v)]||('x'+Math.abs(v));
+  const fl=l=>(l>0?'':'-')+vn(l);
+  const formulaStr=S.original.map(c=>c.map(fl).join(' ∨ ')).join(', ');
+  const LABS={prop:'Propagate',sat:'SAT',unsat:'UNSAT'};
+  const lines=['=== Horn Clause Solver History ===','Formula: '+formulaStr,''];
+  lines.push('Step 0 | Start');
+  lines.push('  True vars = {} | Remaining clauses = '+S.original.length);
+  lines.push('');
+  S.history.forEach((h,i)=>{
+    const next=(i+1<S.history.length)?S.history[i+1]:S;
+    lines.push('Step '+(i+1)+' | '+(LABS[h.action]||h.action)+' | '+h.detail);
+    lines.push('  True vars = {'+next.trueVars.map(v=>S.varNames[v]).join(', ')+'} | Remaining = '+next.formula.length+' clauses');
+    lines.push('');
+  });
+  if(S.status==='sat') lines.push('Result: SATISFIABLE');
+  else if(S.status==='unsat') lines.push('Result: UNSATISFIABLE');
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='horn_history.txt';a.click();URL.revokeObjectURL(a.href);
+}
+
+// ── LOAD / RESET / UNDO / AUTO ────────────────────────────────────────────────
+function loadFormula(){
+  const txt=document.getElementById('fi').value.trim(); if(!txt) return;
+  const errEl=document.getElementById('hornError');
+  errEl.style.display='none'; errEl.innerHTML='';
+  try{
+    const p=parseFormula(txt);
+    if(!p.formula.length){alert('No valid clauses found.');return;}
+
+    // Horn check
+    if(!isHornFormula(p.formula)){
+      const bad=findNonHornClauses(p.formula);
+      errEl.innerHTML=`<span class="horn-error-title">⛔ Not a Horn Formula!</span>`+
+        `The following clause${bad.length===1?'':'s'} violate the Horn property — they contain <b>more than one positive literal</b>:<br><br>`+
+        bad.map(({clause,idx})=>{
+          const pos=clause.filter(l=>l>0);
+          return `<code>C${idx+1}: ${clause.map(l=>{
+            const n=p.varNames[Math.abs(l)]||('x'+Math.abs(l));
+            const name=l>0?n:'¬'+n;
+            return l>0?`<b style="color:#ef4444;font-size:15px">${name}</b>`:name;
+          }).join(' ∨ ')}</code> &nbsp;— positive literals: <b style="color:#ef4444">${pos.map(l=>p.varNames[l]||('x'+l)).join(', ')}</b>`;
+        }).join('<br>');
+      errEl.style.display='block';
+      ['btn-prop','btn-sat','btn-unsat'].forEach(id=>document.getElementById(id).classList.add('not-app'));
+      return;
+    }
+
+    ['btn-prop','btn-sat','btn-unsat'].forEach(id=>document.getElementById(id).classList.remove('not-app'));
+    S={formula:p.formula.map(c=>[...c]),original:p.formula.map(c=>[...c]),
+       varNames:p.varNames,trueVars:[],history:[],step:0,status:'running',lastExpl:''};
+    render();
+    document.getElementById('explContent').innerHTML='<p class="expl-text">Horn formula loaded! Use <b>Propagate</b> to set unit positive variables to TRUE, step by step.</p>';
+  }catch(e){alert('Parse error: '+e.message);}
+}
+
+function resetSolver(){
+  if(!S.original.length) return;
+  S.formula=S.original.map(c=>[...c]);
+  S.trueVars=[];S.history=[];S.step=0;S.status='running';S.lastExpl='';
+  render();
+  document.getElementById('explContent').innerHTML='<p class="expl-text">Reset to initial state.</p>';
+}
+
+function undoStep(){
+  if(!S.history.length) return;
+  const prev=S.history.pop();
+  S.formula=prev.formula;S.trueVars=prev.trueVars;
+  S.step=prev.step;S.lastExpl=prev.expl;S.status='running';
+  render();
+  if(S.lastExpl) document.getElementById('explContent').innerHTML=S.lastExpl;
+}
+
+function autoSolve(){
+  if(S.status!=='running') return;
+  for(let i=0;i<300&&S.status==='running';i++){
+    const app=getApplicable();
+    if(app.unsat){ doConcludeUNSAT(); break; }
+    else if(app.prop){ doPropagate(); render(); }
+    else if(app.sat){ doConcludeSAT(); break; }
+    else break;
+  }
+  render();
+}
+
+function loadEx(name){
+  const ex=EX[name];
+  document.getElementById('fi').value=ex.f;
+  document.getElementById('hornError').style.display='none';
+  loadFormula();
+  if(S.status==='running')
+    document.getElementById('explContent').innerHTML=`<p class="expl-text"><b>Example:</b> ${ex.d}</p>`;
+}
+
+document.getElementById('propOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeProp();});
+document.getElementById('resultOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeResult();});
+document.getElementById('fi').addEventListener('keydown',e=>{if(e.key==='Enter')loadFormula();});
+
+loadEx('chain');
+</script>
+</body>
+</html>

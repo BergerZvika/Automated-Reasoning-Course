@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bit Blasting — Interactive Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --blue:#3b82f6;--blue2:#60a5fa;
+  --violet:#8b5cf6;--violet2:#a78bfa;
+  --green:#22c55e;--green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.35);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.12);--red-bd:rgba(239,68,68,.35);
+  --orange:#f97316;--orange2:#fb923c;--amber:#f59e0b;--amber2:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#431407 0%,#9a3412 40%,#c2410c 70%,#431407 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#fed7aa,#fdba74,#fb923c);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);
+  color:var(--orange2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+
+.wrap{max-width:1500px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+  border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-orange{background:linear-gradient(135deg,var(--orange),#9a3412);color:#fff}
+.btn-orange:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--orange);color:var(--orange2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s
+}
+.formula-input:focus{border-color:var(--orange)}
+.width-sel{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);
+  font-size:13px;padding:8px 12px;outline:none;cursor:pointer}
+.input-row{display:flex;gap:10px;align-items:stretch}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700}
+.badge-orange{background:rgba(249,115,22,.2);color:var(--orange2);border:1px solid rgba(249,115,22,.3)}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue2);border:1px solid rgba(59,130,246,.3)}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.badge-red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+.badge-amber{background:rgba(245,158,11,.15);color:var(--amber2);border:1px solid rgba(245,158,11,.3)}
+.badge-violet{background:rgba(139,92,246,.2);color:var(--violet2);border:1px solid rgba(139,92,246,.3)}
+
+/* Algorithm flow */
+.flow-step{border:2px solid var(--border);border-radius:10px;padding:9px 12px;
+  font-size:11px;font-weight:600;text-align:center;transition:all .3s;color:var(--muted);line-height:1.4}
+.flow-step.active{border-color:var(--orange);background:rgba(249,115,22,.15);color:var(--orange2)}
+.flow-step.done{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.07);color:var(--green)}
+.flow-arrow{text-align:center;color:var(--border);font-size:16px;margin:3px 0;line-height:1}
+
+/* Constraint table */
+.ct-table{display:flex;flex-direction:column;gap:4px}
+.ct-row{display:grid;grid-template-columns:80px 120px 1fr;gap:10px;
+  padding:8px 10px;border-radius:7px;border:1px solid transparent;transition:all .2s;align-items:start}
+.ct-row.done{border-color:rgba(249,115,22,.18);background:rgba(249,115,22,.04)}
+.ct-row.active{border-color:var(--orange);background:rgba(249,115,22,.12)}
+.ct-phase{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);padding-top:1px}
+.ct-phase.ph-skel{color:var(--blue2)}
+.ct-phase.ph-vars{color:var(--amber2)}
+.ct-phase.ph-atom{color:var(--violet2)}
+.ct-phase.ph-term{color:var(--orange2)}
+.ct-phase.ph-shift{color:#34d399}
+.ct-label{font-family:'Consolas',monospace;font-size:12px;color:var(--text);padding-top:1px;font-weight:600}
+.ct-formula{font-family:'Consolas','Courier New',monospace;font-size:12px;white-space:pre;line-height:1.55;color:var(--text)}
+
+/* Info panel */
+.info-section{margin-bottom:12px}
+.info-section-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.info-content{font-family:'Consolas','Courier New',monospace;font-size:12px;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;padding:8px 11px;color:var(--text);
+  white-space:pre-wrap;line-height:1.55}
+.info-text{font-size:12px;color:var(--muted);line-height:1.7}
+.info-text b{color:var(--text)}
+.info-text code{background:var(--surface2);padding:1px 4px;border-radius:3px;
+  font-family:'Consolas',monospace;font-size:11px;color:var(--orange2)}
+
+/* Bit variable table */
+.bv-table{border-collapse:collapse;width:100%;font-size:12px;font-family:'Consolas',monospace}
+.bv-table th{background:var(--surface2);padding:5px 10px;text-align:left;font-size:10px;
+  font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border)}
+.bv-table td{padding:4px 10px;border:1px solid var(--border);color:var(--text)}
+.bv-table tr.active-row td{background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.35)}
+
+/* Formula B display */
+.b-display{font-family:'Consolas',monospace;font-size:12px;background:var(--bg);
+  border:1px solid var(--border);border-radius:8px;padding:12px;white-space:pre-wrap;
+  line-height:1.6;color:var(--text);max-height:280px;overflow-y:auto}
+
+/* Controls */
+.ctrl-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Step history */
+.hist-list{display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto}
+.hist-item{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 11px;font-size:12px}
+.hist-item .h-step{font-size:10px;color:var(--muted);margin-bottom:2px}
+.hist-item .h-text{font-family:'Consolas',monospace;font-size:11px;line-height:1.4;color:var(--text)}
+.hist-item.h-or{border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.06)}
+.hist-item.h-bl{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.06)}
+.hist-item.h-vl{border-color:rgba(139,92,246,.3);background:rgba(139,92,246,.06)}
+.hist-item.h-am{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.06)}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>Bit Blasting (BV-Flattening)</h1>
+    <p>Reduce bit-vector arithmetic (QF_BV) to propositional logic — one Boolean variable per bit</p>
+  </div>
+  <span class="hdr-badge">QF_BV → SAT</span>
+</div>
+
+<div class="wrap">
+
+<!-- Input -->
+<div class="card">
+  <div class="card-title">Formula Input</div>
+  <div class="input-row">
+    <input class="formula-input" id="formulaInput" placeholder="e.g.  x + y = ~z && z & x = bv0001"
+           onkeydown="if(event.key==='Enter')runBB()">
+    <select class="width-sel" id="widthSel" title="Bit-width">
+      <option value="2">2-bit</option>
+      <option value="3">3-bit</option>
+      <option value="4" selected>4-bit</option>
+      <option value="8">8-bit</option>
+    </select>
+    <button class="btn btn-orange" onclick="runBB()">Run ▶</button>
+  </div>
+  <div class="io-row" id="exampleBtns"></div>
+  <div class="input-hint">
+    Propositional: <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">&amp;&amp;</code>
+    <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">||</code>
+    <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">!</code>&nbsp;&nbsp;
+    BV-ops: <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">+ - * &amp; | ^ ~</code>&nbsp;&nbsp;
+    Predicates: <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">= !=</code>&nbsp;&nbsp;
+    Constants: <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">bv0001</code> (binary, MSB first)
+    or decimal <code style="font-family:Consolas;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">1</code>
+  </div>
+</div>
+
+<!-- 3-column grid -->
+<div style="display:grid;grid-template-columns:180px 1fr 370px;gap:18px;align-items:start">
+
+  <!-- Col 1: Algorithm flow -->
+  <div class="card">
+    <div class="card-title">BV-Flattening</div>
+    <div class="flow-step" id="fs-input">φ Input</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-skel">Propositional<br>Skeleton e(φ)</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-vars">Bit Variables<br>e(t)ᵢ per term</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-atoms">BV-Constraint<br>for each atom</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-terms">BV-Constraint<br>for each term</div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step" id="fs-done">Return B</div>
+  </div>
+
+  <!-- Col 2: Constraint table -->
+  <div class="card">
+    <div class="card-title">
+      <span>Constraint Table — B grows here</span>
+      <span id="ctBadge"></span>
+    </div>
+    <div class="ct-table" id="ctTable">
+      <div style="color:var(--muted);font-size:12px">Run a formula to see the bit-blasting steps.</div>
+    </div>
+  </div>
+
+  <!-- Col 3: Info panel -->
+  <div class="card" id="infoCard" style="position:sticky;top:18px">
+    <div class="card-title">
+      <span id="infoTitle">Explanation</span>
+      <span id="infoBadge"></span>
+    </div>
+    <div id="infoBody">
+      <p class="info-text">Enter a formula and click <b>Run ▶</b> to start,<br>then step through the BV-Flattening algorithm.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav controls -->
+<div class="card" id="ctrlCard" style="display:none">
+  <div class="ctrl-row">
+    <button class="btn btn-ghost btn-sm" id="prevBtn" onclick="prevStep()" disabled>← Prev</button>
+    <button class="btn btn-ghost btn-sm" id="autoBtn" onclick="toggleAuto()">▶ Auto</button>
+    <button class="btn btn-orange btn-sm" id="nextBtn" onclick="nextStep()" disabled>Next →</button>
+    <span id="stepCounter" style="font-size:12px;color:var(--muted);margin-left:8px"></span>
+  </div>
+</div>
+
+<!-- Step history -->
+<div class="card" id="histCard" style="display:none">
+  <div class="card-title">
+    <span>Step History</span>
+    <span style="display:flex;align-items:center;gap:10px">
+      <span id="resultBadge" style="display:none"></span>
+      <button class="btn btn-ghost btn-sm" onclick="downloadHistory()">↓ history.txt</button>
+    </span>
+  </div>
+  <div class="hist-list" id="histList"></div>
+</div>
+
+</div><!-- wrap -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// UNICODE HELPERS
+// ═══════════════════════════════════════════════════════════════════
+const SUBS=['₀','₁','₂','₃','₄','₅','₆','₇','₈','₉'];
+const SUPS=['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'];
+function sub(n){return String(n).split('').map(c=>SUBS[+c]||c).join('');}
+function sup(n){return String(n).split('').map(c=>SUPS[+c]||c).join('');}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ═══════════════════════════════════════════════════════════════════
+// TOKENIZER
+// ═══════════════════════════════════════════════════════════════════
+function tokenize(src){
+  const toks=[]; let i=0;
+  while(i<src.length){
+    if(/\s/.test(src[i])){i++;continue;}
+    if(src.slice(i,i+2)==='&&'){toks.push({t:'&&'});i+=2;continue;}
+    if(src.slice(i,i+2)==='||'){toks.push({t:'||'});i+=2;continue;}
+    if(src.slice(i,i+2)==='!='){toks.push({t:'!='});i+=2;continue;}
+    if(src.slice(i,i+2)==='->'){toks.push({t:'->'});i+=2;continue;}
+    if('!~&|^+-*=()<>,'.includes(src[i])){toks.push({t:src[i]});i++;continue;}
+    if(/[A-Za-z_]/.test(src[i])){
+      let j=i;while(j<src.length&&/[A-Za-z0-9_]/.test(src[j]))j++;
+      const word=src.slice(i,j);
+      if(word.startsWith('bv')&&/^[01]+$/.test(word.slice(2)))toks.push({t:'BVCONST',v:word});
+      else toks.push({t:'ID',v:word});
+      i=j;continue;
+    }
+    if(/[0-9]/.test(src[i])){
+      let j=i;while(j<src.length&&/[0-9]/.test(src[j]))j++;
+      toks.push({t:'NUM',v:parseInt(src.slice(i,j))});i=j;continue;
+    }
+    throw new Error('Unknown character: '+src[i]);
+  }
+  toks.push({t:'EOF'});
+  return toks;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PARSER  (recursive descent)
+// ═══════════════════════════════════════════════════════════════════
+let _toks,_ti;
+function peek(){return _toks[_ti];}
+function next(){return _toks[_ti++];}
+function expect(t){const tk=next();if(tk.t!==t)throw new Error('Expected '+t+' got '+tk.t);return tk;}
+
+// Formula := Or
+function parseFormula(src){
+  _toks=tokenize(src);_ti=0;
+  const a=parseOr();
+  if(peek().t!=='EOF')throw new Error('Unexpected token: '+peek().t);
+  return a;
+}
+function parseOr(){
+  let l=parseAnd();
+  while(peek().t==='||'){next();l={type:'prop_or',children:[l,parseAnd()]};}
+  return l;
+}
+function parseAnd(){
+  let l=parseNot();
+  while(peek().t==='&&'){next();l={type:'prop_and',children:[l,parseNot()]};}
+  return l;
+}
+function parseNot(){
+  if(peek().t==='!'){next();return{type:'prop_not',child:parseNot()};}
+  return parseAtomWrapper();
+}
+// BV atom: BVExpr = BVExpr  |  BVExpr != BVExpr
+function parseAtomWrapper(){
+  if(peek().t==='('){
+    // peek ahead: if this starts with '(' that contains a prop formula...
+    // We try to parse as BV atom; if no = follows, treat as prop group
+    const saved=_ti;
+    try{
+      const atom=parseAtomDirect();
+      return{type:'atom',atom};
+    }catch(e){
+      _ti=saved;
+      next(); // consume '('
+      const inner=parseOr();
+      expect(')');
+      return inner;
+    }
+  }
+  return{type:'atom',atom:parseAtomDirect()};
+}
+function parseAtomDirect(){
+  const l=parseBVExpr();
+  if(peek().t==='='){next();return{type:'eq',left:l,right:parseBVExpr()};}
+  if(peek().t==='!='){next();return{type:'neq',left:l,right:parseBVExpr()};}
+  throw new Error('Expected = or != in atom');
+}
+// BV expression precedence (low to high): | ^ & +- * ~ primary
+function parseBVExpr(){return parseBVBitor();}
+function parseBVBitor(){
+  let l=parseBVBitxor();
+  while(peek().t==='|'){next();l={type:'bvor',left:l,right:parseBVBitxor()};}
+  return l;
+}
+function parseBVBitxor(){
+  let l=parseBVBitand();
+  while(peek().t==='^'){next();l={type:'bvxor',left:l,right:parseBVBitand()};}
+  return l;
+}
+function parseBVBitand(){
+  let l=parseBVAdd();
+  while(peek().t==='&'){next();l={type:'bvand',left:l,right:parseBVAdd()};}
+  return l;
+}
+function parseBVAdd(){
+  let l=parseBVMul();
+  while(peek().t==='+'||peek().t==='-'){
+    const op=next().t;
+    l=op==='+'?{type:'bvadd',left:l,right:parseBVMul()}:{type:'bvsub',left:l,right:parseBVMul()};
+  }
+  return l;
+}
+function parseBVMul(){
+  let l=parseBVUnary();
+  while(peek().t==='*'){next();l={type:'bvmul',left:l,right:parseBVUnary()};}
+  return l;
+}
+function parseBVUnary(){
+  if(peek().t==='~'){next();return{type:'bvnot',arg:parseBVUnary()};}
+  return parseBVPrimary();
+}
+function parseBVPrimary(){
+  const tk=peek();
+  if(tk.t==='('){next();const e=parseBVExpr();expect(')');return e;}
+  if(tk.t==='ID'){next();return{type:'var',name:tk.v};}
+  if(tk.t==='BVCONST'){next();return{type:'bvconst',str:tk.v};}
+  if(tk.t==='NUM'){next();return{type:'bvnum',val:tk.v};}
+  throw new Error('Expected BV term, got '+tk.t);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TERM / ATOM COLLECTION
+// ═══════════════════════════════════════════════════════════════════
+function collectVarNames(ast){
+  const vars=new Set();
+  function walk(node){
+    if(!node)return;
+    if(node.type==='var'){vars.add(node.name);return;}
+    if(node.type==='bvadd'||node.type==='bvsub'||node.type==='bvmul'||
+       node.type==='bvand'||node.type==='bvor' ||node.type==='bvxor')
+      {walk(node.left);walk(node.right);}
+    else if(node.type==='bvnot')walk(node.arg);
+    else if(node.type==='atom')  {walk(node.atom.left);walk(node.atom.right);}
+    else if(node.children)       node.children.forEach(walk);
+    else if(node.child)          walk(node.child);
+    else if(node.type==='eq'||node.type==='neq'){walk(node.left);walk(node.right);}
+  }
+  walk(ast);
+  return vars;
+}
+
+// Returns unique BV terms (bottom-up) and unique atoms (in order)
+function collectAll(ast){
+  const termSeen=new Set(),termList=[],atomSeen=new Set(),atomList=[];
+  function walkTerm(t){
+    if(t.type==='bvadd'||t.type==='bvsub'||t.type==='bvmul'||
+       t.type==='bvand'||t.type==='bvor' ||t.type==='bvxor')
+      {walkTerm(t.left);walkTerm(t.right);}
+    else if(t.type==='bvnot')walkTerm(t.arg);
+    const k=termKey(t);
+    if(!termSeen.has(k)){termSeen.add(k);termList.push(t);}
+  }
+  function walkProp(node){
+    if(node.type==='prop_and'||node.type==='prop_or')node.children.forEach(walkProp);
+    else if(node.type==='prop_not')walkProp(node.child);
+    else if(node.type==='atom'){
+      walkTerm(node.atom.left);walkTerm(node.atom.right);
+      const k=atomKey(node.atom);
+      if(!atomSeen.has(k)){atomSeen.add(k);atomList.push(node.atom);}
+    }
+  }
+  walkProp(ast);
+  return{termList,atomList};
+}
+
+function termKey(t){
+  if(t.type==='var')return 'v:'+t.name;
+  if(t.type==='bvconst')return 'c:'+t.str;
+  if(t.type==='bvnum')return 'n:'+t.val;
+  if(t.type==='bvadd')return '+('+termKey(t.left)+','+termKey(t.right)+')';
+  if(t.type==='bvsub')return '-('+termKey(t.left)+','+termKey(t.right)+')';
+  if(t.type==='bvmul')return '*('+termKey(t.left)+','+termKey(t.right)+')';
+  if(t.type==='bvand')return '&('+termKey(t.left)+','+termKey(t.right)+')';
+  if(t.type==='bvor') return '|('+termKey(t.left)+','+termKey(t.right)+')';
+  if(t.type==='bvxor')return '^('+termKey(t.left)+','+termKey(t.right)+')';
+  if(t.type==='bvnot')return '~('+termKey(t.arg)+')';
+  return '?';
+}
+function atomKey(a){return a.type+'('+termKey(a.left)+','+termKey(a.right)+')';}
+
+function printTerm(t){
+  if(t.type==='var')return t.name;
+  if(t.type==='bvconst')return t.str;
+  if(t.type==='bvnum')return String(t.val);
+  if(t.type==='bvadd')return printTerm(t.left)+'+'+printTerm(t.right);
+  if(t.type==='bvsub')return printTerm(t.left)+'-'+printTerm(t.right);
+  if(t.type==='bvmul')return printTerm(t.left)+'*'+printTerm(t.right);
+  if(t.type==='bvand')return printTerm(t.left)+'&'+printTerm(t.right);
+  if(t.type==='bvor') return printTerm(t.left)+'|'+printTerm(t.right);
+  if(t.type==='bvxor')return printTerm(t.left)+'^'+printTerm(t.right);
+  if(t.type==='bvnot')return '~'+printTerm(t.arg);
+  return '?';
+}
+function printAtom(a){return printTerm(a.left)+(a.type==='eq'?'=':'!=')+printTerm(a.right);}
+function printProp(ast){
+  if(ast.type==='prop_and')return ast.children.map(c=>printPropP(c)).join(' && ');
+  if(ast.type==='prop_or') return ast.children.map(c=>printPropP(c)).join(' || ');
+  if(ast.type==='prop_not')return '!'+printPropP(ast.child);
+  if(ast.type==='atom')    return printAtom(ast.atom);
+  return '?';
+}
+function printPropP(ast){
+  if(ast.type==='prop_and'||ast.type==='prop_or')return '('+printProp(ast)+')';
+  return printProp(ast);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NAME ASSIGNMENT
+// ═══════════════════════════════════════════════════════════════════
+function assignNames(termList, atomList, varNames, width){
+  const nameMap=new Map(); // termKey -> name
+  const atomVarList=[];    // atom variable names
+
+  // Letter pool: skip variable names
+  const used=new Set(varNames);
+  const letters='abcdefghijklmnopqrstuvwxyz'.split('');
+  let li=0;
+  function nextLetter(){
+    while(li<letters.length&&used.has(letters[li]))li++;
+    const l=li<letters.length?letters[li]:'t'+li;
+    used.add(l);li++;return l;
+  }
+
+  // Atoms get first letters
+  atomList.forEach(()=>{atomVarList.push(nextLetter());});
+
+  // Terms: variables keep names, others get letters
+  termList.forEach(t=>{
+    const k=termKey(t);
+    if(t.type==='var')nameMap.set(k,t.name);
+    else nameMap.set(k,nextLetter());
+  });
+
+  return{nameMap,atomVarList};
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BIT VARIABLE MAP:  term -> array of bit-variable names
+// ═══════════════════════════════════════════════════════════════════
+function buildBitVarMap(termList, nameMap, width){
+  const bvMap=new Map(); // termKey -> [b₀, b₁, ..., b_{w-1}]
+  termList.forEach(t=>{
+    const name=nameMap.get(termKey(t));
+    const bits=Array.from({length:width},(_,i)=>name+sub(i));
+    bvMap.set(termKey(t),bits);
+  });
+  return bvMap;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONSTANT BITS HELPER (LSB first)
+// ═══════════════════════════════════════════════════════════════════
+function constBits(t, width){
+  if(t.type==='bvconst'){
+    const binStr=t.str.slice(2); // remove 'bv'
+    // binStr is MSB first, pad/truncate to width
+    const padded=binStr.padStart(width,'0').slice(-width);
+    // LSB first = reverse
+    return padded.split('').reverse().map(c=>c==='1'?'1':'0');
+  }
+  if(t.type==='bvnum'){
+    const bits=[];
+    let v=t.val;
+    for(let i=0;i<width;i++){bits.push((v&1)?'1':'0');v>>=1;}
+    return bits;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PROPOSITIONAL SKELETON
+// ═══════════════════════════════════════════════════════════════════
+function propSkeleton(ast, atomVarList, atomList){
+  function walk(node){
+    if(node.type==='prop_and')return node.children.map(walk).join(' ∧ ');
+    if(node.type==='prop_or') return node.children.map(walk).join(' ∨ ');
+    if(node.type==='prop_not')return '¬('+walk(node.child)+')';
+    if(node.type==='atom'){
+      const idx=atomList.findIndex(a=>atomKey(a)===atomKey(node.atom));
+      return atomVarList[idx]||'?';
+    }
+    return '?';
+  }
+  return walk(ast);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONSTRAINT GENERATION
+// ═══════════════════════════════════════════════════════════════════
+// Each returns a constraint string (multi-line)
+
+function genEqualAtomConstraint(a, bvMap, atomVar, width){
+  const lb=bvMap.get(termKey(a.left));
+  const rb=bvMap.get(termKey(a.right));
+  const op=a.type==='eq'?'⟺':'⟺ ¬'; // neq: ¬(all equal)
+  const bits=Array.from({length:width},(_,i)=>`(${lb[i]} ⟺ ${rb[i]})`);
+  const conjunction=bits.join(' ∧ ');
+  const line=`( ${conjunction} )\n  ⟺ ${atomVar}`;
+  return line;
+}
+
+function genNotConstraint(t, bvMap, width){
+  const ab=bvMap.get(termKey(t.arg));
+  const rb=bvMap.get(termKey(t));
+  return Array.from({length:width},(_,i)=>`¬${ab[i]} ⟺ ${rb[i]}`).join('\n');
+}
+
+function genBitwiseConstraint(t, bvMap, width){
+  const lb=bvMap.get(termKey(t.left));
+  const rb=bvMap.get(termKey(t.right));
+  const res=bvMap.get(termKey(t));
+  let op;
+  if(t.type==='bvand')op='∧';
+  else if(t.type==='bvor') op='∨';
+  else op='⊕'; // xor
+  if(t.type==='bvxor'){
+    return Array.from({length:width},(_,i)=>`(${lb[i]} ⟺ ¬${rb[i]}) ⟺ ${res[i]}`).join('\n');
+  }
+  return Array.from({length:width},(_,i)=>`(${lb[i]} ${op} ${rb[i]}) ⟺ ${res[i]}`).join('\n');
+}
+
+function genConstConstraint(t, bvMap, width){
+  const bits=constBits(t,width);
+  const res=bvMap.get(termKey(t));
+  if(!bits)return '(constant)';
+  return bits.map((b,i)=>(b==='1'?'':' ¬')+res[i]).join(' ∧\n');
+}
+
+function genAddSubConstraint(t, bvMap, width){
+  const lb=bvMap.get(termKey(t.left));
+  const isSub=(t.type==='bvsub');
+  // For subtraction a-b = add(a, ~b, 0): use ¬rb for each bit
+  const rbRaw=bvMap.get(termKey(t.right));
+  const rb=isSub?rbRaw.map(v=>'¬'+v):rbRaw;
+  const res=bvMap.get(termKey(t));
+  const lines=[];
+  for(let i=0;i<width;i++){
+    const cin=i===0?'0':`car${sub(i)}`;
+    lines.push(`(${lb[i]} ⊕ ${rb[i]} ⊕ ${cin}) ⟺ ${res[i]}`);
+    if(i<width-1){
+      lines.push(`(${lb[i]}∧${rb[i]}) ∨ ((${lb[i]}⊕${rb[i]})∧${cin}) ⟺ car${sub(i+1)}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+// Multiplication: returns array of sub-step strings
+function genMulSteps(t, bvMap, width){
+  const xb=bvMap.get(termKey(t.left));
+  const yb=bvMap.get(termKey(t.right));
+  const res=bvMap.get(termKey(t));
+  const n=width;
+
+  function sh(i,j){return `sh${sub(i)}${sup(j)}`;}
+  function rv(i,j){return `res${sub(i)}${sup(j)}`;}
+  function cv(i,j){return `car${sub(i)}${sup(j)}`;}
+
+  const steps=[];
+
+  // Step 1: Shift table
+  const shLines=[];
+  for(let j=0;j<n;j++)
+    for(let i=0;i<n;i++)
+      shLines.push(j<=i
+        ?`${sh(i,j)} = ${xb[i-j]} ∧ ${yb[j]}`
+        :`${sh(i,j)} = false`);
+  steps.push({label:'Shift table  shᵢʲ', lines:shLines,
+    info:`shᵢʲ = x_{i-j} ∧ y_j  if j ≤ i,  false otherwise\n\nThis captures the contribution of bit j of y\nshifted left by j positions.`});
+
+  // Step 2: Base cases
+  const baseLines=[];
+  for(let i=0;i<n;i++)baseLines.push(`${rv(i,0)} = ${sh(i,0)}`);
+  for(let i=0;i<n;i++)baseLines.push(`${cv(i,0)} = false`);
+  baseLines.push(`${rv(0,'j')} = ${sh(0,0)}  (for all j: bit 0 never receives carry)`);
+  steps.push({label:'Base cases  resᵢ⁰ & carᵢ⁰', lines:baseLines,
+    info:`resᵢ⁰ = shᵢ⁰  (first partial product, no prior carry)\ncarᵢ⁰ = false  (no prior addition step)\nres₀ʲ = sh₀⁰  (bit 0 only depends on shift 0)`});
+
+  // Step 3+: Recursive steps
+  for(let j=0;j<n-1;j++){
+    const recLines=[];
+    recLines.push(`--- Result bits at step j=${j+1} ---`);
+    recLines.push(`${rv(0,j+1)} = ${sh(0,0)}  (base: i=0)`);
+    for(let i=1;i<n;i++)
+      recLines.push(`${rv(i,j+1)} = ${rv(i,j)} ⊕ ${sh(i,j+1)} ⊕ ${cv(i,j+1)}`);
+    recLines.push(`--- Carry bits at step j=${j+1} ---`);
+    for(let i=0;i<n-1;i++){
+      if(j<i) recLines.push(`${cv(i+1,j+1)} = (${rv(i,j)}∧${sh(i,j+1)}) ∨ ((${rv(i,j)}⊕${sh(i,j+1)})∧${cv(i,j+1)})`);
+      else    recLines.push(`${cv(i+1,j+1)} = false  (j=${j} ≥ i=${i})`);
+    }
+    steps.push({label:`Step j=${j+1} recursion`, lines:recLines,
+      info:`resᵢʲ⁺¹ = resᵢʲ ⊕ shᵢʲ⁺¹ ⊕ carᵢʲ⁺¹\ncarᵢ₊₁ʲ⁺¹ = (resᵢʲ ∧ shᵢʲ⁺¹) ∨ ((resᵢʲ ⊕ shᵢʲ⁺¹) ∧ carᵢʲ⁺¹)  if j < i\n             false  otherwise`});
+  }
+
+  // Final constraint
+  const finalLines=res.map((r,i)=>`${rv(i,n-1)} ⟺ ${r}`);
+  steps.push({label:`Final: resᵢⁿ⁻¹ ⟺ e(t)ᵢ`, lines:finalLines,
+    info:`The bit-blasting constraint for t = x * y:\n∧ᵢ resᵢⁿ⁻¹ ⟺ e(t)ᵢ`});
+
+  return steps;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FRAME GENERATION
+// ═══════════════════════════════════════════════════════════════════
+const EXAMPLES=[
+  {label:'Lecture 10 example (4-bit)',  formula:'x + y = ~z && z & x = bv0001', w:4},
+  {label:'Mul example (2-bit)',         formula:'x * y = z', w:2},
+  {label:'Mul example (3-bit)',         formula:'x * y = z', w:3},
+  {label:'Bitwise XOR',                 formula:'x ^ y = z', w:4},
+  {label:'Subtraction',                 formula:'x - y = z', w:4},
+  {label:'AND equality',                formula:'x & y = bv0001', w:4},
+];
+
+function buildExamples(){
+  const row=document.getElementById('exampleBtns');
+  EXAMPLES.forEach(e=>{
+    const b=document.createElement('button');
+    b.className='btn btn-ghost btn-sm';b.textContent=e.label;
+    b.onclick=()=>{
+      document.getElementById('formulaInput').value=e.formula;
+      document.getElementById('widthSel').value=String(e.w);
+      runBB();
+    };
+    row.appendChild(b);
+  });
+}
+
+let G={frames:[],current:-1,autoTimer:null};
+
+function runBB(){
+  if(G.autoTimer){clearInterval(G.autoTimer);G.autoTimer=null;}
+  const src=document.getElementById('formulaInput').value.trim();
+  if(!src)return;
+  const width=parseInt(document.getElementById('widthSel').value)||4;
+
+  let ast;
+  try{ast=parseFormula(src);}
+  catch(e){alert('Parse error: '+e.message);return;}
+
+  const{termList,atomList}=collectAll(ast);
+  const varNames=collectVarNames(ast);
+  const{nameMap,atomVarList}=assignNames(termList,atomList,varNames,width);
+  const bvMap=buildBitVarMap(termList,nameMap,width);
+  const skelStr=propSkeleton(ast,atomVarList,atomList);
+
+  const frames=[];
+  function addFrame(flowStep,phase,phaseClass,label,constraintStr,info,histText,histClass){
+    frames.push({flowStep,phase,phaseClass,label,constraintStr,info,histText,histClass});
+  }
+
+  // ── Frame 1: Input ──
+  const termSummary=termList.map(t=>`${nameMap.get(termKey(t))} = ${printTerm(t)}`).join('\n');
+  const atomSummary=atomList.map((a,i)=>`${atomVarList[i]} = (${printAtom(a)})`).join('\n');
+  addFrame('input','INPUT','badge-blue','φ',printProp(ast),
+    `<div class="info-section"><div class="info-section-title">Formula φ</div><div class="info-content">${esc(printProp(ast))}</div></div>`+
+    `<div class="info-section"><div class="info-section-title">Bit-width</div><div class="info-text"><b>${width} bits</b> per variable</div></div>`+
+    `<div class="info-text">BV-Flattening converts a bit-vector formula into an equisatisfiable propositional formula B by:<br><br>`+
+    `1. Building the <b>propositional skeleton</b> e(φ)<br>`+
+    `2. Creating a <b>Boolean variable</b> e(t)ᵢ for each bit i of each term t<br>`+
+    `3. Adding <b>BV-Constraints</b> for atoms and terms</div>`,
+    'Input: '+printProp(ast),'h-bl');
+
+  // ── Frame 2: Propositional Skeleton ──
+  addFrame('skel','SKELETON','badge-blue','e(φ) = '+skelStr,
+    `e(φ) = ${skelStr}\n\nAtom variables:\n${atomSummary}`,
+    `<div class="info-section"><div class="info-section-title">Propositional skeleton</div><div class="info-content">e(φ) = ${esc(skelStr)}</div></div>`+
+    `<div class="info-section"><div class="info-section-title">Atom variables</div><div class="info-content">${esc(atomSummary)}</div></div>`+
+    `<div class="info-text">Replace each BV atom with a fresh propositional variable. The result <b>e(φ)</b> is the Boolean structure of the formula.<br><br>B := e(φ)</div>`,
+    'e(φ) = '+skelStr,'h-bl');
+
+  // ── Frame 3: Bit Variables ──
+  const bitVarRows=termList.map(t=>{
+    const name=nameMap.get(termKey(t));
+    const bits=bvMap.get(termKey(t));
+    return `${name.padEnd(4)} (${printTerm(t).padEnd(12)}) │ ${bits.join(', ')}`;
+  }).join('\n');
+  addFrame('vars','BIT VARS','badge-amber','e(t)ᵢ for all terms',bitVarRows,
+    `<div class="info-section"><div class="info-section-title">Bit variable assignment</div><div class="info-content">${esc(bitVarRows)}</div></div>`+
+    `<div class="info-text">For each term t of bit-width l, create fresh Boolean variables <b>e(t)₀, e(t)₁, …, e(t)_{l−1}</b>.<br><br>Each e(t)ᵢ will be constrained to equal the i-th bit of t's value.</div>`,
+    'Bit vars created: '+termList.map(t=>bvMap.get(termKey(t)).join(' ')).join(' | '),'h-am');
+
+  // ── Frames 4+: Atom constraints ──
+  atomList.forEach((atom,idx)=>{
+    const av=atomVarList[idx];
+    const cstr=genEqualAtomConstraint(atom,bvMap,av,width);
+    addFrame('atoms',`C(${av})  atom`,'badge-violet',`${av} = (${printAtom(atom)})`,cstr,
+      `<div class="info-section"><div class="info-section-title">BV-Constraint for atom ${av}</div><div class="info-content">${esc(cstr)}</div></div>`+
+      `<div class="info-text">For equality <code>${printAtom(atom)}</code>:<br><b>∧ᵢ (e(t₁)ᵢ ⟺ e(t₂)ᵢ) ⟺ atom_var</b><br><br>The atom variable is true iff ALL corresponding bits are equal.</div>`,
+      `C(${av}): ${printAtom(atom)} → bitwise equality`,'h-vl');
+  });
+
+  // ── Frames: Term constraints ──
+  termList.forEach(t=>{
+    const k=termKey(t);
+    const name=nameMap.get(k);
+    const bits=bvMap.get(k);
+
+    if(t.type==='var'){
+      addFrame('terms',`C(${name})  var`,'badge-orange',`${name} — variable`,
+        `(no constraint — variable bits are free)`,
+        `<div class="info-text">Variables have <b>no BV-Constraint</b>. Their bit variables <b>${bits.join(', ')}</b> are free Boolean variables in B — they can take any value.</div>`,
+        `C(${name}): variable — no constraint`,'h-or');
+    }
+    else if(t.type==='bvconst'||t.type==='bvnum'){
+      const cstr=genConstConstraint(t,bvMap,width);
+      const bitsArr=constBits(t,width);
+      const dec=bitsArr?parseInt(bitsArr.slice().reverse().join(''),2):0;
+      addFrame('terms',`C(${name})  const`,'badge-orange',`${name} = ${printTerm(t)}`,cstr,
+        `<div class="info-section"><div class="info-section-title">Constant bits (LSB first)</div><div class="info-content">${esc(cstr)}</div></div>`+
+        `<div class="info-text">For constant <code>${printTerm(t)}</code> (decimal ${dec}):<br><b>∧ᵢ (e(t)ᵢ ⟺ sᵢ)</b> where sᵢ is the i-th bit.<br><br>In practice: for bit=1 add <b>e(t)ᵢ</b>, for bit=0 add <b>¬e(t)ᵢ</b>.</div>`,
+        `C(${name}): constant ${printTerm(t)} → fixed bits`,'h-or');
+    }
+    else if(t.type==='bvnot'){
+      const cstr=genNotConstraint(t,bvMap,width);
+      addFrame('terms',`C(${name})  ~`,'badge-orange',`${name} = ~${nameMap.get(termKey(t.arg))}`,cstr,
+        `<div class="info-section"><div class="info-section-title">Bitwise NOT constraint</div><div class="info-content">${esc(cstr)}</div></div>`+
+        `<div class="info-text">For bitwise NOT <code>~t</code>:<br><b>∧ᵢ (¬e(t)ᵢ ⟺ e(~t)ᵢ)</b><br><br>Each bit of the result is the logical negation of the corresponding bit of the operand.</div>`,
+        `C(${name}): bitwise NOT`,'h-or');
+    }
+    else if(t.type==='bvand'||t.type==='bvor'||t.type==='bvxor'){
+      const cstr=genBitwiseConstraint(t,bvMap,width);
+      const opName={bvand:'AND',bvor:'OR',bvxor:'XOR'}[t.type];
+      const opSym={bvand:'&',bvor:'|',bvxor:'^'}[t.type];
+      addFrame('terms',`C(${name})  ${opSym}`,'badge-orange',`${name} = ${nameMap.get(termKey(t.left))} ${opSym} ${nameMap.get(termKey(t.right))}`,cstr,
+        `<div class="info-section"><div class="info-section-title">Bitwise ${opName} constraint</div><div class="info-content">${esc(cstr)}</div></div>`+
+        `<div class="info-text">For bitwise ${opName} <code>${printTerm(t)}</code>:<br><b>∧ᵢ (e(a)ᵢ ${opSym} e(b)ᵢ) ⟺ e(t)ᵢ</b></div>`,
+        `C(${name}): bitwise ${opName}`,'h-or');
+    }
+    else if(t.type==='bvadd'||t.type==='bvsub'){
+      const cstr=genAddSubConstraint(t,bvMap,width);
+      const op=t.type==='bvadd'?'+':'-';
+      addFrame('terms',`C(${name})  ${op}`,'badge-orange',`${name} = ${nameMap.get(termKey(t.left))} ${op} ${nameMap.get(termKey(t.right))}`,cstr,
+        `<div class="info-section"><div class="info-section-title">${t.type==='bvadd'?'Addition':'Subtraction'} constraint</div><div class="info-content">${esc(cstr)}</div></div>`+
+        `<div class="info-text">${t.type==='bvadd'
+          ?'Full adder per bit:<br><b>sum(a,b,cin) = a ⊕ b ⊕ cin</b><br><b>carry(a,b,cin) = (a∧b) ∨ ((a⊕b)∧cin)</b>'
+          :'Subtraction: a-b = add(a, ¬b, 0)<br>(flip all bits of b, carry-in = 0)'}</div>`,
+        `C(${name}): ${t.type==='bvadd'?'addition':'subtraction'}`,'h-or');
+    }
+    else if(t.type==='bvmul'){
+      const mulSteps=genMulSteps(t,bvMap,width);
+      mulSteps.forEach((step,si)=>{
+        const isLast=si===mulSteps.length-1;
+        addFrame('terms',`C(${name})  *\n${step.label}`,'badge-orange',
+          `${name} = ${nameMap.get(termKey(t.left))} * ${nameMap.get(termKey(t.right))}`,
+          step.lines.join('\n'),
+          `<div class="info-section"><div class="info-section-title">Multiplication — ${esc(step.label)}</div><div class="info-content">${esc(step.info)}</div></div>`+
+          (isLast?`<div class="info-text" style="margin-top:8px">Final constraint: <b>∧ᵢ resᵢⁿ⁻¹ ⟺ e(t)ᵢ</b></div>`:''),
+          `C(${name}): mul ${step.label}`,'h-or');
+      });
+    }
+  });
+
+  // ── Final frame: Return B ──
+  const allParts=[skelStr];
+  atomList.forEach((a,i)=>{allParts.push(`[C(${atomVarList[i]})]: ${printAtom(a)}`);});
+  termList.forEach(t=>{const n=nameMap.get(termKey(t));allParts.push(`[C(${n})]: ${printTerm(t)}`);});
+  addFrame('done','RESULT','badge-green','B = e(φ) ∧ all constraints',
+    `B is satisfiable ⟺ φ is satisfiable in BV\n\nB contains:\n  • e(φ): propositional skeleton\n  • ${atomList.length} atom constraint(s)\n  • ${termList.length} term constraint(s)`,
+    `<div class="info-section"><div class="info-section-title">BV-Flattening complete</div><div class="info-content">B is SAT ⟺ φ is SAT (in QF_BV)</div></div>`+
+    `<div class="info-text"><b>Theorem:</b> B and φ are equisatisfiable.<br><br>B is a pure Boolean formula with no BV operations. It can now be solved by any SAT solver (DPLL, CDCL, etc.).<br><br>The best BV solver today, <b>Bitwuzla</b>, uses this technique as its core.</div>`,
+    'Return B — equisatisfiable Boolean formula','h-or');
+
+  G.frames=frames;G.current=-1;
+  document.getElementById('ctrlCard').style.display='';
+  document.getElementById('histCard').style.display='';
+  document.getElementById('histList').innerHTML='';
+  document.getElementById('resultBadge').style.display='none';
+  document.getElementById('nextBtn').disabled=false;
+  document.getElementById('prevBtn').disabled=true;
+  document.getElementById('ctTable').innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">Stepping through…</div>';
+  nextStep();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FLOW STEP ORDERING
+// ═══════════════════════════════════════════════════════════════════
+const FLOW_ORDER=['input','skel','vars','atoms','terms','done'];
+function flowForFrame(f){return f.flowStep;}
+
+function renderAll(){
+  const f=G.frames[G.current];if(!f)return;
+
+  // Algorithm flow
+  const cur=FLOW_ORDER.indexOf(f.flowStep);
+  FLOW_ORDER.forEach((s,si)=>{
+    const el=document.getElementById('fs-'+s);
+    el.className='flow-step'+(si===cur?' active':si<cur?' done':'');
+  });
+
+  // Info panel
+  document.getElementById('infoTitle').textContent=f.label;
+  const ib=document.getElementById('infoBadge');
+  ib.className='badge '+f.phaseClass;ib.textContent=f.phase;
+  document.getElementById('infoBody').innerHTML=f.info;
+
+  // Constraint table: show all rows up to current
+  const table=document.getElementById('ctTable');
+  table.innerHTML='';
+  G.frames.slice(0,G.current+1).forEach((fr,i)=>{
+    const row=document.createElement('div');
+    row.className='ct-row'+(i===G.current?' active':' done');
+    const phDiv=document.createElement('div');
+    phDiv.className='ct-phase ph-'+fr.flowStep;
+    phDiv.textContent=fr.phase;
+    const lblDiv=document.createElement('div');
+    lblDiv.className='ct-label';
+    lblDiv.style.whiteSpace='pre';
+    lblDiv.textContent=fr.label;
+    const fmlDiv=document.createElement('div');
+    fmlDiv.className='ct-formula';
+    fmlDiv.textContent=fr.constraintStr;
+    row.appendChild(phDiv);row.appendChild(lblDiv);row.appendChild(fmlDiv);
+    table.appendChild(row);
+  });
+  // Scroll last row into view
+  if(table.lastChild&&table.lastChild.scrollIntoView)
+    table.lastChild.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  // Step history
+  const list=document.getElementById('histList');
+  list.innerHTML='';
+  G.frames.slice(0,G.current+1).forEach((fr,i)=>{
+    const div=document.createElement('div');
+    div.className='hist-item '+fr.histClass;
+    div.innerHTML=`<div class="h-step">Step ${i+1} — ${fr.label}</div><div class="h-text">${esc(fr.histText)}</div>`;
+    list.appendChild(div);
+  });
+  list.scrollTop=list.scrollHeight;
+
+  if(G.current===G.frames.length-1){
+    const rb=document.getElementById('resultBadge');rb.style.display='';
+    rb.className='badge badge-green';rb.textContent='DONE';
+  }
+
+  document.getElementById('stepCounter').textContent=`Step ${G.current+1} / ${G.frames.length}`;
+  document.getElementById('prevBtn').disabled=G.current<=0;
+  document.getElementById('nextBtn').disabled=G.current>=G.frames.length-1;
+}
+
+function nextStep(){if(G.current<G.frames.length-1){G.current++;renderAll();}}
+function prevStep(){if(G.current>0){G.current--;renderAll();}}
+function toggleAuto(){
+  if(G.autoTimer){
+    clearInterval(G.autoTimer);G.autoTimer=null;
+    document.getElementById('autoBtn').textContent='▶ Auto';
+  }else{
+    document.getElementById('autoBtn').textContent='⏸ Pause';
+    G.autoTimer=setInterval(()=>{
+      if(G.current>=G.frames.length-1){
+        clearInterval(G.autoTimer);G.autoTimer=null;
+        document.getElementById('autoBtn').textContent='▶ Auto';return;
+      }
+      nextStep();
+    },1600);
+  }
+}
+
+function downloadHistory(){
+  if(!G.frames.length){alert('No steps yet.');return;}
+  const src=document.getElementById('formulaInput').value.trim();
+  const w=document.getElementById('widthSel').value;
+  let out=`Bit Blasting (BV-Flattening) Step History\nFormula: ${src}   Bit-width: ${w}\n${'='.repeat(60)}\n\n`;
+  G.frames.forEach((f,i)=>{
+    out+=`Step ${i+1}: [${f.phase}] ${f.label}\n${'-'.repeat(40)}\n${f.constraintStr}\n\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));
+  a.download='bit-blasting-history.txt';a.click();URL.revokeObjectURL(a.href);
+}
+
+buildExamples();
+</script>
+</body>
+</html>

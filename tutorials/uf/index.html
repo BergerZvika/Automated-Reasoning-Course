@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Union-Find — Interactive Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --amber:#f59e0b;--amber2:#fbbf24;--orange:#f97316;
+  --green:#22c55e;--green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.35);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.12);--red-bd:rgba(239,68,68,.35);
+  --yellow:#eab308;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#451a03 0%,#78350f 40%,#7c2d12 70%,#451a03 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#fde68a,#fbbf24,#fb923c);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);
+  color:var(--amber2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+
+.wrap{max-width:1400px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+.input-row{display:flex;gap:10px;align-items:stretch}
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s
+}
+.formula-input:focus{border-color:var(--amber)}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+  border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-amber{background:linear-gradient(135deg,var(--amber),var(--orange));color:#000}
+.btn-amber:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--amber);color:var(--amber2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.main-grid{display:grid;grid-template-columns:280px 1fr;gap:18px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+
+/* Action buttons */
+.action-btn{
+  width:100%;margin-bottom:10px;padding:12px 14px;border-radius:10px;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;text-align:left;transition:all .15s;
+  display:flex;flex-direction:column;gap:2px
+}
+.action-btn:last-child{margin-bottom:0}
+.action-btn:not(:disabled):hover{border-color:var(--amber);background:rgba(245,158,11,.08)}
+.action-btn:disabled{opacity:.35;cursor:not-allowed}
+.action-btn .a-name{font-size:13px;font-weight:700;color:var(--amber2)}
+.action-btn .a-desc{font-size:11px;color:var(--muted)}
+.action-btn .a-count{font-size:11px;color:var(--amber);font-weight:600;margin-top:2px}
+.ab-orange .a-name{color:var(--orange)}
+.ab-orange:not(:disabled):hover{border-color:var(--orange);background:rgba(249,115,22,.08)}
+.ab-red .a-name{color:var(--red)}
+.ab-red:not(:disabled):hover{border-color:var(--red);background:rgba(239,68,68,.08)}
+.ab-green .a-name{color:var(--green)}
+.ab-green:not(:disabled):hover{border-color:var(--green);background:rgba(34,197,94,.08)}
+
+.hint-box{font-size:13px;color:var(--muted);line-height:1.6;min-height:40px}
+
+/* Literal list */
+.lit-list{display:flex;flex-direction:column;gap:6px}
+.lit-item{font-family:'Consolas','Courier New',monospace;font-size:13px;
+  padding:7px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);
+  display:flex;align-items:center;gap:8px}
+.lit-eq{color:#86efac}.lit-neq{color:#fca5a5}.lit-pred{color:#93c5fd}.lit-npred{color:#c4b5fd}
+.lit-tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;
+  background:rgba(245,158,11,.15);color:var(--amber2);flex-shrink:0}
+
+/* Forest (union-find trees) */
+.forest-wrap{
+  display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;
+  padding:10px 0;min-height:80px;overflow-x:auto
+}
+.tree-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:border-color .3s
+}
+.tree-card.just-merged{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.06)}
+.tree-card.sat-tree{border-color:var(--green-bd);background:var(--green-bg)}
+.tree-card.unsat-tree{border-color:var(--red-bd);background:var(--red-bg)}
+.tree-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:2px}
+
+/* SVG tree styles */
+.tree-svg{overflow:visible}
+.uf-node circle{fill:var(--surface);stroke:var(--border);stroke-width:1.5;transition:all .3s}
+.uf-node.is-root circle{stroke:var(--amber);stroke-width:2;fill:rgba(245,158,11,.12)}
+.uf-node.is-changed circle{stroke:var(--orange);stroke-width:2.5;fill:rgba(249,115,22,.15)}
+.uf-node.is-compressed circle{stroke:var(--yellow);stroke-width:2;fill:rgba(234,179,8,.12)}
+.uf-node.fail-node circle{stroke:var(--red);stroke-width:2.5;fill:rgba(239,68,68,.15)}
+.node-label{font-size:10px;fill:var(--text);font-family:'Consolas','Courier New',monospace;pointer-events:none}
+.rank-label{font-size:9px;fill:var(--amber);font-weight:700;pointer-events:none}
+.tree-edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+.tree-edge.edge-changed{stroke:var(--orange);stroke-width:2}
+.tree-edge.edge-compressed{stroke:var(--yellow);stroke-width:1.5;stroke-dasharray:4,2}
+
+/* History */
+.hist-list{display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto}
+.hentry{font-size:12px;padding:7px 10px;border-radius:7px;background:var(--surface2);
+  border:1px solid transparent;color:var(--muted);line-height:1.5}
+.hentry.hcur{border-color:var(--amber);color:var(--text)}
+.hb{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;margin-right:5px}
+.hb-union{background:rgba(245,158,11,.2);color:var(--amber2)}
+.hb-find{background:rgba(234,179,8,.2);color:var(--yellow)}
+.hb-cong{background:rgba(249,115,22,.2);color:var(--orange)}
+.hb-fail{background:rgba(239,68,68,.2);color:#fca5a5}
+.hb-sat{background:rgba(34,197,94,.2);color:#86efac}
+.hb-init{background:rgba(100,116,139,.2);color:var(--muted)}
+
+/* Banners */
+.sat-banner{background:rgba(34,197,94,.14);border:2px solid rgba(34,197,94,.4);
+  border-radius:10px;padding:14px 18px;margin-bottom:14px;text-align:center;display:none}
+.unsat-banner{background:rgba(239,68,68,.14);border:2px solid rgba(239,68,68,.4);
+  border-radius:10px;padding:14px 18px;margin-bottom:14px;text-align:center;display:none}
+
+/* Warn banner */
+.warn-banner{
+  background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.35);
+  border-radius:12px;padding:16px 20px;margin-bottom:14px;display:none
+}
+.warn-banner.show{display:block}
+.warn-title{font-size:14px;font-weight:700;color:var(--orange);margin-bottom:8px}
+.warn-desc{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6}
+.warn-btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-orange:hover{filter:brightness(1.1)}
+
+/* Examples row */
+.examples-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.examples-row span{font-size:12px;color:var(--muted);margin-right:2px}
+.ex-btn{
+  padding:4px 11px;font-size:12px;border-radius:20px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;
+  font-family:'Consolas',monospace
+}
+.ex-btn:hover{border-color:var(--amber);color:var(--amber2)}
+
+/* Overlays / Pickers */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+  align-items:center;justify-content:center;z-index:100}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:24px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;color:var(--amber2);margin-bottom:6px}
+.modal-desc{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+.pick-option{padding:12px 14px;border-radius:10px;background:var(--surface2);
+  border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:all .15s}
+.pick-option:hover{border-color:var(--amber);background:rgba(245,158,11,.08)}
+.pick-option:last-child{margin-bottom:0}
+.pick-rule{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;
+  border-radius:4px;background:rgba(245,158,11,.2);color:var(--amber2);margin-bottom:5px}
+.pick-detail{font-size:12px;font-family:'Consolas','Courier New',monospace;color:var(--text);line-height:1.6}
+.pick-cls{display:inline-block;padding:1px 6px;border-radius:4px;
+  background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);
+  font-size:11px;color:var(--amber2);margin:2px}
+.pick-path{color:var(--yellow);font-weight:600}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>Union-Find</h1>
+    <p>Interactive tutorial — UF solver with path compression &amp; union by rank</p>
+  </div>
+  <span class="hdr-badge">QF_UF · Flat Cube</span>
+</div>
+
+<div class="wrap">
+
+  <!-- Input -->
+  <div class="card">
+    <div class="card-title">Flat Cube Input</div>
+    <div id="warnBanner" class="warn-banner">
+      <div class="warn-title">⚠ Formula is not flat — UF requires a flat cube</div>
+      <div class="warn-desc">
+        Union-Find requires all literals to be in flat form (all function arguments must be variables).<br>
+        You can auto-flatten here, or open the Flatten Tutorial to do it step by step.
+      </div>
+      <div class="warn-btns">
+        <button class="btn btn-orange" onclick="inlineAutoFlatten()">Auto-Flatten</button>
+        <button class="btn btn-ghost" onclick="openFlattenTutorial()">Open in Flatten Tutorial →</button>
+      </div>
+    </div>
+    <div class="input-row">
+      <input id="formulaInput" class="formula-input" placeholder="x=f(a), f(a)=y, x!=y" spellcheck="false"/>
+      <button class="btn btn-amber" onclick="loadFormula()">Initialize ▶</button>
+    </div>
+    <div class="io-row">
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+        ↑ Upload .smt2<input type="file" accept=".smt2" style="display:none" onchange="onFileUpload(event)">
+      </label>
+      <button class="btn btn-ghost btn-sm" onclick="downloadSMT2()">↓ Download .smt2</button>
+    </div>
+    <div class="input-hint">Input a <b>flat</b> cube: equalities <code>=</code>, disequalities <code>!=</code>. All arguments must be variables. Literals separated by <code>,</code>.</div>
+    <div class="examples-row">
+      <span>Examples:</span>
+      <button class="ex-btn" onclick="loadEx('unsat_basic')">UNSAT basic</button>
+      <button class="ex-btn" onclick="loadEx('unsat_cong')">UNSAT congruence</button>
+      <button class="ex-btn" onclick="loadEx('unsat_chain')">UNSAT chain</button>
+      <button class="ex-btn" onclick="loadEx('sat_simple')">SAT simple</button>
+      <button class="ex-btn" onclick="loadEx('sat_cong')">SAT congruence</button>
+      <button class="ex-btn" onclick="loadEx('compress')">Path compression demo</button>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- LEFT: Actions -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title">UF Actions</div>
+
+        <button class="action-btn ab-orange" id="btnUnion" onclick="openUnionPicker()" disabled>
+          <span class="a-name">Union</span>
+          <span class="a-desc">x=y in cube, or f(a…)≡f(b…) with equal args → merge classes</span>
+          <span class="a-count" id="unionCount"></span>
+        </button>
+
+        <button class="action-btn ab-red" id="btnFind" onclick="openFindPicker()" disabled>
+          <span class="a-name">Find</span>
+          <span class="a-desc">Choose x≠y → find(x) &amp; find(y), compress paths, check conflict</span>
+          <span class="a-count" id="findCount"></span>
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Auto-Solve</div>
+        <button class="btn btn-amber" style="width:100%;margin-bottom:8px" id="btnAuto" onclick="autoSolve()" disabled>
+          Auto-Solve
+        </button>
+        <div style="font-size:12px;color:var(--muted)">Applies all Union steps, then checks all disequalities with Find.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">What can I do?</div>
+        <div class="hint-box" id="hintBox">Load a flat cube to begin.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Literals + Forest -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <div class="card">
+        <div class="card-title">
+          <span>Flat Cube</span>
+          <span id="cubeInfo" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div id="litList" class="lit-list">
+          <div style="color:var(--muted);font-style:italic;font-size:14px">Load a formula to see literals here.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Union-Find Forest</span>
+          <span id="forestInfo" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+
+        <div class="sat-banner" id="satBanner">
+          <div style="font-size:22px;font-weight:800;color:#86efac">✓ SATISFIABLE</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px">No rules apply and no disequality is contradicted — the cube is SAT.</div>
+        </div>
+        <div class="unsat-banner" id="unsatBanner">
+          <div style="font-size:22px;font-weight:800;color:#fca5a5">✗ UNSATISFIABLE</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px" id="unsatDetail">A disequality is contradicted.</div>
+        </div>
+
+        <div class="forest-wrap" id="forestWrap">
+          <div style="color:var(--muted);font-style:italic;font-size:14px">Initialize to see the forest.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Step History (full width) -->
+  <div class="card">
+    <div class="card-title">
+      <span>Step History</span>
+      <button class="btn btn-ghost btn-sm" onclick="undoStep()">← Undo</button>
+    </div>
+    <div id="histList" class="hist-list">
+      <div style="color:var(--muted);font-style:italic;font-size:13px">No steps yet.</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="downloadHistory()">↓ Download History</button>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- Union Picker -->
+<div class="overlay" id="unionOverlay">
+  <div class="modal">
+    <div class="modal-title">Union</div>
+    <div class="modal-desc">Choose an equality from the cube to union the two sides. Uses union by rank; find() with path compression is applied automatically.</div>
+    <div id="unionOptions"></div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('unionOverlay')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Find Picker -->
+<div class="overlay" id="findOverlay">
+  <div class="modal">
+    <div class="modal-title">Find — Check Disequality</div>
+    <div class="modal-desc">Choose a disequality x≠y. find(x) and find(y) are called (compressing paths). If they return the same root → UNSAT; otherwise → no conflict.</div>
+    <div id="findOptions"></div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('findOverlay')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let S = {
+  cube: [], equalities: [], disequalities: [], fnApps: [],
+  parent: {}, rank: {},
+  history: [], status: 'idle',
+  lastChanged: new Set(), lastMergedRoot: null
+};
+
+const EXAMPLES = {
+  unsat_basic:  'x=f(a), f(a)=y, x!=y',
+  unsat_cong:   'x=a, x=b, f(a)!=f(b)',
+  unsat_chain:  'x=y, f(x)=z, f(y)!=z',
+  sat_simple:   'x=f(a), y=f(b), x!=y',
+  sat_cong:     'x=y, z=w, x!=z',
+  compress:     'a=b, b=c, c=d, d=e, x!=e'
+};
+
+function loadEx(key) {
+  document.getElementById('formulaInput').value = EXAMPLES[key];
+  document.getElementById('warnBanner').classList.remove('show');
+  loadFormula();
+}
+
+// ═══════════════════════════════════════
+// PARSER (shared with CC/flatten tutorials)
+// ═══════════════════════════════════════
+function termStr(t){ return t.k==='v' ? t.n : `${t.n}(${t.a.map(termStr).join(', ')})`; }
+function litStr(lit){
+  if(lit.k==='eq')    return `${termStr(lit.l)} = ${termStr(lit.r)}`;
+  if(lit.k==='neq')   return `${termStr(lit.l)} \u2260 ${termStr(lit.r)}`;
+  if(lit.k==='pred')  return `${lit.n}(${lit.a.map(termStr).join(', ')})`;
+  if(lit.k==='npred') return `\u00AC${lit.n}(${lit.a.map(termStr).join(', ')})`;
+  return '?';
+}
+function isVar(t){ return t.k==='v'; }
+function isFlat(lit){
+  if(lit.k==='eq')    return isVar(lit.l)&&(isVar(lit.r)||(lit.r.k==='f'&&lit.r.a.every(isVar)));
+  if(lit.k==='neq')   return isVar(lit.l)&&isVar(lit.r);
+  if(lit.k==='pred')  return lit.a.every(isVar);
+  if(lit.k==='npred') return lit.a.every(isVar);
+  return false;
+}
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function tokenize(src){
+  const tokens=[];let i=0;
+  while(i<src.length){
+    if(/\s/.test(src[i])){i++;continue;}
+    if(src.slice(i,i+2)==='!='||src.slice(i,i+2)==='<>'){tokens.push({t:'NEQ',v:'!='});i+=2;continue;}
+    if(src[i]==='='){tokens.push({t:'EQ',v:'='});i++;continue;}
+    if(src[i]==='\u2260'){tokens.push({t:'NEQ',v:'!='});i++;continue;}
+    if(src[i]==='!'||src[i]==='¬'||src[i]==='~'){tokens.push({t:'NEG',v:'!'});i++;continue;}
+    if(src.slice(i,i+4).toLowerCase()==='not '){tokens.push({t:'NEG',v:'!'});i+=4;continue;}
+    if(src[i]==='('){tokens.push({t:'LP',v:'('});i++;continue;}
+    if(src[i]===')'){tokens.push({t:'RP',v:')'});i++;continue;}
+    if(src[i]===','){tokens.push({t:'COMMA',v:','});i++;continue;}
+    if(/[a-zA-Z_]/.test(src[i])){let j=i;while(j<src.length&&/[a-zA-Z0-9_']/.test(src[j]))j++;tokens.push({t:'ID',v:src.slice(i,j)});i=j;continue;}
+    i++;
+  }
+  return tokens;
+}
+function parseCube(src){
+  const tokens=tokenize(src),lits=[];
+  let depth=0,start=0;
+  for(let i=0;i<tokens.length;i++){
+    if(tokens[i].t==='LP')depth++;
+    else if(tokens[i].t==='RP')depth--;
+    else if(tokens[i].t==='COMMA'&&depth===0){lits.push(parseLitTokens(tokens.slice(start,i)));start=i+1;}
+  }
+  if(start<tokens.length)lits.push(parseLitTokens(tokens.slice(start)));
+  return lits.filter(Boolean);
+}
+function parseLitTokens(toks){
+  if(!toks.length)return null;
+  let i=0,negated=false;
+  if(toks[i]&&toks[i].t==='NEG'){negated=true;i++;}
+  const {term:lterm,end:e1}=parseTerm(toks,i);i=e1;
+  if(i>=toks.length){
+    if(lterm.k==='f')return negated?{k:'npred',n:lterm.n,a:lterm.a}:{k:'pred',n:lterm.n,a:lterm.a};
+    return negated?{k:'npred',n:lterm.n,a:[]}:{k:'pred',n:lterm.n,a:[]};
+  }
+  if(toks[i]&&toks[i].t==='EQ'){i++;const{term:rterm}=parseTerm(toks,i);return negated?{k:'neq',l:lterm,r:rterm}:{k:'eq',l:lterm,r:rterm};}
+  if(toks[i]&&toks[i].t==='NEQ'){i++;const{term:rterm}=parseTerm(toks,i);return{k:'neq',l:lterm,r:rterm};}
+  if(lterm.k==='f')return negated?{k:'npred',n:lterm.n,a:lterm.a}:{k:'pred',n:lterm.n,a:lterm.a};
+  return negated?{k:'npred',n:lterm.n,a:[]}:{k:'pred',n:lterm.n,a:[]};
+}
+function parseTerm(toks,i){
+  if(i>=toks.length)throw new Error('Unexpected end');
+  if(toks[i].t!=='ID')throw new Error('Expected identifier');
+  const name=toks[i].v;i++;
+  if(i<toks.length&&toks[i].t==='LP'){
+    i++;const args=[];
+    while(i<toks.length&&toks[i].t!=='RP'){const{term,end}=parseTerm(toks,i);args.push(term);i=end;if(i<toks.length&&toks[i].t==='COMMA')i++;}
+    if(i<toks.length)i++;
+    return{term:{k:'f',n:name,a:args},end:i};
+  }
+  return{term:{k:'v',n:name},end:i};
+}
+
+// ═══════════════════════════════════════
+// SMT2 PARSER
+// ═══════════════════════════════════════
+function tokenizeSMT2(src){
+  const tokens=[];let i=0;
+  while(i<src.length){
+    if(src[i]===';'){while(i<src.length&&src[i]!=='\n')i++;continue;}
+    if(/\s/.test(src[i])){i++;continue;}
+    if(src[i]==='('||src[i]===')'){tokens.push(src[i]);i++;continue;}
+    let j=i;while(j<src.length&&src[j]!=='('&&src[j]!==')'&&!/\s/.test(src[j])&&src[j]!==';')j++;
+    if(j>i)tokens.push(src.slice(i,j));i=j;
+  }
+  return tokens;
+}
+function parseSexps(tokens){
+  const stack=[[]];
+  for(const tok of tokens){
+    if(tok==='('){stack.push([]);}
+    else if(tok===')'){const top=stack.pop();stack[stack.length-1].push(top);}
+    else{stack[stack.length-1].push(tok);}
+  }
+  return stack[0];
+}
+function smt2ToLits(src){
+  const sexps=parseSexps(tokenizeSMT2(src));
+  const decls={};
+  for(const s of sexps){
+    if(!Array.isArray(s))continue;
+    if(s[0]==='declare-fun'){
+      const name=s[1],argTypes=Array.isArray(s[2])?s[2]:[],ret=s[3];
+      decls[name]={arity:argTypes.length,bool:ret==='Bool'};
+    }
+  }
+  function fixTerm(s){
+    if(typeof s==='string'){
+      if(decls[s]&&decls[s].arity===0&&!decls[s].bool)return{k:'v',n:s};
+      return{k:'v',n:s};
+    }
+    if(Array.isArray(s)){
+      const fname=s[0];const args=s.slice(1).map(fixTerm);
+      if(decls[fname]&&decls[fname].bool)return null;
+      return{k:'f',n:fname,a:args};
+    }
+  }
+  const lits=[];
+  for(const s of sexps){
+    if(!Array.isArray(s)||s[0]!=='assert')continue;
+    const lit=s[1];
+    if(Array.isArray(lit)&&lit[0]==='='){
+      const l=fixTerm(lit[1]),r=fixTerm(lit[2]);
+      if(l&&r)lits.push({k:'eq',l,r});
+    } else if(Array.isArray(lit)&&lit[0]==='not'&&Array.isArray(lit[1])&&lit[1][0]==='='){
+      const l=fixTerm(lit[1][1]),r=fixTerm(lit[1][2]);
+      if(l&&r)lits.push({k:'neq',l,r});
+    } else if(Array.isArray(lit)&&lit[0]==='distinct'){
+      const l=fixTerm(lit[1]),r=fixTerm(lit[2]);
+      if(l&&r)lits.push({k:'neq',l,r});
+    } else if(Array.isArray(lit)&&lit[0]==='not'&&Array.isArray(lit[1])&&decls[lit[1][0]]?.bool){
+      const args=lit[1].slice(1).map(fixTerm).filter(Boolean);
+      lits.push({k:'npred',n:lit[1][0],a:args});
+    } else if(Array.isArray(lit)&&decls[lit[0]]?.bool){
+      const args=lit.slice(1).map(fixTerm).filter(Boolean);
+      lits.push({k:'pred',n:lit[0],a:args});
+    }
+  }
+  return lits;
+}
+function litsToSMT2(lits){
+  function ts(t){return t.k==='v'?t.n:`(${t.n} ${t.a.map(ts).join(' ')})`;}
+  const names=new Set(),funs=new Map();
+  function collectTerm(t){
+    if(t.k==='v'){names.add(t.n);}
+    else{funs.set(t.n,(funs.get(t.n)||0)||t.a.length);t.a.forEach(collectTerm);}
+  }
+  lits.forEach(lit=>{
+    if(lit.k==='eq'||lit.k==='neq'){collectTerm(lit.l);collectTerm(lit.r);}
+    else if(lit.k==='pred'||lit.k==='npred'){lit.a.forEach(collectTerm);}
+  });
+  const lines=['(set-logic QF_UF)','(declare-sort S 0)'];
+  funs.forEach((arity,name)=>{
+    lines.push(`(declare-fun ${name} (${Array(arity).fill('S').join(' ')}) S)`);
+  });
+  names.forEach(n=>{if(!funs.has(n))lines.push(`(declare-fun ${n} () S)`);});
+  lits.forEach(lit=>{
+    if(lit.k==='eq')    lines.push(`(assert (= ${ts(lit.l)} ${ts(lit.r)}))`);
+    if(lit.k==='neq')   lines.push(`(assert (not (= ${ts(lit.l)} ${ts(lit.r)})))`);
+    if(lit.k==='pred')  lines.push(`(assert (${[lit.n,...lit.a.map(ts)].join(' ')}))`);
+    if(lit.k==='npred') lines.push(`(assert (not (${[lit.n,...lit.a.map(ts)].join(' ')})))`);
+  });
+  lines.push('(check-sat)');
+  return lines.join('\n');
+}
+
+// ═══════════════════════════════════════
+// UNION-FIND OPERATIONS
+// ═══════════════════════════════════════
+
+// Returns {root, compressed:[all nodes on path from term to root, excluding root]}
+function ufFind(term) {
+  // Walk to root (read-only pass)
+  let root = term;
+  while (S.parent[root] !== root) root = S.parent[root];
+  // Collect ALL nodes on path (including those already direct children)
+  const pathNodes = [];
+  let cur = term;
+  while (cur !== root) {
+    pathNodes.push(cur);
+    cur = S.parent[cur];
+  }
+  // Compress ALL path nodes to point directly to root
+  for (const node of pathNodes) S.parent[node] = root;
+  return { root, compressed: pathNodes };
+}
+
+// Returns {merged, newRoot, changed:[terms whose parent/rank changed]}
+// Uses ufFindRoot (no path compression) — compression only happens via Find action
+function ufUnion(a, b) {
+  const ra = ufFindRoot(a), rb = ufFindRoot(b);
+  if (ra === rb) return { merged: false, changed: new Set() };
+  const changed = new Set();
+  // Union by rank
+  if (S.rank[ra] < S.rank[rb]) {
+    S.parent[ra] = rb; changed.add(ra);
+    return { merged: true, newRoot: rb, changed };
+  } else if (S.rank[ra] > S.rank[rb]) {
+    S.parent[rb] = ra; changed.add(rb);
+    return { merged: true, newRoot: ra, changed };
+  } else {
+    S.parent[rb] = ra; S.rank[ra]++; changed.add(rb);
+    return { merged: true, newRoot: ra, changed };
+  }
+}
+
+// Get path from term to root (including both)
+function getPath(term) {
+  const path = [];
+  let cur = term;
+  while (S.parent[cur] !== cur) { path.push(cur); cur = S.parent[cur]; }
+  path.push(cur); // root
+  return path;
+}
+
+// ═══════════════════════════════════════
+// FINDERS
+// ═══════════════════════════════════════
+function findUnionSteps() {
+  const steps = [];
+  // Explicit equalities where sides are in different classes
+  for (const eq of S.equalities) {
+    if (ufFindRoot(eq.l) !== ufFindRoot(eq.r))
+      steps.push({ kind: 'eq', eq });
+  }
+  // Congruence: two fn-apps with same name, all args pairwise equal, results in different classes
+  const n = S.fnApps.length;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const fi = S.fnApps[i], fj = S.fnApps[j];
+      if (fi.fname !== fj.fname || fi.args.length !== fj.args.length) continue;
+      if (ufFindRoot(fi.result) === ufFindRoot(fj.result)) continue;
+      if (fi.args.every((a, k) => ufFindRoot(a) === ufFindRoot(fj.args[k])))
+        steps.push({ kind: 'cong', fi, fj });
+    }
+  }
+  return steps;
+}
+
+// Find root without path compression (readonly)
+function ufFindRoot(term) {
+  let r = term;
+  while (S.parent[r] !== r) r = S.parent[r];
+  return r;
+}
+
+function hasConflict() {
+  return S.disequalities.some(d => ufFindRoot(d.l) === ufFindRoot(d.r));
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function loadFormula() {
+  const src = document.getElementById('formulaInput').value.trim();
+  if (!src) return;
+  let cube;
+  try { cube = parseCube(src); } catch(e) { alert('Parse error: ' + e.message); return; }
+  initSolver(cube);
+}
+
+function initSolver(cube) {
+  const nonFlat = cube.filter(l => !isFlat(l));
+  if (nonFlat.length) {
+    document.getElementById('warnBanner').classList.add('show');
+    S.status = 'idle';
+    renderAll();
+    return;
+  }
+  document.getElementById('warnBanner').classList.remove('show');
+
+  const equalities = [], disequalities = [], fnApps = [];
+  const termSet = new Set();
+
+  function addTerm(t) {
+    const s = termStr(t);
+    termSet.add(s);
+    if (t.k === 'f') t.a.forEach(a => termSet.add(termStr(a)));
+    return s;
+  }
+
+  for (const lit of cube) {
+    if (lit.k === 'eq') {
+      const ls = addTerm(lit.l), rs = addTerm(lit.r);
+      equalities.push({ l: ls, r: rs, lit });
+      // Track function application
+      if (lit.l.k === 'f') fnApps.push({ result: rs, fname: lit.l.n, args: lit.l.a.map(termStr) });
+      if (lit.r.k === 'f') fnApps.push({ result: ls, fname: lit.r.n, args: lit.r.a.map(termStr) });
+    } else if (lit.k === 'neq') {
+      const ls = addTerm(lit.l), rs = addTerm(lit.r);
+      disequalities.push({ l: ls, r: rs, lit });
+    } else if (lit.k === 'pred' || lit.k === 'npred') {
+      lit.a.forEach(a => termSet.add(termStr(a)));
+    }
+  }
+
+  const parent = {}, rank = {};
+  for (const t of termSet) { parent[t] = t; rank[t] = 0; }
+
+  S = {
+    cube, equalities, disequalities, fnApps,
+    parent, rank,
+    history: [{ parent: { ...parent }, rank: { ...rank }, expl: 'Initialized — each term in its own class', type: 'init', lastChanged: new Set(), lastMergedRoot: null }],
+    status: 'running',
+    lastChanged: new Set(),
+    lastMergedRoot: null
+  };
+
+  renderAll();
+}
+
+function saveSnapshot(expl, type, lastChanged, lastMergedRoot = null) {
+  S.history.push({
+    parent: { ...S.parent },
+    rank: { ...S.rank },
+    expl, type,
+    lastChanged: new Set(lastChanged),
+    lastMergedRoot
+  });
+  S.lastChanged = new Set(lastChanged);
+  S.lastMergedRoot = lastMergedRoot;
+}
+
+// ═══════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════
+function openUnionPicker() {
+  const steps = findUnionSteps();
+  if (!steps.length) { alert('No union steps applicable.'); return; }
+  const cont = document.getElementById('unionOptions');
+  cont.innerHTML = '';
+  steps.forEach(step => {
+    const div = document.createElement('div');
+    div.className = 'pick-option';
+    if (step.kind === 'eq') {
+      const { eq } = step;
+      const ra = ufFindRoot(eq.l), rb = ufFindRoot(eq.r);
+      const clsA = getClass(ra), clsB = getClass(rb);
+      div.innerHTML = `
+        <span class="pick-rule">union</span>
+        <div class="pick-detail">
+          <b>${escHtml(litStr(eq.lit))}</b><br>
+          Class of <em>${escHtml(eq.l)}</em>: ${clsA.map(t=>`<span class="pick-cls">${escHtml(t)}</span>`).join('')}<br>
+          Class of <em>${escHtml(eq.r)}</em>: ${clsB.map(t=>`<span class="pick-cls">${escHtml(t)}</span>`).join('')}
+        </div>`;
+    } else {
+      const { fi, fj } = step;
+      const ra = ufFindRoot(fi.result), rb = ufFindRoot(fj.result);
+      const clsA = getClass(ra), clsB = getClass(rb);
+      const argPairs = fi.args.map((a, k) => `${escHtml(a)}≡${escHtml(fj.args[k])}`).join(', ');
+      div.innerHTML = `
+        <span class="pick-rule" style="background:rgba(249,115,22,.2);color:var(--orange)">congruence</span>
+        <div class="pick-detail">
+          <b>${escHtml(fi.fname)}(${fi.args.map(escHtml).join(', ')})</b> ≡ <b>${escHtml(fj.fname)}(${fj.args.map(escHtml).join(', ')})</b><br>
+          Equal args: ${argPairs}<br>
+          Will union: <span class="pick-cls">${escHtml(fi.result)}</span> and <span class="pick-cls">${escHtml(fj.result)}</span><br>
+          Class of <em>${escHtml(fi.result)}</em>: ${clsA.map(t=>`<span class="pick-cls">${escHtml(t)}</span>`).join('')}<br>
+          Class of <em>${escHtml(fj.result)}</em>: ${clsB.map(t=>`<span class="pick-cls">${escHtml(t)}</span>`).join('')}
+        </div>`;
+    }
+    div.onclick = () => { closeModal('unionOverlay'); applyUnion(step); };
+    cont.appendChild(div);
+  });
+  openModal('unionOverlay');
+}
+
+function applyUnion(step) {
+  let l, r, expl;
+  if (step.kind === 'eq') {
+    const { eq } = step;
+    l = eq.l; r = eq.r;
+    const { merged, newRoot, changed } = ufUnion(l, r);
+    if (!merged) return;
+    expl = `Union(${litStr(eq.lit)}): merged class of ${l} with class of ${r}${changed.size > 0 ? ` [compressed: ${[...changed].join(', ')}]` : ''}`;
+    saveSnapshot(expl, 'union', changed, newRoot);
+  } else {
+    const { fi, fj } = step;
+    l = fi.result; r = fj.result;
+    const { merged, newRoot, changed } = ufUnion(l, r);
+    if (!merged) return;
+    expl = `Union(congruence): ${fi.fname}(${fi.args.join(', ')}) ≡ ${fj.fname}(${fj.args.join(', ')}) → merged ${l} with ${r}${changed.size > 0 ? ` [compressed: ${[...changed].join(', ')}]` : ''}`;
+    saveSnapshot(expl, 'union', changed, newRoot);
+  }
+  renderAll();
+}
+
+function openFindPicker() {
+  if (!S.disequalities.length) { alert('No disequalities to check.'); return; }
+  const cont = document.getElementById('findOptions');
+  cont.innerHTML = '';
+  S.disequalities.forEach(deq => {
+    const pathL = getPath(deq.l), pathR = getPath(deq.r);
+    const rootL = ufFindRoot(deq.l), rootR = ufFindRoot(deq.r);
+    const conflict = rootL === rootR;
+    const div = document.createElement('div');
+    div.className = 'pick-option';
+    div.innerHTML = `
+      <span class="pick-rule">find</span>
+      <div class="pick-detail">
+        <b>${escHtml(litStr(deq.lit))}</b><br>
+        find(<em>${escHtml(deq.l)}</em>): <span class="pick-path">${pathL.map(escHtml).join(' → ')}</span> → root <span class="pick-cls">${escHtml(rootL)}</span><br>
+        find(<em>${escHtml(deq.r)}</em>): <span class="pick-path">${pathR.map(escHtml).join(' → ')}</span> → root <span class="pick-cls">${escHtml(rootR)}</span><br>
+        ${conflict
+          ? `<b style="color:var(--red)">⚠ Same root — CONFLICT!</b>`
+          : `<span style="color:var(--green)">✓ Different roots — no conflict</span>`}
+      </div>`;
+    div.onclick = () => { closeModal('findOverlay'); applyFind(deq); };
+    cont.appendChild(div);
+  });
+  openModal('findOverlay');
+}
+
+function applyFind(deq) {
+  const pathL = getPath(deq.l), pathR = getPath(deq.r);
+  const { root: rootL, compressed: compL } = ufFind(deq.l);
+  const { root: rootR, compressed: compR } = ufFind(deq.r);
+  const changed = new Set([deq.l, deq.r, ...compL, ...compR]);
+  const conflict = rootL === rootR;
+
+  let expl = `Find(${litStr(deq.lit)}): find(${deq.l})=${rootL} [path: ${pathL.join('→')}], find(${deq.r})=${rootR} [path: ${pathR.join('→')}]`;
+  if (conflict) {
+    expl += ' → SAME ROOT → UNSAT';
+    S.status = 'unsat';
+    saveSnapshot(expl, 'fail', changed);
+  } else {
+    expl += ' → different roots, no conflict';
+    saveSnapshot(expl, 'find', changed);
+  }
+  renderAll();
+}
+
+function concludeSAT() {
+  S.status = 'sat';
+  saveSnapshot('SAT: no rules applicable, no disequality contradicted', 'sat', new Set());
+  renderAll();
+}
+
+function autoSolve() {
+  let steps = 0;
+  while (S.status === 'running' && steps < 200) {
+    const unions = findUnionSteps();
+    if (unions.length) { applyUnion(unions[0]); steps++; continue; }
+    // Check all disequalities with Find
+    if (S.disequalities.length) { applyFind(S.disequalities[0]); steps++; continue; }
+    concludeSAT();
+    break;
+  }
+}
+
+function undoStep() {
+  if (S.history.length <= 1) return;
+  S.history.pop();
+  const prev = S.history[S.history.length - 1];
+  S.parent = { ...prev.parent };
+  S.rank = { ...prev.rank };
+  S.lastChanged = new Set(prev.lastChanged);
+  S.lastMergedRoot = prev.lastMergedRoot;
+  S.status = prev.type === 'sat' ? 'sat' : prev.type === 'unsat' ? 'unsat' : 'running';
+  if (S.status === 'sat' || S.status === 'unsat') S.status = 'running';
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function getClass(root) {
+  return Object.keys(S.parent).filter(t => {
+    let r = t; while (S.parent[r] !== r) r = S.parent[r]; return r === root;
+  });
+}
+
+function getRoots() {
+  return Object.keys(S.parent).filter(t => S.parent[t] === t);
+}
+
+// ═══════════════════════════════════════
+// TREE LAYOUT + SVG
+// ═══════════════════════════════════════
+const NODE_R = 22;
+const H_GAP = 18;
+const V_GAP = 68;
+
+function buildChildrenOf() {
+  const ch = {};
+  for (const t of Object.keys(S.parent)) ch[t] = [];
+  for (const t of Object.keys(S.parent)) {
+    if (S.parent[t] !== t) ch[S.parent[t]].push(t);
+  }
+  return ch;
+}
+
+function nodeWidth(t) {
+  // Width needed for the node label
+  return Math.max(NODE_R * 2, t.length * 7 + 14);
+}
+
+function subtreeW(t, ch) {
+  const children = ch[t] || [];
+  if (!children.length) return nodeWidth(t) + H_GAP;
+  const cw = children.reduce((s, c) => s + subtreeW(c, ch), 0);
+  return Math.max(nodeWidth(t) + H_GAP, cw);
+}
+
+function layoutTree(root, ch) {
+  const pos = {};
+  function layout(t, cx, y) {
+    pos[t] = { x: cx, y };
+    const children = ch[t] || [];
+    if (!children.length) return;
+    const total = children.reduce((s, c) => s + subtreeW(c, ch), 0);
+    let lx = cx - total / 2;
+    for (const c of children) {
+      const cw = subtreeW(c, ch);
+      layout(c, lx + cw / 2, y + V_GAP);
+      lx += cw;
+    }
+  }
+  const w = subtreeW(root, ch);
+  layout(root, w / 2, NODE_R + 8);
+  let maxY = 0;
+  for (const t in pos) maxY = Math.max(maxY, pos[t].y);
+  return { pos, width: w, height: maxY + NODE_R + 20 };
+}
+
+function renderSVGTree(root, ch, failTerms) {
+  const { pos, width, height } = layoutTree(root, ch);
+  const isSat = S.status === 'sat';
+  const isUnsat = S.status === 'unsat';
+
+  const markerId = 'arr-' + root.replace(/[^a-zA-Z0-9]/g, '_');
+
+  let edges = '', nodes = '';
+
+  for (const t in pos) {
+    if (t === root) continue;
+    const p = S.parent[t];
+    const { x: x1, y: y1 } = pos[t];
+    const { x: x2, y: y2 } = pos[p] || pos[root];
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const ux = dx / len, uy = dy / len;
+    // Shorten for arrowhead
+    const sx = x1 + ux * NODE_R;
+    const sy = y1 + uy * NODE_R;
+    const ex = x2 - ux * (NODE_R + 5);
+    const ey = y2 - uy * (NODE_R + 5);
+    const isComp = S.lastChanged.has(t);
+    edges += `<line x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"
+      class="tree-edge${isComp ? ' edge-compressed' : ''}"
+      marker-end="url(#${markerId})"/>`;
+  }
+
+  for (const t in pos) {
+    const { x, y } = pos[t];
+    const isRoot = t === root;
+    const isChanged = S.lastChanged.has(t);
+    const isFail = failTerms && failTerms.has(t);
+    const nw = nodeWidth(t);
+    const rx = nw / 2, ry = NODE_R;
+    let cls = 'uf-node';
+    if (isRoot) cls += ' is-root';
+    if (isChanged && !isRoot) cls += ' is-compressed';
+    if (t === S.lastMergedRoot) cls += ' is-changed';
+    if (isFail) cls += ' fail-node';
+
+    const label = escHtml(t.length > 12 ? t.slice(0, 11) + '…' : t);
+    const rankText = isRoot
+      ? `<text x="${x.toFixed(1)}" y="${(y + NODE_R + 13).toFixed(1)}" class="rank-label" text-anchor="middle">r=${S.rank[t] || 0}</text>`
+      : '';
+
+    nodes += `<g class="${cls}">
+      <ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${rx}" ry="${ry}"/>
+      <text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="node-label" text-anchor="middle" dominant-baseline="middle">${label}</text>
+      ${rankText}
+    </g>`;
+  }
+
+  const isRootMerged = root === S.lastMergedRoot;
+  const isFailTree = isUnsat && failTerms && failTerms.has(root);
+  const cardCls = `tree-card${isRootMerged ? ' just-merged' : ''}${isSat ? ' sat-tree' : ''}${isFailTree ? ' unsat-tree' : ''}`;
+
+  return `<div class="${cardCls}">
+    <svg width="${width}" height="${height}" class="tree-svg">
+      <defs>
+        <marker id="${markerId}" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L7,3 z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+      ${edges}
+      ${nodes}
+    </svg>
+  </div>`;
+}
+
+function renderForest() {
+  const wrap = document.getElementById('forestWrap');
+  if (!Object.keys(S.parent).length) {
+    wrap.innerHTML = '<div style="color:var(--muted);font-style:italic;font-size:14px">Initialize to see the forest.</div>';
+    return;
+  }
+  const ch = buildChildrenOf();
+  const roots = getRoots();
+
+  // Identify fail terms for red highlight (the class containing both sides of a conflicted disequality)
+  let failTerms = null;
+  if (S.status === 'unsat') {
+    const conflicted = S.disequalities.find(d => ufFindRoot(d.l) === ufFindRoot(d.r));
+    if (conflicted) {
+      failTerms = new Set();
+      const ra = ufFindRoot(conflicted.l);
+      Object.keys(S.parent).forEach(t => {
+        if (ufFindRoot(t) === ra) failTerms.add(t);
+      });
+    }
+  }
+
+  // Which root contains the last-merged root?
+  wrap.innerHTML = roots.map(r => renderSVGTree(r, ch, failTerms)).join('');
+
+  // Update forest info
+  document.getElementById('forestInfo').textContent =
+    `${roots.length} class${roots.length !== 1 ? 'es' : ''}, ${Object.keys(S.parent).length} terms`;
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function renderLits() {
+  const el = document.getElementById('litList');
+  if (!S.cube.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-style:italic;font-size:14px">Load a formula.</div>';
+    return;
+  }
+  el.innerHTML = S.cube.map(lit => {
+    const cls = lit.k === 'eq' ? 'lit-eq' : lit.k === 'neq' ? 'lit-neq' : lit.k === 'pred' ? 'lit-pred' : 'lit-npred';
+    const tag = lit.k === 'eq' ? '=' : lit.k === 'neq' ? '≠' : lit.k === 'pred' ? 'P' : '¬P';
+    return `<div class="lit-item"><span class="lit-tag">${tag}</span><span class="${cls}">${escHtml(litStr(lit))}</span></div>`;
+  }).join('');
+  document.getElementById('cubeInfo').textContent =
+    `${S.equalities.length} eq · ${S.disequalities.length} diseq · ${S.fnApps.length} fn-app`;
+}
+
+function renderButtons() {
+  const running = S.status === 'running';
+  ['btnFind','btnUnion','btnAuto'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.disabled = !running;
+  });
+  if (!running) return;
+
+  const unions = findUnionSteps();
+  const canFind = S.disequalities.length > 0;
+  const canSAT = !unions.length && !hasConflict();
+
+  document.getElementById('btnUnion').disabled = !unions.length;
+  document.getElementById('btnFind').disabled = !canFind;
+  document.getElementById('unionCount').textContent = unions.length ? `${unions.length} applicable` : '';
+  document.getElementById('findCount').textContent = canFind ? `${S.disequalities.length} disequality${S.disequalities.length > 1 ? 'ies' : ''} to check` : '';
+
+  if (canSAT) concludeSAT();
+}
+
+function renderHint() {
+  const box = document.getElementById('hintBox');
+  if (S.status === 'idle') { box.innerHTML = 'Load a flat cube to begin.'; return; }
+  if (S.status === 'sat') { box.innerHTML = '<b style="color:var(--green)">SAT</b> — no rules apply, no contradiction.'; return; }
+  if (S.status === 'unsat') { box.innerHTML = '<b style="color:var(--red)">UNSAT</b> — a disequality is contradicted.'; return; }
+
+  const parts = [];
+  const unions = findUnionSteps();
+  if (unions.length) parts.push(`<b style="color:var(--orange)">Union</b>: ${unions.length} equalit${unions.length > 1 ? 'ies' : 'y'} to merge.`);
+  if (S.disequalities.length) {
+    const conflicts = S.disequalities.filter(d => ufFindRoot(d.l) === ufFindRoot(d.r));
+    if (conflicts.length) parts.push(`<b style="color:var(--red)">Find</b>: ${conflicts.length} disequality conflict${conflicts.length > 1 ? 's' : ''} detected — apply Find to confirm UNSAT.`);
+    else parts.push(`<b style="color:var(--amber)">Find</b>: apply on ${S.disequalities.length} disequalit${S.disequalities.length > 1 ? 'ies' : 'y'} to compress paths and check for conflicts.`);
+  }
+  if (!parts.length) parts.push('No actions needed — ready to conclude SAT.');
+  box.innerHTML = parts.join('<br>');
+}
+
+function renderHistory() {
+  const list = document.getElementById('histList');
+  if (S.history.length <= 1) {
+    list.innerHTML = '<div style="color:var(--muted);font-style:italic;font-size:13px">No steps yet.</div>';
+    return;
+  }
+  list.innerHTML = S.history.slice(1).map((h, i) => {
+    const type = h.type;
+    const badgeCls = `hb hb-${type}`;
+    const label = type === 'union' ? 'UNION' : type === 'find' ? 'FIND' : type === 'cong' ? 'CONG' : type === 'fail' ? 'FAIL' : type === 'sat' ? 'SAT' : 'STEP';
+    const isCur = i === S.history.length - 2;
+    return `<div class="hentry${isCur ? ' hcur' : ''}"><span class="${badgeCls}">${label}</span>${escHtml(h.expl)}</div>`;
+  }).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function renderBanners() {
+  const sat = document.getElementById('satBanner');
+  const unsat = document.getElementById('unsatBanner');
+  sat.style.display = S.status === 'sat' ? 'block' : 'none';
+  unsat.style.display = S.status === 'unsat' ? 'block' : 'none';
+  if (S.status === 'unsat') {
+    const conflicted = S.disequalities.find(d => ufFindRoot(d.l) === ufFindRoot(d.r));
+    document.getElementById('unsatDetail').textContent = conflicted
+      ? `Contradiction: ${litStr(conflicted.lit)} — find(${conflicted.l}) = find(${conflicted.r}) (same class).`
+      : 'A disequality is contradicted by the equivalence classes.';
+  }
+}
+
+function renderAll() {
+  renderLits();
+  renderBanners();
+  renderForest();
+  renderButtons();
+  renderHint();
+  renderHistory();
+}
+
+// ═══════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════
+// FILE I/O
+// ═══════════════════════════════════════
+function downloadSMT2() {
+  const src = document.getElementById('formulaInput').value.trim();
+  if (!src) return;
+  let cube;
+  try { cube = parseCube(src); } catch(e) { alert('Parse error: ' + e.message); return; }
+  const content = litsToSMT2(cube);
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+  a.download = 'formula.smt2'; a.click();
+}
+
+function onFileUpload(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const lits = smt2ToLits(e.target.result);
+      document.getElementById('formulaInput').value = lits.map(litStr).join(', ');
+      initSolver(lits);
+    } catch(err) { alert('SMT2 parse error: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+function downloadHistory() {
+  if (S.history.length <= 1) return;
+  const lines = S.history.map((h, i) => {
+    const roots = Object.keys(h.parent).filter(t => h.parent[t] === t);
+    const classes = roots.map(r => {
+      const members = Object.keys(h.parent).filter(t => {
+        let p = t; while (h.parent[p] !== p) p = h.parent[p]; return p === r;
+      });
+      return `{${members.join(', ')}}`;
+    }).join(' | ');
+    return `Step ${i}: ${h.expl}\n  Classes: ${classes}`;
+  });
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(lines.join('\n\n'));
+  a.download = 'uf-history.txt'; a.click();
+}
+
+// ═══════════════════════════════════════
+// FLATTEN ENGINE (same as CC tutorial)
+// ═══════════════════════════════════════
+function freshName(count){ return 'z'+(count+1); }
+
+function findFlattenRules(cube, freshCount){
+  const options=[];
+  for(let litIdx=0;litIdx<cube.length;litIdx++){
+    const lit=cube[litIdx];
+    if(isFlat(lit)) continue;
+    const fn=freshName(freshCount);
+    if(lit.k==='eq'&&!isVar(lit.l)){
+      const z={k:'v',n:fn};
+      const newLits=[{k:'eq',l:z,r:lit.r},{k:'eq',l:z,r:lit.l}];
+      options.push({rule:'equal_rule',litIdx,oldLit:lit,freshName:fn,
+        newCube:[...cube.slice(0,litIdx),...newLits,...cube.slice(litIdx+1)],
+        nextFresh:freshCount+1,standsFor:termStr(lit.l)});
+      continue;
+    }
+    if(lit.k==='neq'&&!isVar(lit.l)){
+      const z={k:'v',n:fn};
+      const newLits=[{k:'neq',l:z,r:lit.r},{k:'eq',l:z,r:lit.l}];
+      options.push({rule:'not_s_rule',litIdx,oldLit:lit,freshName:fn,
+        newCube:[...cube.slice(0,litIdx),...newLits,...cube.slice(litIdx+1)],
+        nextFresh:freshCount+1,standsFor:termStr(lit.l)});
+      continue;
+    }
+    if(lit.k==='neq'&&isVar(lit.l)&&!isVar(lit.r)){
+      const z={k:'v',n:fn};
+      const newLits=[{k:'neq',l:lit.l,r:z},{k:'eq',l:z,r:lit.r}];
+      options.push({rule:'not_t_rule',litIdx,oldLit:lit,freshName:fn,
+        newCube:[...cube.slice(0,litIdx),...newLits,...cube.slice(litIdx+1)],
+        nextFresh:freshCount+1,standsFor:termStr(lit.r)});
+      continue;
+    }
+    if(lit.k==='eq'&&isVar(lit.l)&&lit.r.k==='f'){
+      const idx=lit.r.a.findIndex(a=>!isVar(a));
+      if(idx>=0){
+        const oldArg=lit.r.a[idx];
+        const z={k:'v',n:fn};
+        const newArgs=lit.r.a.map((a,i)=>i===idx?z:a);
+        const newEq={k:'eq',l:lit.l,r:{k:'f',n:lit.r.n,a:newArgs}};
+        options.push({rule:'function_rule',litIdx,oldLit:lit,freshName:fn,
+          newCube:[...cube.slice(0,litIdx),newEq,{k:'eq',l:z,r:oldArg},...cube.slice(litIdx+1)],
+          nextFresh:freshCount+1,standsFor:termStr(oldArg)});
+        continue;
+      }
+    }
+    if(lit.k==='pred'){
+      const idx=lit.a.findIndex(a=>!isVar(a));
+      if(idx>=0){
+        const oldArg=lit.a[idx];
+        const z={k:'v',n:fn};
+        const newArgs=lit.a.map((a,i)=>i===idx?z:a);
+        options.push({rule:'predicat_rule',litIdx,oldLit:lit,freshName:fn,
+          newCube:[...cube.slice(0,litIdx),{k:'pred',n:lit.n,a:newArgs},{k:'eq',l:z,r:oldArg},...cube.slice(litIdx+1)],
+          nextFresh:freshCount+1,standsFor:termStr(oldArg)});
+        continue;
+      }
+    }
+    if(lit.k==='npred'){
+      const idx=lit.a.findIndex(a=>!isVar(a));
+      if(idx>=0){
+        const oldArg=lit.a[idx];
+        const z={k:'v',n:fn};
+        const newArgs=lit.a.map((a,i)=>i===idx?z:a);
+        options.push({rule:'not_predicat_rule',litIdx,oldLit:lit,freshName:fn,
+          newCube:[...cube.slice(0,litIdx),{k:'npred',n:lit.n,a:newArgs},{k:'eq',l:z,r:oldArg},...cube.slice(litIdx+1)],
+          nextFresh:freshCount+1,standsFor:termStr(oldArg)});
+        continue;
+      }
+    }
+  }
+  return options;
+}
+
+function inlineAutoFlatten(){
+  const raw=document.getElementById('formulaInput').value.trim();
+  if(!raw){alert('Please enter a formula first.');return;}
+  let cube;
+  try{cube=parseCube(raw);}catch(e){alert('Parse error: '+e.message);return;}
+  let fc=0;
+  const MAX=200;let steps=0;
+  while(steps<MAX){
+    const opts=findFlattenRules(cube,fc);
+    if(!opts.length) break;
+    cube=opts[0].newCube; fc=opts[0].nextFresh; steps++;
+  }
+  const flatStr=cube.map(litStr).join(', ');
+  document.getElementById('formulaInput').value=flatStr;
+  document.getElementById('warnBanner').classList.remove('show');
+  initSolver(cube);
+}
+
+function openFlattenTutorial(){
+  const raw=document.getElementById('formulaInput').value.trim();
+  localStorage.setItem('flatten_formula',raw);
+  window.location.href=`../flatten/?f=${encodeURIComponent(raw)}`;
+}
+
+// ═══════════════════════════════════════
+// STARTUP
+// ═══════════════════════════════════════
+(function init() {
+  const params = new URLSearchParams(location.search);
+  const f = params.get('f') || localStorage.getItem('uf_formula');
+  if (f) {
+    document.getElementById('formulaInput').value = f;
+    try { initSolver(parseCube(f)); } catch(e) {}
+  }
+})();
+</script>
+</body>
+</html>

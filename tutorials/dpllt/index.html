@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPLL(T) — Interactive Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --blue:#3b82f6;--blue2:#60a5fa;--cyan:#06b6d4;--cyan2:#22d3ee;
+  --violet:#8b5cf6;--violet2:#a78bfa;
+  --green:#22c55e;--green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.35);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.12);--red-bd:rgba(239,68,68,.35);
+  --orange:#f97316;--amber:#f59e0b;--amber2:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#0c1445 0%,#1e3a8a 40%,#1d4ed8 70%,#0c1445 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#bfdbfe,#93c5fd,#67e8f9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);
+  color:var(--blue2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+.wrap{max-width:1500px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+  border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#1d4ed8);color:#fff}
+.btn-blue:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s;width:100%
+}
+.formula-input:focus{border-color:var(--blue)}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.input-row{display:flex;gap:10px;align-items:stretch;margin-top:10px}
+.ex-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ex-chip{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:4px 10px;font-size:12px;font-family:'Consolas','Courier New',monospace;
+  color:var(--muted);cursor:pointer;transition:all .15s
+}
+.ex-chip:hover{border-color:var(--blue);color:var(--blue2)}
+
+/* Diagram SVG */
+.diagram-wrap{width:100%;overflow:auto;background:var(--bg);border-radius:10px;border:1px solid var(--border);padding:16px;min-height:300px;display:flex;align-items:center;justify-content:center}
+#dplltSvg{max-width:100%;height:auto}
+
+/* Component classes for SVG */
+.comp-box{fill:#1e2535;stroke:#2a3148;stroke-width:1.5;rx:8;ry:8}
+.comp-label{font-family:'Segoe UI',system-ui,sans-serif;fill:var(--text);dominant-baseline:central;text-anchor:middle}
+.comp-sublabel{font-size:11px;font-family:'Consolas',monospace;fill:#8892a4;dominant-baseline:central;text-anchor:middle}
+.arrow-line{stroke:#3a4159;stroke-width:1.5;fill:none;marker-end:url(#arr)}
+.arrow-label{font-size:11px;font-family:'Consolas',monospace;fill:#8892a4;text-anchor:middle}
+.output-label{font-size:16px;font-weight:700;font-family:'Segoe UI',sans-serif;dominant-baseline:central;text-anchor:middle}
+
+/* Highlight states */
+.hl-blue .comp-box{fill:rgba(59,130,246,.18);stroke:var(--blue);stroke-width:2.5}
+.hl-blue .comp-label{fill:var(--blue2)}
+.hl-cyan .comp-box{fill:rgba(6,182,212,.15);stroke:var(--cyan);stroke-width:2.5}
+.hl-cyan .comp-label{fill:var(--cyan2)}
+.hl-violet .comp-box{fill:rgba(139,92,246,.15);stroke:var(--violet);stroke-width:2.5}
+.hl-violet .comp-label{fill:var(--violet2)}
+.hl-green .output-label{fill:var(--green)}
+.hl-red .output-label{fill:var(--red)}
+.hl-orange .arrow-line{stroke:var(--orange);stroke-width:2.5;marker-end:url(#arr-orange)}
+.hl-orange .arrow-label{fill:var(--orange);font-weight:700}
+.hl-cyan-arr .arrow-line{stroke:var(--cyan);stroke-width:2.5;marker-end:url(#arr-cyan)}
+.hl-cyan-arr .arrow-label{fill:var(--cyan2);font-weight:700}
+
+/* Pulse animation */
+@keyframes pulse-blue{0%,100%{filter:drop-shadow(0 0 6px rgba(59,130,246,.7))}50%{filter:drop-shadow(0 0 16px rgba(59,130,246,1))}}
+@keyframes pulse-violet{0%,100%{filter:drop-shadow(0 0 6px rgba(139,92,246,.7))}50%{filter:drop-shadow(0 0 16px rgba(139,92,246,1))}}
+@keyframes pulse-green{0%,100%{filter:drop-shadow(0 0 6px rgba(34,197,94,.7))}50%{filter:drop-shadow(0 0 16px rgba(34,197,94,1))}}
+@keyframes pulse-red{0%,100%{filter:drop-shadow(0 0 6px rgba(239,68,68,.7))}50%{filter:drop-shadow(0 0 16px rgba(239,68,68,1))}}
+@keyframes pulse-cyan{0%,100%{filter:drop-shadow(0 0 6px rgba(6,182,212,.7))}50%{filter:drop-shadow(0 0 16px rgba(6,182,212,1))}}
+@keyframes pulse-orange{0%,100%{filter:drop-shadow(0 0 6px rgba(249,115,22,.7))}50%{filter:drop-shadow(0 0 16px rgba(249,115,22,1))}}
+.pulse-blue{animation:pulse-blue 1.5s ease-in-out infinite;cursor:pointer}
+.pulse-violet{animation:pulse-violet 1.5s ease-in-out infinite;cursor:pointer}
+.pulse-green{animation:pulse-green 1.5s ease-in-out infinite;cursor:pointer}
+.pulse-red{animation:pulse-red 1.5s ease-in-out infinite;cursor:pointer}
+.pulse-cyan{animation:pulse-cyan 1.5s ease-in-out infinite;cursor:pointer}
+.pulse-orange{animation:pulse-orange 1.5s ease-in-out infinite;cursor:pointer}
+
+/* Info panel */
+.step-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue2)}
+.badge-violet{background:rgba(139,92,246,.15);color:var(--violet2)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-cyan{background:rgba(6,182,212,.15);color:var(--cyan2)}
+.badge-orange{background:rgba(249,115,22,.15);color:var(--orange)}
+
+.info-section{margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)}
+.info-section-title{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.info-content{font-family:'Consolas','Courier New',monospace;font-size:12px;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-all}
+.info-highlight{color:var(--blue2)}
+.lit-eq{color:var(--green)}
+.lit-neq{color:var(--red)}
+.lit-bool{color:var(--amber2)}
+
+/* Clauses */
+.clause-row{font-family:'Consolas',monospace;font-size:12px;padding:3px 0;color:var(--text)}
+.clause-row .unit{color:var(--amber2)}
+.clause-new{background:rgba(249,115,22,.1);border-radius:4px;padding:1px 4px}
+
+/* Step history */
+.hist-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto}
+.hist-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px}
+.hist-item .h-step{font-size:10px;color:var(--muted);margin-bottom:2px}
+.hist-item .h-text{font-family:'Consolas',monospace;font-size:12px;line-height:1.4;color:var(--text)}
+.hist-item.h-sat{border-color:var(--green-bd);background:var(--green-bg)}
+.hist-item.h-unsat{border-color:var(--red-bd);background:var(--red-bg)}
+.hist-item.h-theory{border-color:rgba(139,92,246,.3);background:rgba(139,92,246,.07)}
+.hist-item.h-block{border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.07)}
+.hist-item.h-dpll{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.07)}
+
+/* Tag chips */
+.tag{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-right:4px}
+.tag-blue{background:rgba(59,130,246,.15);color:var(--blue2)}
+.tag-violet{background:rgba(139,92,246,.15);color:var(--violet2)}
+.tag-green{background:var(--green-bg);color:var(--green)}
+.tag-red{background:var(--red-bg);color:var(--red)}
+.tag-orange{background:rgba(249,115,22,.15);color:var(--orange)}
+
+/* theory trace */
+.trace-item{padding:3px 8px;font-size:12px;font-family:'Consolas',monospace;border-left:3px solid var(--border);margin-bottom:3px;line-height:1.5}
+.trace-union{border-color:var(--blue);color:var(--blue2)}
+.trace-cong{border-color:var(--violet);color:var(--violet2)}
+.trace-conflict{border-color:var(--red);color:var(--red)}
+.trace-ok{border-color:var(--green);color:var(--green)}
+
+/* Solver picker */
+.solver-picker{
+  position:fixed;z-index:200;background:var(--surface);border:1px solid var(--blue);
+  border-radius:10px;padding:14px 16px;min-width:200px;
+  box-shadow:0 8px 28px rgba(0,0,0,.65);display:none
+}
+.solver-picker.open{display:block}
+.solver-picker-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px}
+.solver-option{display:block;width:100%;text-align:left;background:var(--surface2);
+  border:1px solid var(--border);border-radius:6px;color:var(--text);
+  font-size:13px;font-weight:600;padding:7px 13px;margin-bottom:6px;cursor:pointer;
+  transition:all .15s}
+.solver-option:hover{border-color:var(--blue);color:var(--blue2)}
+.solver-option.active{border-color:var(--blue);background:rgba(59,130,246,.18);color:var(--blue2)}
+.solver-option:last-child{margin-bottom:0}
+
+/* Needs-selection pulse — amber glow on unselected SVG solver boxes */
+@keyframes needs-pick{
+  0%,100%{filter:drop-shadow(0 0 5px rgba(245,158,11,.6))}
+  50%{filter:drop-shadow(0 0 18px rgba(245,158,11,1))}
+}
+.needs-pick{animation:needs-pick 1.2s ease-in-out infinite}
+.needs-pick .comp-box{stroke:var(--amber);stroke-width:2.5;fill:rgba(245,158,11,.08)}
+.needs-pick .comp-label,.needs-pick .comp-sublabel:not([fill]){fill:var(--amber2)}
+
+/* Formula trace box */
+.fbox-row{display:flex;gap:14px;align-items:flex-start;padding:7px 10px;border-radius:7px;
+  border:1px solid transparent;margin-bottom:3px;transition:background .2s,border-color .2s}
+.fbox-active-blue  {border-color:var(--blue);  background:rgba(59,130,246,.09)}
+.fbox-active-violet{border-color:var(--violet);background:rgba(139,92,246,.09)}
+.fbox-active-cyan  {border-color:var(--cyan);  background:rgba(6,182,212,.09)}
+.fbox-label{font-size:11px;font-weight:700;font-style:italic;font-family:'Consolas',monospace;
+  color:var(--muted);min-width:110px;padding-top:2px;flex-shrink:0}
+.fbox-value{font-family:'Consolas','Courier New',monospace;font-size:12px;color:var(--text);
+  line-height:1.6;flex:1;white-space:pre-wrap;word-break:break-all}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>DPLL(T) Interactive Tutorial</h1>
+    <p>SAT-solver + theory solver cooperation for SMT solving</p>
+  </div>
+  <div class="hdr-badge">T = UF (Union-Find)</div>
+</div>
+<div class="wrap">
+
+<!-- Input card -->
+<div class="card">
+  <div class="card-title">Formula Input
+    <span style="font-size:11px;color:var(--muted)">Theory: <strong style="color:var(--violet2)">UF</strong></span>
+  </div>
+  <div class="input-row">
+    <input class="formula-input" id="formulaInput" placeholder="e.g. f(a)=b & a=c & f(c)!=b" spellcheck="false">
+    <button class="btn btn-ghost btn-sm" onclick="uploadSMT2()" title="Load formula from .smt2 file">↑ .smt2</button>
+    <button class="btn btn-ghost btn-sm" onclick="downloadSMT2()" title="Save formula as .smt2 file">↓ .smt2</button>
+    <button id="runBtn" class="btn btn-blue" onclick="loadFormula()">Run ▶</button>
+  </div>
+  <input type="file" id="smt2FileInput" accept=".smt2,.smt" style="display:none" onchange="onSMT2FileSelected(event)">
+  <div class="input-hint">UF atoms: <code>a=b</code>, <code>f(a)!=b</code>, <code>g(a,b)=c</code> &nbsp;|&nbsp; Boolean: <code>&amp;</code> <code>|</code> <code>!</code> <code>-&gt;</code> <code>&lt;-&gt;</code></div>
+  <div class="ex-chips" id="exChips"></div>
+</div>
+
+<!-- Main content -->
+<div id="mainContent">
+
+  <!-- Diagram + Info panel side by side -->
+  <div style="display:grid;grid-template-columns:1fr 390px;gap:18px;align-items:start">
+
+    <div class="card">
+      <div class="card-title">Algorithm Flow</div>
+      <div class="diagram-wrap">
+        <svg id="dplltSvg" viewBox="0 0 760 520" width="760" height="520" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="7" refX="7" refY="3.5" orient="auto">
+              <path d="M0,0 L0,7 L8,3.5 z" fill="#3a4159"/>
+            </marker>
+            <marker id="arr-cyan" markerWidth="8" markerHeight="7" refX="7" refY="3.5" orient="auto">
+              <path d="M0,0 L0,7 L8,3.5 z" fill="#06b6d4"/>
+            </marker>
+            <marker id="arr-orange" markerWidth="8" markerHeight="7" refX="7" refY="3.5" orient="auto">
+              <path d="M0,0 L0,7 L8,3.5 z" fill="#f97316"/>
+            </marker>
+            <marker id="arr-green" markerWidth="8" markerHeight="7" refX="7" refY="3.5" orient="auto">
+              <path d="M0,0 L0,7 L8,3.5 z" fill="#22c55e"/>
+            </marker>
+          </defs>
+
+          <!-- φ box -->
+          <g id="comp-phi" onclick="componentClicked('phi')">
+            <rect class="comp-box" x="20" y="30" width="72" height="42" rx="8"/>
+            <text class="comp-label" x="56" y="51" font-size="18" font-style="italic">φ</text>
+          </g>
+
+          <!-- Arrow φ → tr -->
+          <g class="arrow-line">
+            <line class="arrow-line" x1="92" y1="51" x2="137" y2="51"/>
+          </g>
+
+          <!-- tr(φ) box -->
+          <g id="comp-tr" onclick="componentClicked('tr')">
+            <rect class="comp-box" x="138" y="30" width="96" height="42" rx="8"/>
+            <text class="comp-label" x="186" y="51" font-size="14" font-style="italic">tr(φ)</text>
+          </g>
+
+          <!-- Arrow tr → CNF -->
+          <g>
+            <line class="arrow-line" x1="186" y1="72" x2="186" y2="114"/>
+          </g>
+
+          <!-- CNF box -->
+          <g id="comp-cnf" onclick="componentClicked('cnf')">
+            <rect class="comp-box" x="138" y="115" width="96" height="42" rx="8"/>
+            <text class="comp-label" x="186" y="136" font-size="14">CNF</text>
+          </g>
+
+          <!-- Arrow CNF → DPLL -->
+          <g>
+            <line class="arrow-line" x1="186" y1="157" x2="186" y2="194"/>
+          </g>
+
+          <!-- DPLL box -->
+          <g id="comp-dpll" onclick="dpllBoxClicked(event)" style="cursor:pointer">
+            <rect class="comp-box" x="100" y="195" width="172" height="210" rx="10"/>
+            <text class="comp-sublabel" x="186" y="218" font-size="12">sat</text>
+            <text id="satSolverLabel" class="comp-label" x="186" y="293" font-size="16" font-weight="700">SAT Solver</text>
+            <text class="comp-sublabel" x="186" y="315" font-size="10" fill="#3b82f6">▾ click to choose</text>
+            <text class="comp-sublabel" x="186" y="388" font-size="12">unsat</text>
+          </g>
+
+          <!-- Arrow DPLL-sat → T-sat (right, long) -->
+          <g id="comp-tr-inv" onclick="componentClicked('tr_inv')">
+            <line class="arrow-line" x1="272" y1="230" x2="519" y2="230"/>
+            <text class="arrow-label" x="396" y="216" font-size="11" font-style="italic">tr⁻¹(φₘ)</text>
+            <!-- Dynamic: model literals shown on arrow -->
+            <text id="trInvLabel" x="396" y="248" font-size="10"
+              font-family="'Consolas','Courier New',monospace" text-anchor="middle"
+              fill="#22d3ee" display="none"></text>
+            <!-- Clickable hit area -->
+            <rect x="272" y="206" width="247" height="52" fill="transparent"/>
+          </g>
+
+          <!-- T box -->
+          <g id="comp-theory" onclick="theoryBoxClicked(event)" style="cursor:pointer">
+            <rect class="comp-box" x="520" y="195" width="120" height="210" rx="10"/>
+            <text class="comp-sublabel" x="580" y="218" font-size="12">sat</text>
+            <text id="theorySolverMainLabel" class="comp-label" x="580" y="295" font-size="16" font-weight="700">T</text>
+            <text class="comp-sublabel" x="580" y="318" font-size="10" fill="#3b82f6">▾ click to choose</text>
+            <text class="comp-sublabel" x="580" y="388" font-size="12">unsat</text>
+          </g>
+
+          <!-- Arrow T-sat → SAT output (up) -->
+          <g id="comp-sat-out" onclick="componentClicked('sat_out')">
+            <line class="arrow-line" x1="580" y1="195" x2="580" y2="150"/>
+            <text class="output-label" x="580" y="130" font-size="15" font-weight="700" fill="#8892a4">sat</text>
+          </g>
+
+          <!-- Arrow T-unsat → DPLL-unsat (left, long) -->
+          <g id="comp-f-clause" onclick="componentClicked('f_clause')">
+            <line class="arrow-line" x1="520" y1="370" x2="272" y2="370"/>
+            <text class="arrow-label" x="396" y="388" font-size="11" font-style="italic">F ∧ ¬φₘ</text>
+            <!-- Dynamic: actual blocking clause formula shown on arrow -->
+            <text id="blockClauseLabel" x="396" y="408" font-size="10"
+              font-family="'Consolas','Courier New',monospace" text-anchor="middle"
+              fill="#f97316" display="none"></text>
+            <!-- Clickable hit area -->
+            <rect x="272" y="348" width="248" height="68" fill="transparent"/>
+          </g>
+
+          <!-- Arrow DPLL-unsat → UNSAT output (down) -->
+          <g id="comp-unsat-out" onclick="componentClicked('unsat_out')">
+            <line class="arrow-line" x1="186" y1="405" x2="186" y2="450"/>
+            <text class="output-label" x="186" y="470" font-size="15" font-weight="700" fill="#8892a4">unsat</text>
+          </g>
+
+          <!-- Iteration badge area -->
+          <text id="iterLabel" x="750" y="30" font-size="11" fill="#3a4159" text-anchor="end" font-family="Consolas,monospace"></text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Info panel -->
+    <div class="card" id="infoPanel">
+      <div class="card-title">
+        <span id="stepTitle">—</span>
+        <span id="stepBadge" class="step-badge badge-blue" style="display:none"></span>
+      </div>
+      <div id="stepBody" style="font-size:13px;line-height:1.6;color:var(--muted)">Load a formula to begin.</div>
+      <div style="margin-top:16px;display:flex;gap:8px">
+        <button class="btn btn-blue" id="btnNext" onclick="nextStep()" disabled>Next →</button>
+        <button class="btn btn-ghost btn-sm" id="btnBack" onclick="prevStep()" disabled>← Back</button>
+        <button class="btn btn-ghost btn-sm" id="btnAuto" onclick="autoPlay()" style="margin-left:auto">Auto ▶</button>
+      </div>
+    </div>
+
+  </div><!-- end grid -->
+
+  <!-- Formula trace -->
+  <div class="card" id="formulaBox">
+    <div class="card-title">Formula Trace</div>
+    <div id="fbox-phi"  class="fbox-row"><span class="fbox-label">φ</span>            <span id="fval-phi"  class="fbox-value" style="color:var(--muted)">—</span></div>
+    <div id="fbox-tr"   class="fbox-row"><span class="fbox-label">tr(φ)</span>         <span id="fval-tr"   class="fbox-value" style="color:var(--muted)">—</span></div>
+    <div id="fbox-prop" class="fbox-row"><span class="fbox-label">Propositional</span> <span id="fval-prop" class="fbox-value" style="color:var(--muted)">—</span></div>
+    <div id="fbox-cnf"  class="fbox-row"><span class="fbox-label">CNF</span>           <span id="fval-cnf"  class="fbox-value" style="color:var(--muted)">—</span></div>
+    <div id="fbox-uf"   class="fbox-row"><span class="fbox-label">UF Literals</span>   <span id="fval-uf"   class="fbox-value" style="color:var(--muted)">—</span></div>
+  </div>
+
+</div>
+
+<!-- Step History — full width -->
+<div class="card" id="histCard" style="display:none">
+  <div class="card-title">
+    <span>Step History</span>
+    <span style="display:flex;align-items:center;gap:10px">
+      <span id="resultBadge" style="display:none"></span>
+      <button class="btn btn-ghost btn-sm" onclick="downloadHistory()" title="Download step history as .txt">↓ history.txt</button>
+    </span>
+  </div>
+  <div class="hist-list" id="histList"></div>
+</div>
+
+<!-- Solver picker overlays -->
+<div id="satPicker" class="solver-picker">
+  <div class="solver-picker-title">SAT Solver</div>
+  <button class="solver-option" onclick="selectSolver('sat','dpll','DPLL',24);event.stopPropagation()">DPLL</button>
+  <button class="solver-option" onclick="selectSolver('sat','basic-cdcl','Basic CDCL',14);event.stopPropagation()">Basic CDCL</button>
+  <button class="solver-option" onclick="selectSolver('sat','cdcl','CDCL',22);event.stopPropagation()">CDCL</button>
+</div>
+<div id="theoryPicker" class="solver-picker">
+  <div class="solver-picker-title">Theory Solver (T)</div>
+  <button class="solver-option" onclick="selectSolver('theory','union-find','Union-Find',13);event.stopPropagation()">Union-Find</button>
+  <button class="solver-option" onclick="selectSolver('theory','cc','CC',22);event.stopPropagation()">Congruence Closure (CC)</button>
+</div>
+
+</div><!-- wrap -->
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// PARSER — UF terms + propositional formula
+// ════════════════════════════════════════════════════════════════
+let _tok, _pos;
+
+function tokenize(src) {
+  const toks = [];
+  let i = 0;
+  while (i < src.length) {
+    if (/\s/.test(src[i])) { i++; continue; }
+    if (src.slice(i,i+3)==='<->') { toks.push('<->'); i+=3; continue; }
+    if (src.slice(i,i+2)==='->') { toks.push('->'); i+=2; continue; }
+    if (src.slice(i,i+2)==='!=') { toks.push('!='); i+=2; continue; }
+    if ('!&|()=,'.includes(src[i])) { toks.push(src[i]); i++; continue; }
+    if (/[A-Za-z_]/.test(src[i])) {
+      let j=i; while(j<src.length && /[A-Za-z0-9_]/.test(src[j])) j++;
+      toks.push(src.slice(i,j)); i=j; continue;
+    }
+    throw new Error('Unknown char: '+src[i]);
+  }
+  return toks;
+}
+
+function peek() { return _tok[_pos]; }
+function consume(t) {
+  if (t && _tok[_pos]!==t) throw new Error('Expected '+t+' got '+_tok[_pos]);
+  return _tok[_pos++];
+}
+
+// UF term
+function parseTerm() {
+  const name = consume();
+  if (peek()==='(') {
+    consume('(');
+    const args=[];
+    if (peek()!==')') { args.push(parseTerm()); while(peek()===','){consume(',');args.push(parseTerm());} }
+    consume(')');
+    return {type:'fapp', name, args};
+  }
+  return {type:'var', name};
+}
+
+// Try to parse a UF atom: term (=|!=) term
+// Returns null and restores pos on failure
+function tryUFAtom() {
+  const saved=_pos;
+  try {
+    const t1=parseTerm();
+    if (peek()==='=' || peek()==='!=') {
+      const op=consume(); const t2=parseTerm();
+      return {type:'uf', op, t1, t2};
+    }
+    _pos=saved; return null;
+  } catch(e) { _pos=saved; return null; }
+}
+
+// Propositional formula with UF atoms as leaves
+function parseExpr() { return parseIff(); }
+function parseIff() {
+  let l=parseImp();
+  while(peek()==='<->'){consume('<->');l={type:'iff',children:[l,parseImp()]};}
+  return l;
+}
+function parseImp() {
+  let l=parseDisj();
+  while(peek()==='->'){ consume('->');l={type:'imp',children:[l,parseDisj()]}; }
+  return l;
+}
+function parseDisj() {
+  let l=parseConj();
+  while(peek()==='|'){ consume('|');l={type:'or',children:[l,parseConj()]}; }
+  return l;
+}
+function parseConj() {
+  let l=parseNegOrAtom();
+  while(peek()==='&'){ consume('&');l={type:'and',children:[l,parseNegOrAtom()]}; }
+  return l;
+}
+function parseNegOrAtom() {
+  if (peek()==='!') { consume('!'); return {type:'not',child:parseNegOrAtom()}; }
+  if (peek()==='(') {
+    consume('('); const e=parseExpr(); consume(')'); return e;
+  }
+  const uf=tryUFAtom();
+  if (uf) return uf;
+  throw new Error('Expected UF atom or ( at: '+peek());
+}
+
+function parseFormula(src) {
+  _tok=tokenize(src.trim()); _pos=0;
+  const ast=parseExpr();
+  if (_pos<_tok.length) throw new Error('Unexpected: '+_tok[_pos]);
+  return ast;
+}
+
+// ════════════════════════════════════════════════════════════════
+// TERM / ATOM UTILITIES
+// ════════════════════════════════════════════════════════════════
+function termStr(t) {
+  if (!t) return '?';
+  if (t.type==='var') return t.name;
+  return t.name+'('+t.args.map(termStr).join(',')+')';
+}
+function atomStr(a) { return termStr(a.t1)+a.op+termStr(a.t2); }
+
+function collectTerms(t, out=new Set()) {
+  out.add(termStr(t));
+  if (t.type==='fapp') t.args.forEach(a=>collectTerms(a,out));
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════
+// BOOLEAN ABSTRACTION — assign pᵢ to each unique UF atom
+// ════════════════════════════════════════════════════════════════
+// atomMap: str -> varIdx (1-based)
+// varAtoms: [{str, ast}] indexed by varIdx-1
+let atomMap, varAtoms;
+
+function abstractUF(ast) {
+  if (ast.type==='uf') {
+    const str=atomStr(ast);
+    if (!atomMap.has(str)) {
+      atomMap.set(str, atomMap.size+1);
+      varAtoms.push({str, ast});
+    }
+    return {type:'bvar', id:atomMap.get(str), str};
+  }
+  if (ast.type==='not') return {type:'not', child:abstractUF(ast.child)};
+  if (ast.children) return {...ast, children:ast.children.map(abstractUF)};
+  return ast;
+}
+
+// ════════════════════════════════════════════════════════════════
+// TSEYTIN → CNF
+// ════════════════════════════════════════════════════════════════
+// Returns {clauses:[[int]], nVars:int, rootVar:int, tsMap:{varIdx->node}}
+function toCNF(boolAst, nUFVars) {
+  let nextVar=nUFVars+1;
+  const clauses=[];
+  const tsMap={}; // fresh var -> description
+
+  function proc(node) {
+    if (node.type==='bvar') return node.id;
+    const v=nextVar++;
+    switch(node.type) {
+      case 'not': {
+        const d=proc(node.child);
+        clauses.push([-v,-d]); clauses.push([v,d]);
+        tsMap[v]='¬p'+d; break;
+      }
+      case 'and': {
+        const [c1,c2]=node.children.map(proc);
+        clauses.push([-v,c1]); clauses.push([-v,c2]); clauses.push([v,-c1,-c2]);
+        tsMap[v]='p'+c1+'∧p'+c2; break;
+      }
+      case 'or': {
+        const [c1,c2]=node.children.map(proc);
+        clauses.push([-v,c1,c2]); clauses.push([-c1,v]); clauses.push([-c2,v]);
+        tsMap[v]='p'+c1+'∨p'+c2; break;
+      }
+      case 'imp': {
+        const [c1,c2]=node.children.map(proc);
+        clauses.push([-v,-c1,c2]); clauses.push([v,c1]); clauses.push([v,-c2]);
+        tsMap[v]='p'+c1+'→p'+c2; break;
+      }
+      case 'iff': {
+        const [c1,c2]=node.children.map(proc);
+        clauses.push([-v,c1,-c2]); clauses.push([-v,-c1,c2]);
+        clauses.push([v,-c1,-c2]); clauses.push([v,c1,c2]);
+        tsMap[v]='p'+c1+'↔p'+c2; break;
+      }
+    }
+    return v;
+  }
+  const rootVar=proc(boolAst);
+  clauses.push([rootVar]);
+  const nVars=nextVar-1;
+  return {clauses, nVars, rootVar, tsMap};
+}
+
+// ════════════════════════════════════════════════════════════════
+// DPLL — simple recursive solver
+// ════════════════════════════════════════════════════════════════
+function dpllSolve(clauses, nVars) {
+  function status(clause, asgn) {
+    let free=[];
+    for (const lit of clause) {
+      const v=Math.abs(lit), val=asgn[v];
+      if (val===undefined) free.push(lit);
+      else if (val===(lit>0)) return {t:'sat'};
+    }
+    if (!free.length) return {t:'unsat'};
+    if (free.length===1) return {t:'unit', lit:free[0]};
+    return {t:'open'};
+  }
+
+  function solve(asgn) {
+    // Unit propagation (iterative)
+    let changed=true;
+    while (changed) {
+      changed=false;
+      for (const cl of clauses) {
+        const s=status(cl,asgn);
+        if (s.t==='unsat') return null;
+        if (s.t==='unit') {
+          const v=Math.abs(s.lit);
+          if (asgn[v]===undefined) { asgn[v]=(s.lit>0); changed=true; }
+        }
+      }
+    }
+    // All satisfied?
+    if (clauses.every(cl=>status(cl,asgn).t==='sat')) {
+      // Fill unassigned
+      for (let v=1;v<=nVars;v++) if (asgn[v]===undefined) asgn[v]=false;
+      return asgn;
+    }
+    // Choose first unassigned
+    let u=-1;
+    for (let v=1;v<=nVars;v++) if (asgn[v]===undefined){u=v;break;}
+    if (u===-1) return null;
+
+    const a1={...asgn}; a1[u]=true;
+    const r=solve(a1); if (r) return r;
+    const a2={...asgn}; a2[u]=false;
+    return solve(a2);
+  }
+
+  const result=solve({});
+  if (!result) return {sat:false};
+  return {sat:true, model:result};
+}
+
+// ════════════════════════════════════════════════════════════════
+// BASIC CDCL — unit propagation + clause learning (chronological backtrack)
+// ════════════════════════════════════════════════════════════════
+function basicCdclSolve(clauses, nVars) {
+  const learned = [];
+
+  function litSat(lit, asgn) {
+    const v = Math.abs(lit), val = asgn[v];
+    if (val === undefined) return undefined;
+    return val === (lit > 0);
+  }
+
+  function propagate(allClauses, asgn) {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const cl of allClauses) {
+        let undefLit = null, sat = false, undef = 0;
+        for (const lit of cl) {
+          const lv = litSat(lit, asgn);
+          if (lv === true) { sat = true; break; }
+          if (lv === undefined) { undef++; undefLit = lit; }
+        }
+        if (sat) continue;
+        if (undef === 0) return false;
+        if (undef === 1 && asgn[Math.abs(undefLit)] === undefined) {
+          asgn[Math.abs(undefLit)] = undefLit > 0; changed = true;
+        }
+      }
+    }
+    return true;
+  }
+
+  function solve(asgn, decisions) {
+    const all = clauses.concat(learned);
+    if (!propagate(all, asgn)) {
+      if (decisions.length > 0)
+        learned.push(decisions.map(([v, val]) => val ? -v : v));
+      return null;
+    }
+    if (all.every(cl => cl.some(lit => litSat(lit, asgn) === true))) {
+      for (let v = 1; v <= nVars; v++) if (asgn[v] === undefined) asgn[v] = false;
+      return asgn;
+    }
+    let u = -1;
+    for (let v = 1; v <= nVars; v++) if (asgn[v] === undefined) { u = v; break; }
+    if (u === -1) return null;
+    for (const val of [true, false]) {
+      const a = Object.assign({}, asgn); a[u] = val;
+      const r = solve(a, decisions.concat([[u, val]]));
+      if (r) return r;
+    }
+    return null;
+  }
+
+  const r = solve({}, []);
+  return r ? {sat: true, model: r} : {sat: false};
+}
+
+// ════════════════════════════════════════════════════════════════
+// CDCL — clause learning + non-chronological backjumping (1-UIP)
+// ════════════════════════════════════════════════════════════════
+function cdclSolve(clauses, nVars) {
+  const asgn  = new Array(nVars + 1).fill(undefined);
+  const lvl   = new Array(nVars + 1).fill(-1);
+  const rsn   = new Array(nVars + 1).fill(null);
+  const trail = [];
+  const lrnd  = [];
+  let   dl    = 0;
+
+  function allCls() { return clauses.concat(lrnd); }
+
+  function doAssign(v, val, clause) {
+    asgn[v] = val; lvl[v] = dl; rsn[v] = clause; trail.push(v);
+  }
+
+  function bcp() {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const cl of allCls()) {
+        let unassLit = 0, sat = false, undef = 0;
+        for (const lit of cl) {
+          const v = Math.abs(lit);
+          if (asgn[v] === undefined) { undef++; unassLit = lit; }
+          else if (asgn[v] === (lit > 0)) { sat = true; break; }
+        }
+        if (sat) continue;
+        if (undef === 0) return cl;
+        if (undef === 1 && asgn[Math.abs(unassLit)] === undefined) {
+          doAssign(Math.abs(unassLit), unassLit > 0, cl); changed = true;
+        }
+      }
+    }
+    return null;
+  }
+
+  function analyze(conflCl) {
+    const seen = new Set(conflCl.map(l => Math.abs(l)));
+    let ti = trail.length - 1;
+    function atCur() { let n = 0; seen.forEach(v => { if (lvl[v] === dl) n++; }); return n; }
+    while (atCur() > 1) {
+      while (ti >= 0 && (!seen.has(trail[ti]) || lvl[trail[ti]] !== dl)) ti--;
+      if (ti < 0) break;
+      const v = trail[ti--];
+      if (!rsn[v]) break;
+      seen.delete(v);
+      for (const l of rsn[v]) if (Math.abs(l) !== v) seen.add(Math.abs(l));
+    }
+    const learnedCl = [...seen].map(v => asgn[v] === true ? -v : v);
+    const bjLvl = [...seen].reduce((mx, v) => lvl[v] >= 0 && lvl[v] < dl && lvl[v] > mx ? lvl[v] : mx, 0);
+    return {learnedCl, bjLvl};
+  }
+
+  function backjump(toLevel) {
+    while (trail.length && lvl[trail[trail.length - 1]] > toLevel) {
+      const v = trail.pop();
+      asgn[v] = undefined; lvl[v] = -1; rsn[v] = null;
+    }
+    dl = toLevel;
+  }
+
+  let conf = bcp();
+  if (conf) return {sat: false};
+
+  while (true) {
+    let u = 0;
+    for (let v = 1; v <= nVars; v++) if (asgn[v] === undefined) { u = v; break; }
+    if (!u) {
+      const model = {};
+      for (let v = 1; v <= nVars; v++) model[v] = asgn[v] !== undefined ? asgn[v] : false;
+      return {sat: true, model};
+    }
+    dl++;
+    doAssign(u, true, null);
+    conf = bcp();
+    while (conf) {
+      if (dl === 0) return {sat: false};
+      const {learnedCl, bjLvl} = analyze(conf);
+      lrnd.push(learnedCl);
+      backjump(bjLvl);
+      const uip = learnedCl.find(l => asgn[Math.abs(l)] === undefined);
+      if (uip) doAssign(Math.abs(uip), uip > 0, learnedCl);
+      conf = bcp();
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// UF THEORY SOLVER — union-find + congruence closure (with trace)
+// ════════════════════════════════════════════════════════════════
+function ufTheoryCheck(ufLiterals) {
+  const parent={}, rank={};
+  const trace=[];
+
+  // Collect all term strings
+  const allTerms=new Set();
+  for (const lit of ufLiterals) {
+    collectTerms(lit.ast.t1,allTerms);
+    collectTerms(lit.ast.t2,allTerms);
+  }
+  for (const t of allTerms) { parent[t]=t; rank[t]=0; }
+
+  function find(x) {
+    while (parent[x]!==x) x=parent[x]; return x;
+  }
+  function union(x,y,reason) {
+    const rx=find(x), ry=find(y);
+    if (rx===ry) return false;
+    if (rank[rx]<rank[ry]) parent[rx]=ry;
+    else if (rank[rx]>rank[ry]) parent[ry]=rx;
+    else { parent[ry]=rx; rank[rx]++; }
+    trace.push({type:'union', x, y, reason});
+    return true;
+  }
+
+  // Collect function applications
+  const fnApps=[];
+  function collectFApps(t) {
+    if (t.type==='fapp') {
+      fnApps.push({result:termStr(t), fname:t.name, args:t.args.map(termStr)});
+      t.args.forEach(collectFApps);
+    }
+  }
+  for (const lit of ufLiterals) {
+    collectFApps(lit.ast.t1); collectFApps(lit.ast.t2);
+  }
+  // Deduplicate fn apps
+  const fnSet=new Set(); const fnAppsUniq=[];
+  for (const fa of fnApps) {
+    const key=fa.fname+'('+fa.args.join(',')+')';
+    if (!fnSet.has(key)) { fnSet.add(key); fnAppsUniq.push(fa); }
+  }
+
+  // Step 1: equalities
+  for (const lit of ufLiterals) {
+    if (lit.positive && lit.ast.op==='=') {
+      const ls=termStr(lit.ast.t1), rs=termStr(lit.ast.t2);
+      union(ls,rs,'equality: '+ls+'='+rs);
+    }
+  }
+
+  // Step 2: congruence
+  let changed=true;
+  while (changed) {
+    changed=false;
+    for (let i=0;i<fnAppsUniq.length;i++) {
+      for (let j=i+1;j<fnAppsUniq.length;j++) {
+        const fi=fnAppsUniq[i], fj=fnAppsUniq[j];
+        if (fi.fname!==fj.fname||fi.args.length!==fj.args.length) continue;
+        if (find(fi.result)===find(fj.result)) continue;
+        if (fi.args.every((a,k)=>find(a)===find(fj.args[k]))) {
+          union(fi.result,fj.result,'congruence: '+fi.fname+'('+fi.args.join(',')+')='+fj.fname+'('+fj.args.join(',')+')'+(fi.args.length?', args in same class':''));
+          changed=true;
+        }
+      }
+    }
+  }
+
+  // Step 3: check disequalities
+  for (const lit of ufLiterals) {
+    const ls=termStr(lit.ast.t1), rs=termStr(lit.ast.t2);
+    const isDeq=(lit.positive && lit.ast.op==='!=') || (!lit.positive && lit.ast.op==='=');
+    if (isDeq) {
+      if (find(ls)===find(rs)) {
+        trace.push({type:'conflict', x:ls, y:rs, reason:'find('+ls+')=find('+rs+') but '+ls+'≠'+rs});
+        return {sat:false, trace, conflictPair:[ls,rs]};
+      }
+    }
+  }
+
+  trace.push({type:'ok', reason:'No conflicts found'});
+  return {sat:true, trace};
+}
+
+// ════════════════════════════════════════════════════════════════
+// UF THEORY SOLVER — union-find only (no congruence, equalities only)
+// ════════════════════════════════════════════════════════════════
+function ufUnionFindCheck(ufLiterals) {
+  const parent = {}, rank = {};
+  const trace  = [];
+  const allTerms = new Set();
+  for (const lit of ufLiterals) {
+    collectTerms(lit.ast.t1, allTerms);
+    collectTerms(lit.ast.t2, allTerms);
+  }
+  for (const t of allTerms) { parent[t] = t; rank[t] = 0; }
+
+  function find(x) { while (parent[x] !== x) x = parent[x]; return x; }
+  function union(x, y, reason) {
+    const rx = find(x), ry = find(y);
+    if (rx === ry) return;
+    if (rank[rx] < rank[ry]) parent[rx] = ry;
+    else if (rank[rx] > rank[ry]) parent[ry] = rx;
+    else { parent[ry] = rx; rank[rx]++; }
+    trace.push({type: 'union', x, y, reason});
+  }
+
+  // Equalities only — no congruence closure
+  for (const lit of ufLiterals) {
+    if (lit.positive && lit.ast.op === '=') {
+      const ls = termStr(lit.ast.t1), rs = termStr(lit.ast.t2);
+      union(ls, rs, 'equality: ' + ls + '=' + rs);
+    }
+  }
+
+  for (const lit of ufLiterals) {
+    const ls = termStr(lit.ast.t1), rs = termStr(lit.ast.t2);
+    const isDeq = (lit.positive && lit.ast.op === '!=') || (!lit.positive && lit.ast.op === '=');
+    if (isDeq && find(ls) === find(rs)) {
+      trace.push({type: 'conflict', x: ls, y: rs, reason: 'find('+ls+')=find('+rs+') but '+ls+'≠'+rs});
+      return {sat: false, trace, conflictPair: [ls, rs]};
+    }
+  }
+
+  trace.push({type: 'ok', reason: 'No conflicts (union-find, no congruence rule applied)'});
+  return {sat: true, trace};
+}
+
+// ════════════════════════════════════════════════════════════════
+// DPLL(T) MAIN — produce frames array
+// ════════════════════════════════════════════════════════════════
+function runDPLLT(formulaSrc) {
+  const frames=[];
+  let log='';
+
+  // 1. Parse
+  const ast=parseFormula(formulaSrc);
+
+  // 2. Abstract UF atoms
+  atomMap=new Map(); varAtoms=[];
+  const boolAst=abstractUF(ast);
+  const nUFVars=varAtoms.length;
+
+  // 3. Tseytin → CNF
+  const {clauses:baseClauses, nVars:baseNVars, rootVar, tsMap}=toCNF(boolAst, nUFVars);
+
+  // Build variable name table
+  const varName=v => {
+    if (v<=nUFVars) return 'p'+v;
+    return 'p'+v+'ₜ'; // Tseytin aux var
+  };
+
+  const litStr=lit => {
+    const v=Math.abs(lit);
+    return (lit<0?'¬':'')+'p'+v;
+  };
+
+  const clauseStr=cl => '('+cl.map(litStr).join(' ∨ ')+')';
+
+  // Frame helper
+  function addFrame(component, title, badgeClass, badgeText, bodyHtml, histText, histClass) {
+    frames.push({component, title, badgeClass, badgeText, bodyHtml, histText, histClass});
+  }
+
+  // Formula trace data — accumulated as algorithm progresses
+  const _propStr=[...atomMap.entries()].map(([str,idx])=>`p${idx}  ↔  ${str}`).join('\n');
+  const _trPhiStr=boolFormulaStr(boolAst);
+  const _baseCnfStr=baseClauses.map(clauseStr).join('\n');
+  let _curUfStr='';
+
+  // — Frame 1: φ input
+  addFrame('phi','Input Formula','badge-blue','INPUT',
+    `<div class="info-section"><div class="info-section-title">Formula φ</div><div class="info-content">${escHtml(formulaSrc)}</div></div>`+
+    `<div class="info-section"><div class="info-section-title">Description</div><div style="font-size:12px;color:var(--muted)">DPLL(T) is a <span style="color:var(--blue2)">lazy SMT solving</span> framework.<br>The SAT solver (<b style="color:var(--blue2)">${{dpll:'DPLL','basic-cdcl':'Basic CDCL',cdcl:'CDCL'}[G.satSolver]||'DPLL'}</b>) handles Boolean structure.<br>The theory solver (T = <b style="color:var(--violet2)">${{'union-find':'Union-Find',cc:'CC (Congruence Closure)'}[G.theorySolver]||'Union-Find'}</b>) checks theory consistency of each model.</div></div>`,
+    'Input: '+formulaSrc, 'h-dpll');
+  frames[frames.length-1].fstate={phi:formulaSrc, tr:'', prop:'', cnf:'', uf:'', active:['phi']};
+
+  // — Frame 2: tr(φ) — Boolean abstraction
+  let trBody=`<div class="info-section"><div class="info-section-title">UF Atoms → Boolean Variables</div><div class="info-content">`;
+  for (const [str,idx] of atomMap) {
+    trBody+=`<span class="tag tag-blue">p${idx}</span> ↔ <span class="${str.includes('!=')?'lit-neq':'lit-eq'}">${escHtml(str)}</span>\n`;
+  }
+  trBody+=`</div></div>`;
+  trBody+=`<div class="info-section"><div class="info-section-title">Boolean Formula</div><div class="info-content">${escHtml(boolFormulaStr(boolAst))}</div></div>`;
+  addFrame('tr','tr(φ) — Boolean Abstraction','badge-blue','FLATTEN',trBody,
+    'Abstracted '+nUFVars+' UF atoms to Boolean vars', 'h-dpll');
+  frames[frames.length-1].fstate={phi:formulaSrc, tr:_trPhiStr, prop:_propStr, cnf:'', uf:'', active:['tr','prop']};
+
+  // — Frame 3: CNF
+  let cnfBody=`<div class="info-section"><div class="info-section-title">Initial CNF (${baseClauses.length} clauses, ${baseNVars} vars)</div><div style="max-height:200px;overflow-y:auto">`;
+  for (const cl of baseClauses) {
+    cnfBody+=`<div class="clause-row">${escHtml(clauseStr(cl))}</div>`;
+  }
+  cnfBody+=`</div></div>`;
+  if (Object.keys(tsMap).length>0) {
+    cnfBody+=`<div class="info-section"><div class="info-section-title">Tseytin Aux Variables</div><div class="info-content">`;
+    for (const [v,desc] of Object.entries(tsMap)) {
+      cnfBody+=`<span class="tag tag-blue">p${v}</span> ↔ ${escHtml(desc)}\n`;
+    }
+    cnfBody+=`</div></div>`;
+  }
+  addFrame('cnf','CNF Conversion (Tseytin)','badge-blue','CNF',cnfBody,
+    'CNF: '+baseClauses.length+' clauses, '+baseNVars+' variables','h-dpll');
+  frames[frames.length-1].fstate={phi:formulaSrc, tr:_trPhiStr, prop:_propStr, cnf:_baseCnfStr, uf:'', active:['cnf']};
+
+  // DPLL(T) loop
+  let currentClauses=[...baseClauses];
+  let currentNVars=baseNVars;
+  let iteration=0;
+  const MAX_ITER=15;
+
+  const satSolverName = {dpll:'DPLL','basic-cdcl':'Basic CDCL',cdcl:'CDCL'}[G.satSolver] || 'DPLL';
+  const satSolverFn   = G.satSolver==='basic-cdcl' ? basicCdclSolve : G.satSolver==='cdcl' ? cdclSolve : dpllSolve;
+  const thSolverName  = G.theorySolver==='cc' ? 'CC (Congruence Closure)' : 'Union-Find';
+  const thSolverFn    = G.theorySolver==='cc' ? ufTheoryCheck : ufUnionFindCheck;
+
+  while (iteration<MAX_ITER) {
+    iteration++;
+
+    // — SAT Solver frame
+    let dpllBody=`<div class="info-section"><div class="info-section-title">CNF (Iteration ${iteration}, ${currentClauses.length} clauses)</div><div style="max-height:180px;overflow-y:auto">`;
+    for (let ci=0;ci<currentClauses.length;ci++) {
+      const cl=currentClauses[ci];
+      dpllBody+=`<div class="clause-row">${escHtml(clauseStr(cl))}</div>`;
+    }
+    dpllBody+=`</div></div>`;
+    dpllBody+=`<div class="info-section"><div class="info-section-title">Status</div><div style="font-size:12px;color:var(--muted)">Running <b>${satSolverName}</b> on the Boolean CNF…</div></div>`;
+    addFrame('dpll',satSolverName+' SAT Solver (Iteration '+iteration+')','badge-blue',satSolverName+' #'+iteration,
+      dpllBody,satSolverName+' iteration '+iteration+': solving '+currentClauses.length+' clauses','h-dpll');
+    frames[frames.length-1].fstate={phi:formulaSrc, tr:_trPhiStr, prop:_propStr, cnf:currentClauses.map(clauseStr).join('\n'), uf:_curUfStr, active:['cnf']};
+
+    // Run selected SAT solver
+    const dpllResult=satSolverFn(currentClauses, currentNVars);
+
+    if (!dpllResult.sat) {
+      // DPLL UNSAT → overall UNSAT
+      const unBody=`<div class="info-section"><div class="info-section-title">${satSolverName} returned UNSAT</div><div style="font-size:12px;color:var(--red)">The Boolean CNF is unsatisfiable — all models have been exhausted by theory blocking clauses.</div></div>`+
+        `<div class="info-section"><div class="info-section-title">Conclusion</div><div style="font-size:14px;font-weight:700;color:var(--red);text-align:center;padding:8px">UNSAT</div></div>`;
+      addFrame('unsat_out','Overall: UNSAT','badge-red','UNSAT',unBody,satSolverName+' returned UNSAT → Overall UNSAT','h-unsat');
+      frames[frames.length-1].fstate={phi:formulaSrc, tr:_trPhiStr, prop:_propStr, cnf:currentClauses.map(clauseStr).join('\n'), uf:_curUfStr, active:[]};
+      break;
+    }
+
+    // DPLL found model — extract UF literals
+    const model=dpllResult.model;
+    const ufLiterals=[];
+    for (let v=1;v<=nUFVars;v++) {
+      const positive=model[v]===true;
+      ufLiterals.push({varIdx:v, positive, ast:varAtoms[v-1].ast, str:varAtoms[v-1].str});
+    }
+
+    // — tr⁻¹ frame
+    let trInvBody=`<div class="info-section"><div class="info-section-title">DPLL Model φₘ</div><div class="info-content">`;
+    for (let v=1;v<=nUFVars;v++) {
+      const val=model[v];
+      const atom=varAtoms[v-1];
+      trInvBody+=`<span class="tag tag-blue">p${v}</span> = <span style="color:${val?'var(--green)':'var(--red)'}">${val?'T':'F'}</span>  → <span class="${val?'lit-eq':'lit-neq'}">${escHtml(val?atom.str:negAtomStr(atom.ast))}</span>\n`;
+    }
+    trInvBody+=`</div></div>`;
+    trInvBody+=`<div class="info-section"><div class="info-section-title">UF Literals to Theory</div><div class="info-content">`;
+    for (const lit of ufLiterals) {
+      const label=lit.positive?lit.str:negAtomStr(lit.ast);
+      trInvBody+=`<span class="${lit.positive?'lit-eq':'lit-neq'}">${escHtml(label)}</span>\n`;
+    }
+    trInvBody+=`</div></div>`;
+    addFrame('tr_inv','tr⁻¹(φₘ) — Extract UF Model','badge-cyan','MODEL',trInvBody,
+      'Model: '+ufLiterals.map(l=>l.positive?l.str:negAtomStr(l.ast)).join(', '),'h-dpll');
+    frames[frames.length-1].modelStr=ufLiterals.map(l=>l.positive?l.str:negAtomStr(l.ast)).join(', ');
+    _curUfStr=ufLiterals.map(l=>l.positive?l.str:negAtomStr(l.ast)).join('\n');
+    frames[frames.length-1].fstate={phi:formulaSrc, tr:_trPhiStr, prop:_propStr, cnf:currentClauses.map(clauseStr).join('\n'), uf:_curUfStr, active:['uf']};
+
+    // — Theory solver frame
+    const thResult=thSolverFn(ufLiterals);
+    let thBody=`<div class="info-section"><div class="info-section-title">${thSolverName} Trace</div><div style="max-height:200px;overflow-y:auto">`;
+    for (const t of thResult.trace) {
+      if (t.type==='union') thBody+=`<div class="trace-item trace-union">⊔ ${escHtml(t.reason)}</div>`;
+      else if (t.type==='conflict') thBody+=`<div class="trace-item trace-conflict">✗ CONFLICT: ${escHtml(t.reason)}</div>`;
+      else if (t.type==='ok') thBody+=`<div class="trace-item trace-ok">✓ ${escHtml(t.reason)}</div>`;
+    }
+    thBody+=`</div></div>`;
+    thBody+=`<div class="info-section"><div class="info-section-title">Theory Result</div><div style="font-size:14px;font-weight:700;color:${thResult.sat?'var(--green)':'var(--red)'};text-align:center;padding:6px">${thResult.sat?'SAT — UF consistent':'UNSAT — contradiction found'}</div></div>`;
+    addFrame('theory','Theory Solver T ('+thSolverName+', Iteration '+iteration+')','badge-violet','T #'+iteration,
+      thBody, thResult.sat?'Theory SAT':'Theory UNSAT: '+thResult.trace.find(t=>t.type==='conflict')?.reason,
+
+      thResult.sat?'h-sat':'h-theory');
+    frames[frames.length-1].fstate={phi:formulaSrc, tr:_trPhiStr, prop:_propStr, cnf:currentClauses.map(clauseStr).join('\n'), uf:_curUfStr, active:['uf']};
+
+    if (thResult.sat) {
+      // Overall SAT
+      const satBody=`<div class="info-section"><div class="info-section-title">Theory says SAT</div><div style="font-size:12px;color:var(--green)">The UF model is consistent. The formula is satisfiable.</div></div>`+
+        `<div class="info-section"><div class="info-section-title">Satisfying Assignment</div><div class="info-content">`;
+      let satBodyContent='';
+      for (const lit of ufLiterals) {
+        const label=lit.positive?lit.str:negAtomStr(lit.ast);
+        satBodyContent+=`<span class="${lit.positive?'lit-eq':'lit-neq'}">${escHtml(label)}</span>\n`;
+      }
+      const satBodyFull=satBody+escHtml('')+satBodyContent+`</div></div><div class="info-section"><div style="font-size:16px;font-weight:700;color:var(--green);text-align:center;padding:8px">SAT ✓</div></div>`;
+      addFrame('sat_out','Overall: SAT','badge-green','SAT',satBodyFull,'Overall: SAT','h-sat');
+      frames[frames.length-1].fstate={phi:formulaSrc, tr:_trPhiStr, prop:_propStr, cnf:currentClauses.map(clauseStr).join('\n'), uf:_curUfStr, active:[]};
+      break;
+    }
+
+    // Theory UNSAT — build blocking clause
+    // Blocking clause: ¬(p1∧p2∧…∧pk) for the UF part of the model
+    const blockLits=ufLiterals.map(l=>l.positive?-l.varIdx:l.varIdx);
+    const blockClause=blockLits;
+    currentClauses=[...currentClauses, blockClause];
+
+    let fcBody=`<div class="info-section"><div class="info-section-title">Blocking Clause F ∧ ¬φₘ</div><div class="info-content">${escHtml(clauseStr(blockClause))}</div></div>`;
+    fcBody+=`<div class="info-section"><div class="info-section-title">Explanation</div><div style="font-size:12px;color:var(--muted)">The theory found the current model <span style="color:var(--red)">T-inconsistent</span>.<br>This clause forbids the same model in future DPLL iterations.</div></div>`;
+    fcBody+=`<div class="info-section"><div class="info-section-title">Updated CNF</div><div style="font-size:12px;color:var(--muted)">${currentClauses.length} clauses total (added 1 blocking clause)</div></div>`;
+    addFrame('f_clause','F ∧ ¬φₘ — Blocking Clause','badge-orange','BLOCK',fcBody,
+      'Blocking clause: '+clauseStr(blockClause),'h-block');
+    frames[frames.length-1].blockClauseStr=clauseStr(blockClause);
+    frames[frames.length-1].fstate={phi:formulaSrc, tr:_trPhiStr, prop:_propStr, cnf:currentClauses.map(clauseStr).join('\n'), uf:_curUfStr, active:['cnf']};
+  }
+
+  return frames;
+}
+
+// Helper: negate a UF atom (flip = ↔ !=)
+function negAtomStr(ast) {
+  const negOp=ast.op==='='?'!=':'=';
+  return termStr(ast.t1)+negOp+termStr(ast.t2);
+}
+
+// Helper: print Boolean AST as string
+function boolFormulaStr(ast) {
+  if (!ast) return '?';
+  if (ast.type==='bvar') return 'p'+ast.id;
+  if (ast.type==='not') return '¬'+boolFormulaStr(ast.child);
+  if (ast.type==='and') return '('+ast.children.map(boolFormulaStr).join('∧')+')';
+  if (ast.type==='or') return '('+ast.children.map(boolFormulaStr).join('∨')+')';
+  if (ast.type==='imp') return '('+ast.children.map(boolFormulaStr).join('→')+')';
+  if (ast.type==='iff') return '('+ast.children.map(boolFormulaStr).join('↔')+')';
+  return '?';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ════════════════════════════════════════════════════════════════
+// STATE & NAVIGATION
+// ════════════════════════════════════════════════════════════════
+let G = { frames:[], current:-1, autoTimer:null, satSolver:'dpll', theorySolver:'union-find', satChosen:false, theoryChosen:false };
+
+// ════════════════════════════════════════════════════════════════
+// SOLVER SELECTION — picker UI
+// ════════════════════════════════════════════════════════════════
+function dpllBoxClicked(event) {
+  const f = G.frames[G.current];
+  if (f && f.component === 'dpll') { nextStep(); return; }
+  openSolverPicker(event, 'sat');
+}
+
+function theoryBoxClicked(event) {
+  const f = G.frames[G.current];
+  if (f && f.component === 'theory') { nextStep(); return; }
+  openSolverPicker(event, 'theory');
+}
+
+function openSolverPicker(event, type) {
+  event.stopPropagation();
+  const satP = document.getElementById('satPicker');
+  const thP  = document.getElementById('theoryPicker');
+  const picker = type === 'sat' ? satP : thP;
+  const other  = type === 'sat' ? thP  : satP;
+  other.classList.remove('open');
+  picker.style.left = Math.min(event.clientX, window.innerWidth - 230) + 'px';
+  picker.style.top  = (event.clientY + 12) + 'px';
+  picker.classList.toggle('open');
+}
+
+function selectSolver(type, value, displayText, fontSize) {
+  if (type === 'sat') {
+    G.satSolver = value;
+    G.satChosen = true;
+    // SVG label
+    const lbl = document.getElementById('satSolverLabel');
+    if (lbl) { lbl.textContent = displayText; lbl.setAttribute('font-size', fontSize); }
+    // SVG pulse off
+    document.getElementById('comp-dpll').classList.remove('needs-pick');
+    // Dropdown picker
+    document.querySelectorAll('#satPicker .solver-option').forEach(btn =>
+      btn.classList.toggle('active', btn.textContent.trim() === {dpll:'DPLL','basic-cdcl':'Basic CDCL',cdcl:'CDCL'}[value])
+    );
+    document.getElementById('satPicker').classList.remove('open');
+  } else {
+    G.theorySolver = value;
+    G.theoryChosen = true;
+    // SVG label
+    const lbl = document.getElementById('theorySolverMainLabel');
+    if (lbl) { lbl.textContent = displayText; lbl.setAttribute('font-size', fontSize); lbl.removeAttribute('font-style'); }
+    // SVG pulse off
+    document.getElementById('comp-theory').classList.remove('needs-pick');
+    // Dropdown picker
+    document.querySelectorAll('#theoryPicker .solver-option').forEach(btn =>
+      btn.classList.toggle('active', btn.textContent.trim() === {'union-find':'Union-Find',cc:'Congruence Closure (CC)'}[value])
+    );
+    document.getElementById('theoryPicker').classList.remove('open');
+  }
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('satPicker')?.classList.remove('open');
+  document.getElementById('theoryPicker')?.classList.remove('open');
+});
+
+function loadFormula() {
+  const src=document.getElementById('formulaInput').value.trim();
+  if (!src) return;
+  try {
+    G.frames=runDPLLT(src);
+    G.current=-1;
+    if (G.autoTimer) { clearInterval(G.autoTimer); G.autoTimer=null; }
+    document.getElementById('mainContent').style.display='';
+    document.getElementById('histCard').style.display='';
+    nextStep();
+  } catch(e) {
+    alert('Error: '+e.message);
+    console.error(e);
+  }
+}
+
+function nextStep() {
+  if (!G.satChosen || !G.theoryChosen) {
+    if (!G.satChosen)    document.getElementById('comp-dpll').classList.add('needs-pick');
+    if (!G.theoryChosen) document.getElementById('comp-theory').classList.add('needs-pick');
+    return;
+  }
+  if (G.current>=G.frames.length-1) return;
+  G.current++;
+  renderAll();
+}
+
+function prevStep() {
+  if (G.current<=0) return;
+  G.current--;
+  renderAll();
+}
+
+function autoPlay() {
+  if (G.autoTimer) { clearInterval(G.autoTimer); G.autoTimer=null; document.getElementById('btnAuto').textContent='Auto ▶'; return; }
+  document.getElementById('btnAuto').textContent='Stop ■';
+  G.autoTimer=setInterval(()=>{
+    if (G.current>=G.frames.length-1) { clearInterval(G.autoTimer); G.autoTimer=null; document.getElementById('btnAuto').textContent='Auto ▶'; return; }
+    nextStep();
+  }, 2200);
+}
+
+function componentClicked(id) {
+  const f=G.frames[G.current];
+  if (f && f.component===id) nextStep();
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDERING
+// ════════════════════════════════════════════════════════════════
+const COMP_PULSE = {
+  phi:'pulse-blue', tr:'pulse-blue', cnf:'pulse-blue', dpll:'pulse-blue',
+  tr_inv:'pulse-cyan', theory:'pulse-violet',
+  sat_out:'pulse-green', unsat_out:'pulse-red', f_clause:'pulse-orange'
+};
+
+const COMP_HL = {
+  phi:'hl-blue', tr:'hl-blue', cnf:'hl-blue', dpll:'hl-blue',
+  tr_inv:'hl-cyan-arr', theory:'hl-violet',
+  sat_out:'hl-green', unsat_out:'hl-red', f_clause:'hl-orange'
+};
+
+// Map component name → SVG element ID
+const COMP_SVG = {
+  phi:'comp-phi', tr:'comp-tr', cnf:'comp-cnf', dpll:'comp-dpll',
+  tr_inv:'comp-tr-inv', theory:'comp-theory',
+  sat_out:'comp-sat-out', unsat_out:'comp-unsat-out', f_clause:'comp-f-clause'
+};
+
+// Previous active component (to remove class)
+let prevActive=null;
+
+function renderDiagram() {
+  if (!G.frames.length||G.current<0) return;
+  const f=G.frames[G.current];
+  const allComps=['phi','tr','cnf','dpll','tr_inv','theory','sat_out','unsat_out','f_clause'];
+
+  // Reset all
+  for (const c of allComps) {
+    const el=document.getElementById(COMP_SVG[c]);
+    if (!el) continue;
+    // Remove pulse and hl classes
+    el.classList.remove(COMP_PULSE[c], COMP_HL[c]);
+  }
+
+  // Highlight past components (dimmed)
+  for (let i=0;i<G.current;i++) {
+    const fc=G.frames[i].component;
+    // don't add done state for now
+  }
+
+  // Highlight current component
+  const cur=f.component;
+  const el=document.getElementById(COMP_SVG[cur]);
+  if (el) {
+    el.classList.add(COMP_PULSE[cur], COMP_HL[cur]);
+  }
+
+  // Update iteration label
+  const iterMatch=f.title.match(/Iteration (\d+)/);
+  const iterEl=document.getElementById('iterLabel');
+  iterEl.textContent=iterMatch?'Iteration '+iterMatch[1]:'';
+
+  // Show model literals on right arrow when on tr_inv step
+  const trInvLabel=document.getElementById('trInvLabel');
+  if (trInvLabel) {
+    if (f.component==='tr_inv' && f.modelStr) {
+      trInvLabel.textContent=f.modelStr;
+      trInvLabel.setAttribute('display','');
+    } else {
+      trInvLabel.setAttribute('display','none');
+    }
+  }
+
+  // Show actual blocking clause on left arrow when on f_clause step
+  const bcLabel=document.getElementById('blockClauseLabel');
+  if (bcLabel) {
+    if (f.component==='f_clause' && f.blockClauseStr) {
+      bcLabel.textContent=f.blockClauseStr;
+      bcLabel.setAttribute('display','');
+    } else {
+      bcLabel.setAttribute('display','none');
+    }
+  }
+}
+
+function renderInfoPanel() {
+  if (!G.frames.length||G.current<0) return;
+  const f=G.frames[G.current];
+  document.getElementById('stepTitle').textContent=f.title;
+  const badge=document.getElementById('stepBadge');
+  badge.textContent=f.badgeText;
+  badge.className='step-badge '+f.badgeClass;
+  badge.style.display='';
+  document.getElementById('stepBody').innerHTML=f.bodyHtml;
+  document.getElementById('btnNext').disabled=G.current>=G.frames.length-1;
+  document.getElementById('btnBack').disabled=G.current<=0;
+}
+
+function renderHistory() {
+  const list=document.getElementById('histList');
+  list.innerHTML='';
+  for (let i=0;i<=G.current&&i<G.frames.length;i++) {
+    const f=G.frames[i];
+    const div=document.createElement('div');
+    div.className='hist-item '+f.histClass;
+    div.innerHTML=`<div class="h-step">Step ${i+1} — ${escHtml(f.title)}</div><div class="h-text">${escHtml(f.histText)}</div>`;
+    list.appendChild(div);
+  }
+  // Scroll to bottom
+  list.scrollTop=list.scrollHeight;
+
+  // Result badge
+  const last=G.frames[G.current];
+  const rb=document.getElementById('resultBadge');
+  if (last&&last.component==='sat_out') {
+    rb.style.display=''; rb.className='step-badge badge-green'; rb.textContent='SAT';
+  } else if (last&&last.component==='unsat_out') {
+    rb.style.display=''; rb.className='step-badge badge-red'; rb.textContent='UNSAT';
+  } else { rb.style.display='none'; }
+}
+
+function renderFormulaBox() {
+  if (!G.frames.length || G.current < 0) return;
+  const fs = G.frames[G.current].fstate;
+  if (!fs) return;
+  const rows = [
+    {id:'phi',  val:fs.phi},
+    {id:'tr',   val:fs.tr},
+    {id:'prop', val:fs.prop},
+    {id:'cnf',  val:fs.cnf},
+    {id:'uf',   val:fs.uf},
+  ];
+  for (const {id, val} of rows) {
+    const rowEl = document.getElementById('fbox-'+id);
+    const valEl = document.getElementById('fval-'+id);
+    if (!rowEl || !valEl) continue;
+    valEl.textContent = val || '—';
+    valEl.style.color = val ? '' : 'var(--muted)';
+    const isActive = fs.active.includes(id);
+    const colorCls = id==='uf' ? 'fbox-active-violet' : id==='tr'||id==='prop' ? 'fbox-active-cyan' : 'fbox-active-blue';
+    rowEl.className = 'fbox-row' + (isActive ? ' '+colorCls : '');
+  }
+}
+
+function renderAll() {
+  renderDiagram();
+  renderInfoPanel();
+  renderHistory();
+  renderFormulaBox();
+}
+
+// ════════════════════════════════════════════════════════════════
+// EXAMPLES
+// ════════════════════════════════════════════════════════════════
+const EXAMPLES=[
+  {label:'f(a)=b ∧ a=c ∧ f(c)≠b',       formula:'f(a)=b & a=c & f(c)!=b'},
+  {label:'(a=b ∨ b=c) ∧ a≠c',            formula:'(a=b | b=c) & a!=c'},
+  {label:'a=b ∧ f(a)≠f(b)',              formula:'a=b & f(a)!=f(b)'},
+  {label:'(a=b | a=c) ∧ f(a)≠f(b) ∧ f(a)≠f(c)', formula:'(a=b | a=c) & f(a)!=f(b) & f(a)!=f(c)'},
+  {label:'f(f(a))=a ∧ f(a)≠a',           formula:'f(f(a))=a & f(a)!=a'},
+  {label:'a=b → f(a)=f(b)',              formula:'a=b -> f(a)=f(b)'},
+];
+
+function buildExamples() {
+  const chips=document.getElementById('exChips');
+  chips.innerHTML='';
+  for (const ex of EXAMPLES) {
+    const span=document.createElement('span');
+    span.className='ex-chip';
+    span.textContent=ex.label;
+    span.title=ex.formula;
+    span.onclick=()=>{ document.getElementById('formulaInput').value=ex.formula; loadFormula(); };
+    chips.appendChild(span);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// SMT2 UPLOAD
+// ════════════════════════════════════════════════════════════════
+function uploadSMT2() {
+  document.getElementById('smt2FileInput').click();
+}
+
+function onSMT2FileSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const formula = extractFormulaFromSMT2(ev.target.result);
+    if (formula) {
+      document.getElementById('formulaInput').value = formula;
+    } else {
+      alert('Could not parse formula from .smt2 file.\nMake sure it has an (assert ...) with a UF formula.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function extractFormulaFromSMT2(text) {
+  // Prefer an inline hint comment: "; formula: ..."
+  const hint = text.match(/;\s*formula:\s*(.+)/);
+  if (hint) return hint[1].trim();
+
+  // Otherwise parse the (assert ...) body
+  const m = text.match(/\(assert\s+([\s\S]+)\)\s*(?:\(check-sat\))?/);
+  if (!m) return null;
+  try {
+    const tokens = smtTokenize(m[1].trim());
+    let pos = 0;
+    function next()  { return tokens[pos++]; }
+    function peek()  { return tokens[pos]; }
+    function parse() {
+      if (peek() !== '(') return {t:'atom', v: next()};
+      next(); // '('
+      const head = next();
+      const args = [];
+      while (peek() !== ')') args.push(parse());
+      next(); // ')'
+      return {t:'list', head, args};
+    }
+    return smtToTutorial(parse());
+  } catch(_) { return null; }
+}
+
+function smtTokenize(s) {
+  const toks = [];
+  let i = 0;
+  while (i < s.length) {
+    if (/\s/.test(s[i])) { i++; continue; }
+    if (s[i]==='('||s[i]===')') { toks.push(s[i++]); continue; }
+    let j = i;
+    while (j < s.length && !/[\s()]/.test(s[j])) j++;
+    toks.push(s.slice(i, j)); i = j;
+  }
+  return toks;
+}
+
+function smtToTutorial(node) {
+  if (node.t === 'atom') return node.v;
+  const {head, args} = node;
+  if (head === 'and')      return args.map(smtToTutorial).join(' & ');
+  if (head === 'or')       return args.map(smtToTutorial).join(' | ');
+  if (head === '=>')       return smtToTutorial(args[0]) + ' -> ' + smtToTutorial(args[1]);
+  if (head === 'not') {
+    const inner = args[0];
+    if (inner.t==='list' && inner.head==='=')
+      return smtTermToTutorial(inner.args[0]) + '!=' + smtTermToTutorial(inner.args[1]);
+    return '!' + smtToTutorial(inner);
+  }
+  if (head === '=') return smtTermToTutorial(args[0]) + '=' + smtTermToTutorial(args[1]);
+  // fallback: function application treated as term equality? just pass through
+  return smtTermToTutorial(node);
+}
+
+function smtTermToTutorial(node) {
+  if (node.t === 'atom') return node.v;
+  const {head, args} = node;
+  if (!args.length) return head;
+  return head + '(' + args.map(smtTermToTutorial).join(',') + ')';
+}
+
+// ════════════════════════════════════════════════════════════════
+// SMT2 DOWNLOAD
+// ════════════════════════════════════════════════════════════════
+function downloadSMT2() {
+  const src = document.getElementById('formulaInput').value.trim();
+  if (!src) { alert('Enter a formula first.'); return; }
+  try {
+    const ast = parseFormula(src);
+    const constants = new Set();
+    const functions = new Map(); // name → arity
+
+    function collectDecls(node) {
+      if (node.type==='uf')  { collectTermDecls(node.t1); collectTermDecls(node.t2); }
+      else if (node.child)   { collectDecls(node.child); }
+      else if (node.children){ node.children.forEach(collectDecls); }
+    }
+    function collectTermDecls(t) {
+      if (t.type==='var')  { constants.add(t.name); }
+      else if (t.type==='fapp') { functions.set(t.name, t.args.length); t.args.forEach(collectTermDecls); }
+    }
+    collectDecls(ast);
+
+    let out = `; Generated by DPLL(T) Tutorial\n; formula: ${src}\n`;
+    out += `(set-logic QF_UF)\n(declare-sort U 0)\n`;
+    for (const c of constants)        out += `(declare-const ${c} U)\n`;
+    for (const [f,ar] of functions)   out += `(declare-fun ${f} (${Array(ar).fill('U').join(' ')}) U)\n`;
+    out += `(assert ${astToSMT2(ast)})\n(check-sat)\n`;
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([out], {type:'text/plain'}));
+    a.download = 'formula.smt2';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+function astToSMT2(node) {
+  if (node.type==='uf') {
+    const t1=termToSMT2(node.t1), t2=termToSMT2(node.t2);
+    return node.op==='=' ? `(= ${t1} ${t2})` : `(not (= ${t1} ${t2}))`;
+  }
+  if (node.type==='not') return `(not ${astToSMT2(node.child)})`;
+  if (node.type==='and') return `(and ${node.children.map(astToSMT2).join(' ')})`;
+  if (node.type==='or')  return `(or ${node.children.map(astToSMT2).join(' ')})`;
+  if (node.type==='imp') return `(=> ${astToSMT2(node.children[0])} ${astToSMT2(node.children[1])})`;
+  if (node.type==='iff') return `(= ${astToSMT2(node.children[0])} ${astToSMT2(node.children[1])})`;
+  return '?';
+}
+
+function termToSMT2(t) {
+  if (t.type==='var')  return t.name;
+  if (t.type==='fapp') return `(${t.name} ${t.args.map(termToSMT2).join(' ')})`;
+  return '?';
+}
+
+function downloadHistory() {
+  if (!G.frames.length) { alert('No steps to download yet. Run a formula first.'); return; }
+  const satName = {dpll:'DPLL','basic-cdcl':'Basic CDCL',cdcl:'CDCL'}[G.satSolver] || 'DPLL';
+  const thName  = {'union-find':'Union-Find',cc:'CC (Congruence Closure)'}[G.theorySolver] || 'Union-Find';
+  const formulaSrc = G.frames[0] ? (G.frames[0].histText || '').replace(/^Input:\s*/,'') : '';
+  let out = `DPLL(T) Step History\n`;
+  out += `SAT Solver: ${satName}   Theory Solver: ${thName}\n`;
+  out += `Formula: ${formulaSrc}\n`;
+  out += '='.repeat(60) + '\n\n';
+  G.frames.forEach((f, i) => {
+    out += `Step ${i+1}: ${f.title}\n`;
+    out += '-'.repeat(40) + '\n';
+    out += (f.histText || '') + '\n\n';
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([out], {type:'text/plain'}));
+  a.download = 'dpll-history.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+buildExamples();
+
+// Highlight both solver boxes until user chooses
+document.getElementById('comp-dpll').classList.add('needs-pick');
+document.getElementById('comp-theory').classList.add('needs-pick');
+</script>
+</body>
+</html>

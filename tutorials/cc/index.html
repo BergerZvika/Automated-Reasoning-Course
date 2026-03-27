@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Congruence Closure — Interactive Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --teal:#14b8a6;--teal2:#2dd4bf;--cyan:#06b6d4;--cyan2:#22d3ee;
+  --green:#22c55e;--green-bg:rgba(34,197,94,0.12);--green-border:rgba(34,197,94,0.3);
+  --red:#ef4444;--red-bg:rgba(239,68,68,0.12);--red-border:rgba(239,68,68,0.35);
+  --yellow:#f59e0b;--yellow-bg:rgba(245,158,11,0.12);--yellow-border:rgba(245,158,11,0.35);
+  --orange:#f97316;--orange-bg:rgba(249,115,22,0.12);--orange-border:rgba(249,115,22,0.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#042f2e 0%,#134e4a 40%,#0e4f5e 70%,#042f2e 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#5eead4,#22d3ee,#67e8f9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.3);
+  color:var(--teal2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+
+.wrap{max-width:1400px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+.input-row{display:flex;gap:10px;align-items:stretch}
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s
+}
+.formula-input:focus{border-color:var(--teal)}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.examples-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.examples-row span{font-size:12px;color:var(--muted);margin-right:2px}
+.ex-btn{
+  padding:4px 11px;font-size:12px;border-radius:20px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;
+  font-family:'Consolas',monospace
+}
+.ex-btn:hover{border-color:var(--teal);color:var(--teal2)}
+
+.btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--teal);color:#fff}
+.btn-primary:hover{background:var(--teal2)}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--border)}
+.btn-sm{padding:7px 13px;font-size:12px}
+.btn-cyan{background:var(--cyan);color:#fff}
+.btn-cyan:hover{filter:brightness(1.1)}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{filter:brightness(1.1)}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-orange:hover{filter:brightness(1.1)}
+
+.main-grid{display:grid;grid-template-columns:280px 1fr;gap:18px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+
+/* Action buttons */
+.action-btn{
+  width:100%;padding:12px 15px;border-radius:10px;border:2px solid rgba(20,184,166,.3);
+  cursor:pointer;text-align:left;transition:all .2s;margin-bottom:9px;
+  background:rgba(20,184,166,.08);color:var(--teal2);display:flex;flex-direction:column;gap:3px
+}
+.action-btn:hover:not(:disabled){border-color:var(--teal);background:rgba(20,184,166,.16)}
+.action-btn:disabled{opacity:.35;cursor:not-allowed}
+.a-name{font-size:14px;font-weight:700}
+.a-desc{font-size:11px;color:var(--muted);font-family:'Consolas',monospace}
+.a-count{font-size:12px;font-weight:700;color:var(--teal2)}
+
+.ab-cyan{border-color:rgba(6,182,212,.3);background:rgba(6,182,212,.08);color:var(--cyan2)}
+.ab-cyan:hover:not(:disabled){border-color:var(--cyan);background:rgba(6,182,212,.16)}
+.ab-red{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#fca5a5}
+.ab-red:hover:not(:disabled){border-color:var(--red);background:rgba(239,68,68,.16)}
+.ab-green{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.08);color:#86efac}
+.ab-green:hover:not(:disabled){border-color:var(--green);background:rgba(34,197,94,.16)}
+
+/* Literal list (cube display) */
+.lit-list{display:flex;flex-direction:column;gap:6px}
+.lit-row{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;
+  border-radius:9px;border:1px solid var(--border);background:var(--bg);
+}
+.lit-row.eq-lit{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.25)}
+.lit-row.neq-lit{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.25)}
+.lit-row.pred-lit{background:rgba(20,184,166,.08);border-color:rgba(20,184,166,.25)}
+.lit-str{font-family:'Consolas',monospace;font-size:14px;flex:1;font-weight:600}
+.lit-type-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.badge-eq{background:rgba(34,197,94,.2);color:#86efac}
+.badge-neq{background:rgba(239,68,68,.2);color:#fca5a5}
+.badge-pred{background:rgba(20,184,166,.2);color:var(--teal2)}
+
+/* M Partition display — main visual element */
+.m-display{display:flex;flex-wrap:wrap;gap:12px;min-height:80px;align-items:flex-start;align-content:flex-start}
+.cls-card{
+  background:var(--bg);border:2px solid var(--border);border-radius:12px;
+  padding:14px 16px;min-width:120px;max-width:280px;transition:all .4s
+}
+.cls-card.just-merged{
+  border-color:var(--teal);background:rgba(20,184,166,.1);
+  box-shadow:0 0 20px rgba(20,184,166,.25);animation:flash-merge .8s ease-out
+}
+.cls-card.sat-class{
+  border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.08);
+}
+.cls-card.unsat-class{
+  border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.08);
+}
+.cls-header{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.cls-terms{display:flex;flex-wrap:wrap;gap:6px}
+.term-chip{
+  padding:5px 12px;border-radius:7px;font-family:'Consolas',monospace;font-size:13px;font-weight:600;
+  background:var(--surface2);border:1px solid var(--border);color:var(--text)
+}
+.term-chip.is-func{background:rgba(6,182,212,.12);border-color:rgba(6,182,212,.3);color:var(--cyan2)}
+.m-empty{color:var(--muted);font-style:italic;font-size:14px}
+.m-count{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:12px}
+
+/* Warning banner */
+.warn-banner{
+  background:var(--orange-bg);border:1px solid var(--orange-border);
+  border-radius:12px;padding:16px 20px;margin-bottom:14px;display:none
+}
+.warn-banner.show{display:block}
+.warn-title{font-size:14px;font-weight:700;color:var(--orange);margin-bottom:8px}
+.warn-desc{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6}
+.warn-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* History */
+.hist-list{display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto}
+.hist-list::-webkit-scrollbar{width:4px}.hist-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.hentry{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;background:var(--bg);border:1px solid var(--border);font-size:12px}
+.hentry.hcur{border-color:var(--teal);background:rgba(20,184,166,.08)}
+.hnum{font-size:10px;font-weight:700;color:var(--muted);min-width:18px;text-align:right}
+.hbadge{font-size:11px;font-weight:700;min-width:80px;flex-shrink:0}
+.hdetail{color:var(--muted);font-family:'Consolas',monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.hb-top{color:var(--teal2)}.hb-cong{color:var(--cyan2)}.hb-fail{color:#fca5a5}.hb-sat{color:#86efac}.hb-init{color:var(--muted)}
+
+/* Overlay / Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:100;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;max-width:640px;width:92%;max-height:88vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.modal-desc{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6}
+
+.pick-option{
+  padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg);
+  cursor:pointer;transition:all .2s;margin-bottom:8px
+}
+.pick-option:hover{border-color:var(--teal);background:rgba(20,184,166,.08)}
+.pick-option-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pick-rule{font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;background:rgba(20,184,166,.2);color:var(--teal2);text-transform:uppercase;letter-spacing:.04em}
+.pick-merge{font-size:13px;font-family:'Consolas',monospace;font-weight:600}
+.pick-cls-a{color:var(--teal2)}
+.pick-cls-b{color:var(--cyan2)}
+.pick-args{font-size:12px;color:var(--muted);font-family:'Consolas',monospace;margin-top:6px;line-height:1.8}
+
+/* Result overlay */
+.result-icon{font-size:64px;margin-bottom:16px;text-align:center}
+.result-title{font-size:38px;font-weight:900;margin-bottom:10px;text-align:center}
+.result-title.sat{color:var(--green)}
+.result-title.unsat{color:var(--red)}
+.result-desc{font-size:15px;color:var(--muted);line-height:1.65;margin-bottom:18px;text-align:center}
+.final-m{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;margin-bottom:24px;justify-content:center}
+.final-cls{padding:10px 14px;border-radius:10px;border:1px solid var(--teal-border,rgba(20,184,166,.3));background:rgba(20,184,166,.08);font-family:'Consolas',monospace;font-size:13px;color:var(--teal2)}
+.unsat-detail{background:var(--red-bg);border:1px solid var(--red-border);border-radius:10px;padding:14px;font-family:'Consolas',monospace;font-size:14px;color:#fca5a5;text-align:center;margin-bottom:18px}
+
+/* Hint box */
+.hint-box{font-size:13px;color:var(--muted);line-height:1.7}
+.hint-box b{color:var(--text)}
+
+/* Animations */
+@keyframes flash-merge{0%,100%{box-shadow:none}40%{box-shadow:0 0 24px rgba(20,184,166,.5)}}
+@keyframes pop-in{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes slide-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.slide-up{animation:slide-up .25s ease-out}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>Congruence Closure</h1>
+    <p>EUF theory solver &mdash; decide satisfiability of a flat cube using equivalence classes</p>
+  </div>
+  <div class="hdr-badge">EUF / CC Algorithm</div>
+</div>
+
+<div class="wrap">
+
+  <!-- Input Card -->
+  <div class="card">
+    <div class="card-title">Flat Cube Input</div>
+    <div id="warnBanner" class="warn-banner">
+      <div class="warn-title">&#9888; Formula is not flat &mdash; CC requires a flat cube</div>
+      <div class="warn-desc">
+        The Congruence Closure algorithm requires all literals to be in flat form.<br>
+        You can auto-flatten here, or open the Flatten Tutorial to do it step by step.
+      </div>
+      <div class="warn-btns">
+        <button class="btn btn-orange" onclick="inlineAutoFlatten()">Auto-Flatten</button>
+        <button class="btn btn-ghost" onclick="openFlattenTutorial()">Open in Flatten Tutorial &#8594;</button>
+      </div>
+    </div>
+    <div class="input-row">
+      <input id="formulaInput" class="formula-input"
+        placeholder="e.g.: x = f(a), f(a) = y, x != y"
+        value="x = f(a), f(a) = y, x != y">
+      <button class="btn btn-primary" onclick="initializeCC()">Initialize</button>
+      <button class="btn btn-ghost" onclick="resetAll()">Reset</button>
+    </div>
+    <div class="io-row">
+      <input type="file" id="smt2FileIn" accept=".smt2" style="display:none" onchange="onFileUpload(event)">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('smt2FileIn').click()">&#8593; Upload .smt2</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadSMT2()">&#8595; Download .smt2</button>
+    </div>
+    <div class="input-hint">
+      Input a <b>flat</b> cube: equalities <code>=</code>, disequalities <code>!=</code>, predicates <code>P(x,y)</code>.
+      All arguments must be variables. Literals separated by <code>,</code>.
+    </div>
+    <div class="examples-row">
+      <span>Examples:</span>
+      <button class="ex-btn" onclick="loadExample('simple_unsat')">Simple UNSAT</button>
+      <button class="ex-btn" onclick="loadExample('cong_unsat')">Congruence UNSAT</button>
+      <button class="ex-btn" onclick="loadExample('chain_unsat')">Chain UNSAT</button>
+      <button class="ex-btn" onclick="loadExample('simple_sat')">Simple SAT</button>
+      <button class="ex-btn" onclick="loadExample('sat_no_cong')">SAT no congruence</button>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- LEFT: Actions + Hint -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title">CC Actions</div>
+
+        <button class="action-btn" id="btnTopLevel" onclick="openTopLevelPicker()" disabled>
+          <span class="a-name">Top-Level</span>
+          <span class="a-desc">x=y in cube, x&#x2262;y &rArr; merge</span>
+          <span class="a-count" id="topCount"></span>
+        </button>
+
+        <button class="action-btn ab-cyan" id="btnCongruence" onclick="openCongruencePicker()" disabled>
+          <span class="a-name">Congruence</span>
+          <span class="a-desc">f(a&#x2081;,…)&#x2261;f(b&#x2081;,…), a&#x1D62;&#x2261;b&#x1D62; &rArr; merge</span>
+          <span class="a-count" id="congCount"></span>
+        </button>
+
+        <button class="action-btn ab-red" id="btnFail" onclick="applyFail()" disabled>
+          <span class="a-name">Fail (UNSAT)</span>
+          <span class="a-desc">x&#x2260;y in cube but x&#x2261;y &rArr; UNSAT</span>
+          <span class="a-count" id="failCount"></span>
+        </button>
+
+      </div>
+
+      <div class="card">
+        <div class="card-title">Auto-Solve</div>
+        <button class="btn btn-cyan" style="width:100%;margin-bottom:8px" onclick="autoSolve()" id="btnAutoSolve" disabled>
+          Auto-Solve
+        </button>
+        <div style="font-size:12px;color:var(--muted)">Applies top-level, then congruence, then fail check, stops at SAT/UNSAT.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">What can I do?</div>
+        <div class="hint-box" id="hintBox">Load a flat cube to begin.</div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Cube + M display -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Flat cube -->
+      <div class="card">
+        <div class="card-title">
+          <span>Flat Cube</span>
+          <span id="cubeInfo" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+        <div id="litList" class="lit-list">
+          <div style="color:var(--muted);font-style:italic;font-size:14px">Load a formula to see literals here.</div>
+        </div>
+      </div>
+
+      <!-- M partition — main visual element -->
+      <div class="card" id="mCard">
+        <div class="card-title">
+          <span>Equivalence Classes M</span>
+          <span id="mCountBadge" style="font-size:12px;font-weight:700;color:var(--muted)"></span>
+        </div>
+        <div id="satBanner" style="display:none;background:rgba(34,197,94,.14);border:2px solid rgba(34,197,94,.4);border-radius:10px;padding:14px 18px;margin-bottom:14px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#86efac">✓ SATISFIABLE</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px">No rules apply and no disequality is contradicted — the cube is SAT.</div>
+        </div>
+        <div id="unsatBanner" style="display:none;background:rgba(239,68,68,.14);border:2px solid rgba(239,68,68,.4);border-radius:10px;padding:14px 18px;margin-bottom:14px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#fca5a5">✗ UNSATISFIABLE</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px" id="unsatBannerDetail">A disequality is contradicted by the equivalence classes.</div>
+        </div>
+        <div id="mDisplay" class="m-display">
+          <div class="m-empty">Initialize to see equivalence classes.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Step History — full width -->
+  <div class="card">
+    <div class="card-title">
+      <span>Step History</span>
+      <button class="btn btn-ghost btn-sm" onclick="undoStep()">&#8592; Undo</button>
+    </div>
+    <div id="histList" class="hist-list">
+      <div style="color:var(--muted);font-style:italic;font-size:13px">No steps yet.</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%" onclick="downloadHistory()">&#8595; Download History</button>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- Top-Level Picker -->
+<div class="overlay" id="topOverlay">
+  <div class="modal">
+    <div class="modal-title">Top-Level Rule</div>
+    <div class="modal-desc">
+      An equality in the cube whose two sides are in different classes. Choose one to merge.
+    </div>
+    <div id="topOptions"></div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('topOverlay')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Congruence Picker -->
+<div class="overlay" id="congOverlay">
+  <div class="modal">
+    <div class="modal-title">Congruence Rule</div>
+    <div class="modal-desc">
+      Two function applications with congruent arguments but in different classes. Choose one to merge.
+    </div>
+    <div id="congOptions"></div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('congOverlay')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Result overlay -->
+<div class="overlay" id="resultOverlay">
+  <div class="modal" style="text-align:center;max-width:600px">
+    <div class="result-icon" id="resultIcon"></div>
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-desc" id="resultDesc"></div>
+    <div id="resultBody"></div>
+    <button class="btn btn-ghost" onclick="closeModal('resultOverlay')">Close</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let S = {
+  cube: [],
+  terms: {},
+  equalities: [],
+  disequalities: [],
+  M: [],
+  history: [],
+  step: 0,
+  status: 'idle',
+  lastMerge: null
+};
+
+const EXAMPLES = {
+  simple_unsat: 'x = f(a), f(a) = y, x != y',
+  cong_unsat:   'x = a, x = b, f(a) != f(b)',
+  chain_unsat:  'x = y, f(x) = z, f(y) != z',
+  simple_sat:   'x = f(a), y = f(b), x != y',
+  sat_no_cong:  'x = y, z = w, x != z'
+};
+
+function loadExample(key){
+  document.getElementById('formulaInput').value = EXAMPLES[key];
+  document.getElementById('warnBanner').classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+// SHARED PARSER (same as flatten tutorial)
+// ═══════════════════════════════════════
+function termStr(t){ return t.k==='v' ? t.n : `${t.n}(${t.a.map(termStr).join(', ')})`; }
+function litStr(lit){
+  if(lit.k==='eq')    return `${termStr(lit.l)} = ${termStr(lit.r)}`;
+  if(lit.k==='neq')   return `${termStr(lit.l)} \u2260 ${termStr(lit.r)}`;
+  if(lit.k==='pred')  return `${lit.n}(${lit.a.map(termStr).join(', ')})`;
+  if(lit.k==='npred') return `\u00AC${lit.n}(${lit.a.map(termStr).join(', ')})`;
+  return '?';
+}
+function isVar(t){ return t.k==='v'; }
+function isFlat(lit){
+  if(lit.k==='eq')    return isVar(lit.l) && (isVar(lit.r)||(lit.r.k==='f'&&lit.r.a.every(isVar)));
+  if(lit.k==='neq')   return isVar(lit.l) && isVar(lit.r);
+  if(lit.k==='pred')  return lit.a.every(isVar);
+  if(lit.k==='npred') return lit.a.every(isVar);
+  return false;
+}
+
+function tokenize(src){
+  const tokens = [];
+  let i = 0;
+  while(i < src.length){
+    if(/\s/.test(src[i])){ i++; continue; }
+    if(src.slice(i,i+2)==='!='||src.slice(i,i+2)==='<>'){tokens.push({t:'NEQ',v:'!='});i+=2;continue;}
+    if(src[i]==='='){tokens.push({t:'EQ',v:'='});i++;continue;}
+    if(src[i]==='\u2260'){tokens.push({t:'NEQ',v:'!='});i++;continue;}
+    if(src[i]==='!'||src[i]==='¬'||src[i]==='~'){tokens.push({t:'NEG',v:'!'});i++;continue;}
+    if(src.slice(i,i+4).toLowerCase()==='not '){tokens.push({t:'NEG',v:'!'});i+=4;continue;}
+    if(src[i]==='('){tokens.push({t:'LP',v:'('});i++;continue;}
+    if(src[i]===')'){tokens.push({t:'RP',v:')'});i++;continue;}
+    if(src[i]===','){tokens.push({t:'COMMA',v:','});i++;continue;}
+    if(/[a-zA-Z_]/.test(src[i])){
+      let j=i; while(j<src.length&&/[a-zA-Z0-9_']/.test(src[j])) j++;
+      tokens.push({t:'ID',v:src.slice(i,j)}); i=j; continue;
+    }
+    i++;
+  }
+  return tokens;
+}
+
+function parseCube(src){
+  const tokens = tokenize(src);
+  const lits = [];
+  let depth=0, start=0;
+  for(let i=0;i<tokens.length;i++){
+    if(tokens[i].t==='LP') depth++;
+    else if(tokens[i].t==='RP') depth--;
+    else if(tokens[i].t==='COMMA'&&depth===0){
+      lits.push(parseLitTokens(tokens.slice(start,i)));
+      start=i+1;
+    }
+  }
+  if(start<tokens.length) lits.push(parseLitTokens(tokens.slice(start)));
+  return lits.filter(Boolean);
+}
+
+function parseLitTokens(toks){
+  if(!toks.length) return null;
+  let i=0;
+  let negated=false;
+  if(toks[i]&&toks[i].t==='NEG'){negated=true;i++;}
+  const {term:lterm,end:e1}=parseTerm(toks,i); i=e1;
+  if(i>=toks.length){
+    if(lterm.k==='f') return negated?{k:'npred',n:lterm.n,a:lterm.a}:{k:'pred',n:lterm.n,a:lterm.a};
+    return negated?{k:'npred',n:lterm.n,a:[]}:{k:'pred',n:lterm.n,a:[]};
+  }
+  if(toks[i]&&toks[i].t==='EQ'){
+    i++;
+    const {term:rterm}=parseTerm(toks,i);
+    if(negated) return {k:'neq',l:lterm,r:rterm};
+    return {k:'eq',l:lterm,r:rterm};
+  }
+  if(toks[i]&&toks[i].t==='NEQ'){
+    i++;
+    const {term:rterm}=parseTerm(toks,i);
+    return {k:'neq',l:lterm,r:rterm};
+  }
+  if(lterm.k==='f') return negated?{k:'npred',n:lterm.n,a:lterm.a}:{k:'pred',n:lterm.n,a:lterm.a};
+  return negated?{k:'npred',n:lterm.n,a:[]}:{k:'pred',n:lterm.n,a:[]};
+}
+
+function parseTerm(toks,i){
+  if(i>=toks.length) throw new Error('Unexpected end');
+  if(toks[i].t!=='ID') throw new Error('Expected identifier');
+  const name=toks[i].v; i++;
+  if(i<toks.length&&toks[i].t==='LP'){
+    i++;
+    const args=[];
+    while(i<toks.length&&toks[i].t!=='RP'){
+      const {term,end}=parseTerm(toks,i); args.push(term); i=end;
+      if(i<toks.length&&toks[i].t==='COMMA') i++;
+    }
+    if(i<toks.length) i++;
+    return {term:{k:'f',n:name,a:args},end:i};
+  }
+  return {term:{k:'v',n:name},end:i};
+}
+
+// ═══════════════════════════════════════
+// CC ALGORITHM
+// ═══════════════════════════════════════
+function collectTerms(cube){
+  const termMap={};
+  function add(t){
+    const s=termStr(t);
+    if(!(s in termMap)) termMap[s]=t;
+    if(t.k==='f') t.a.forEach(add);
+  }
+  cube.forEach(lit=>{
+    if(lit.k==='eq'||lit.k==='neq'){ add(lit.l); add(lit.r); }
+    else if(lit.k==='pred')  { add({k:'f',n:lit.n,a:lit.a}); lit.a.forEach(add); }
+    else if(lit.k==='npred') { add({k:'f',n:lit.n,a:lit.a}); lit.a.forEach(add); }
+  });
+  return termMap;
+}
+
+function sameClass(M,tsA,tsB){
+  const ia=M.findIndex(c=>c.includes(tsA));
+  const ib=M.findIndex(c=>c.includes(tsB));
+  return ia>=0&&ib>=0&&ia===ib;
+}
+
+function mergeClasses(M,tsA,tsB){
+  const ia=M.findIndex(c=>c.includes(tsA));
+  const ib=M.findIndex(c=>c.includes(tsB));
+  if(ia<0||ib<0||ia===ib) return {M, mergedIdx:-1};
+  const nm=M.filter((_,i)=>i!==ia&&i!==ib);
+  nm.push([...M[ia],...M[ib]]);
+  return {M:nm, mergedIdx:nm.length-1};
+}
+
+function findTopLevelSteps(M,equalities){
+  return equalities
+    .filter(eq=>!sameClass(M,termStr(eq.l),termStr(eq.r)))
+    .map(eq=>({type:'top',eq,la:termStr(eq.l),ra:termStr(eq.r)}));
+}
+
+function findCongruenceSteps(M,termMap){
+  const apps=Object.keys(termMap).filter(ts=>termMap[ts].k==='f');
+  const steps=[],seen=new Set();
+  for(let i=0;i<apps.length;i++) for(let j=i+1;j<apps.length;j++){
+    const tA=termMap[apps[i]],tB=termMap[apps[j]];
+    if(tA.n!==tB.n||tA.a.length!==tB.a.length) continue;
+    if(sameClass(M,apps[i],apps[j])) continue;
+    if(tA.a.every((a,k)=>sameClass(M,termStr(a),termStr(tB.a[k])))){
+      const key=[apps[i],apps[j]].sort().join('::');
+      if(!seen.has(key)){seen.add(key);steps.push({type:'cong',tsA:apps[i],tsB:apps[j],tA,tB});}
+    }
+  }
+  return steps;
+}
+
+function findFailStep(M,disequalities){
+  for(const deq of disequalities){
+    const la=termStr(deq.l),ra=termStr(deq.r);
+    if(sameClass(M,la,ra)) return {type:'fail',deq,la,ra};
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════
+// INITIALIZE
+// ═══════════════════════════════════════
+function initializeCC(){
+  const raw=document.getElementById('formulaInput').value.trim();
+  if(!raw){alert('Please enter a cube.');return;}
+  let cube;
+  try{cube=parseCube(raw);}catch(e){alert('Parse error: '+e.message);return;}
+  if(!cube.length){alert('No literals parsed.');return;}
+
+  // Check flatness
+  const nonFlat=cube.filter(l=>!isFlat(l));
+  if(nonFlat.length){
+    document.getElementById('warnBanner').classList.add('show');
+    S.status='idle';
+    renderAll();
+    return;
+  }
+  document.getElementById('warnBanner').classList.remove('show');
+
+  const termMap=collectTerms(cube);
+  const M=Object.keys(termMap).map(ts=>[ts]);
+  const equalities=cube.filter(l=>l.k==='eq');
+  const disequalities=cube.filter(l=>l.k==='neq');
+
+  S={
+    cube, terms:termMap, equalities, disequalities,
+    M, history:[{M:JSON.parse(JSON.stringify(M)), expl:'Initialized',type:'init'}],
+    step:0, status:'running', lastMerge:null
+  };
+  renderAll();
+}
+
+function resetAll(){
+  S={cube:[],terms:{},equalities:[],disequalities:[],M:[],history:[],step:0,status:'idle',lastMerge:null};
+  document.getElementById('warnBanner').classList.remove('show');
+  renderAll();
+}
+
+// ═══════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════
+function doMerge(tsA,tsB,expl,type){
+  const {M:newM,mergedIdx}=mergeClasses(S.M,tsA,tsB);
+  S.M=newM;
+  S.lastMerge={mergedIdx};
+  S.step++;
+  S.history.push({M:JSON.parse(JSON.stringify(newM)),expl,type});
+  // Check done
+  renderAll();
+}
+
+function openTopLevelPicker(){
+  const steps=findTopLevelSteps(S.M,S.equalities);
+  if(!steps.length){alert('No top-level steps applicable.');return;}
+  const container=document.getElementById('topOptions');
+  container.innerHTML='';
+  steps.forEach(st=>{
+    const clsA=S.M.find(c=>c.includes(st.la))||[st.la];
+    const clsB=S.M.find(c=>c.includes(st.ra))||[st.ra];
+    const div=document.createElement('div');
+    div.className='pick-option';
+    div.innerHTML=`
+      <div class="pick-option-header">
+        <span class="pick-rule">top-level</span>
+        <span class="pick-merge">
+          <span class="pick-cls-a">{${clsA.map(escHtml).join(', ')}}</span>
+          &larr; merge &rarr;
+          <span class="pick-cls-b">{${clsB.map(escHtml).join(', ')}}</span>
+        </span>
+      </div>
+      <div class="pick-args">Reason: <b>${escHtml(litStr(st.eq))}</b> is in the cube</div>
+    `;
+    div.onclick=()=>{
+      doMerge(st.la,st.ra,`top_level: merged ${st.la} and ${st.ra} via ${litStr(st.eq)}`,'top');
+      closeModal('topOverlay');
+    };
+    container.appendChild(div);
+  });
+  document.getElementById('topOverlay').classList.add('show');
+}
+
+function openCongruencePicker(){
+  const steps=findCongruenceSteps(S.M,S.terms);
+  if(!steps.length){alert('No congruence steps applicable.');return;}
+  const container=document.getElementById('congOptions');
+  container.innerHTML='';
+  steps.forEach(st=>{
+    const clsA=S.M.find(c=>c.includes(st.tsA))||[st.tsA];
+    const clsB=S.M.find(c=>c.includes(st.tsB))||[st.tsB];
+    const argPairs=st.tA.a.map((a,k)=>`${termStr(a)} \u2261 ${termStr(st.tB.a[k])}`).join(', ');
+    const div=document.createElement('div');
+    div.className='pick-option';
+    div.innerHTML=`
+      <div class="pick-option-header">
+        <span class="pick-rule">congruence</span>
+        <span class="pick-merge">
+          <span class="pick-cls-a">${escHtml(st.tsA)}</span>
+          &equiv;
+          <span class="pick-cls-b">${escHtml(st.tsB)}</span>
+        </span>
+      </div>
+      <div class="pick-args">
+        Args congruent: <b>${escHtml(argPairs)}</b><br>
+        Merging: <span class="pick-cls-a">{${clsA.map(escHtml).join(', ')}}</span>
+        with <span class="pick-cls-b">{${clsB.map(escHtml).join(', ')}}</span>
+      </div>
+    `;
+    div.onclick=()=>{
+      doMerge(st.tsA,st.tsB,`congruence: merged ${st.tsA} and ${st.tsB} (args congruent)`,'cong');
+      closeModal('congOverlay');
+    };
+    container.appendChild(div);
+  });
+  document.getElementById('congOverlay').classList.add('show');
+}
+
+function applyFail(){
+  const fail=findFailStep(S.M,S.disequalities);
+  if(!fail){alert('No fail condition found.');return;}
+  S.status='unsat';
+  S.step++;
+  S.history.push({M:JSON.parse(JSON.stringify(S.M)),expl:`FAIL: ${litStr(fail.deq)} but ${fail.la} \u2261 ${fail.ra}`  ,type:'fail'});
+  renderAll();
+  // Show result
+  showResult('unsat', fail);
+}
+
+function concludeSAT(){
+  const tops=findTopLevelSteps(S.M,S.equalities);
+  const congs=findCongruenceSteps(S.M,S.terms);
+  const fail=findFailStep(S.M,S.disequalities);
+  if(tops.length||congs.length){alert('There are still applicable rules. Apply them first.');return;}
+  if(fail){alert('A fail condition exists. Apply Fail instead.');return;}
+  S.status='sat';
+  S.step++;
+  S.history.push({M:JSON.parse(JSON.stringify(S.M)),expl:'SAT: no rules applicable, no fail',type:'sat'});
+  renderAll();
+  showResult('sat', null);
+}
+
+function undoStep(){
+  if(S.history.length<=1) return;
+  S.history.pop();
+  const prev=S.history[S.history.length-1];
+  S.M=JSON.parse(JSON.stringify(prev.M));
+  S.step=Math.max(0,S.step-1);
+  S.lastMerge=null;
+  if(S.status==='sat'||S.status==='unsat') S.status='running';
+  renderAll();
+}
+
+function autoSolve(){
+  const MAX=200; let steps=0;
+  while(steps<MAX){
+    if(S.status==='sat'||S.status==='unsat') break;
+    const tops=findTopLevelSteps(S.M,S.equalities);
+    if(tops.length){ doMerge(tops[0].la,tops[0].ra,`top_level: ${tops[0].la} \u2261 ${tops[0].ra}`,'top'); steps++;continue; }
+    const congs=findCongruenceSteps(S.M,S.terms);
+    if(congs.length){ doMerge(congs[0].tsA,congs[0].tsB,`congruence: ${congs[0].tsA} \u2261 ${congs[0].tsB}`,'cong'); steps++;continue; }
+    const fail=findFailStep(S.M,S.disequalities);
+    if(fail){ applyFail(); break; }
+    concludeSAT(); break;
+  }
+}
+
+// ═══════════════════════════════════════
+// FLATTEN (inline, for CC)
+// ═══════════════════════════════════════
+function freshName(count){ return 'z'+(count+1); }
+
+function findFlattenRules(cube, freshCount){
+  const options=[];
+  for(let litIdx=0;litIdx<cube.length;litIdx++){
+    const lit=cube[litIdx];
+    if(isFlat(lit)) continue;
+    const fn=freshName(freshCount);
+    if(lit.k==='eq'&&!isVar(lit.l)){
+      const z={k:'v',n:fn};
+      const newLits=[{k:'eq',l:z,r:lit.r},{k:'eq',l:z,r:lit.l}];
+      options.push({rule:'equal_rule',litIdx,oldLit:lit,freshName:fn,
+        newCube:[...cube.slice(0,litIdx),...newLits,...cube.slice(litIdx+1)],
+        nextFresh:freshCount+1,standsFor:termStr(lit.l)});
+      continue;
+    }
+    if(lit.k==='neq'&&!isVar(lit.l)){
+      const z={k:'v',n:fn};
+      const newLits=[{k:'neq',l:z,r:lit.r},{k:'eq',l:z,r:lit.l}];
+      options.push({rule:'not_s_rule',litIdx,oldLit:lit,freshName:fn,
+        newCube:[...cube.slice(0,litIdx),...newLits,...cube.slice(litIdx+1)],
+        nextFresh:freshCount+1,standsFor:termStr(lit.l)});
+      continue;
+    }
+    if(lit.k==='neq'&&isVar(lit.l)&&!isVar(lit.r)){
+      const z={k:'v',n:fn};
+      const newLits=[{k:'neq',l:lit.l,r:z},{k:'eq',l:z,r:lit.r}];
+      options.push({rule:'not_t_rule',litIdx,oldLit:lit,freshName:fn,
+        newCube:[...cube.slice(0,litIdx),...newLits,...cube.slice(litIdx+1)],
+        nextFresh:freshCount+1,standsFor:termStr(lit.r)});
+      continue;
+    }
+    if(lit.k==='eq'&&isVar(lit.l)&&lit.r.k==='f'){
+      const idx=lit.r.a.findIndex(a=>!isVar(a));
+      if(idx>=0){
+        const oldArg=lit.r.a[idx];
+        const z={k:'v',n:fn};
+        const newArgs=lit.r.a.map((a,i)=>i===idx?z:a);
+        const newEq={k:'eq',l:lit.l,r:{k:'f',n:lit.r.n,a:newArgs}};
+        options.push({rule:'function_rule',litIdx,oldLit:lit,freshName:fn,
+          newCube:[...cube.slice(0,litIdx),newEq,{k:'eq',l:z,r:oldArg},...cube.slice(litIdx+1)],
+          nextFresh:freshCount+1,standsFor:termStr(oldArg)});
+        continue;
+      }
+    }
+    if(lit.k==='pred'){
+      const idx=lit.a.findIndex(a=>!isVar(a));
+      if(idx>=0){
+        const oldArg=lit.a[idx];
+        const z={k:'v',n:fn};
+        const newArgs=lit.a.map((a,i)=>i===idx?z:a);
+        options.push({rule:'predicat_rule',litIdx,oldLit:lit,freshName:fn,
+          newCube:[...cube.slice(0,litIdx),{k:'pred',n:lit.n,a:newArgs},{k:'eq',l:z,r:oldArg},...cube.slice(litIdx+1)],
+          nextFresh:freshCount+1,standsFor:termStr(oldArg)});
+        continue;
+      }
+    }
+    if(lit.k==='npred'){
+      const idx=lit.a.findIndex(a=>!isVar(a));
+      if(idx>=0){
+        const oldArg=lit.a[idx];
+        const z={k:'v',n:fn};
+        const newArgs=lit.a.map((a,i)=>i===idx?z:a);
+        options.push({rule:'not_predicat_rule',litIdx,oldLit:lit,freshName:fn,
+          newCube:[...cube.slice(0,litIdx),{k:'npred',n:lit.n,a:newArgs},{k:'eq',l:z,r:oldArg},...cube.slice(litIdx+1)],
+          nextFresh:freshCount+1,standsFor:termStr(oldArg)});
+        continue;
+      }
+    }
+  }
+  return options;
+}
+
+function inlineAutoFlatten(){
+  const raw=document.getElementById('formulaInput').value.trim();
+  if(!raw){alert('Please enter a formula first.');return;}
+  let cube;
+  try{cube=parseCube(raw);}catch(e){alert('Parse error: '+e.message);return;}
+  let fc=0;
+  const MAX=200; let steps=0;
+  while(steps<MAX){
+    const opts=findFlattenRules(cube,fc);
+    if(!opts.length) break;
+    cube=opts[0].newCube; fc=opts[0].nextFresh; steps++;
+  }
+  const flatStr=cube.map(litStr).join(', ');
+  document.getElementById('formulaInput').value=flatStr;
+  document.getElementById('warnBanner').classList.remove('show');
+  initializeCC();
+}
+
+function openFlattenTutorial(){
+  const raw=document.getElementById('formulaInput').value.trim();
+  const encoded=encodeURIComponent(raw);
+  localStorage.setItem('flatten_formula',raw);
+  window.location.href=`../flatten/?f=${encoded}`;
+}
+
+// ═══════════════════════════════════════
+// RESULT MODAL
+// ═══════════════════════════════════════
+function showResult(verdict, failInfo){
+  const icon=document.getElementById('resultIcon');
+  const title=document.getElementById('resultTitle');
+  const desc=document.getElementById('resultDesc');
+  const body=document.getElementById('resultBody');
+  if(verdict==='sat'){
+    icon.textContent='✓';
+    title.className='result-title sat'; title.textContent='SAT';
+    desc.textContent='The flat cube is satisfiable. No contradictions found in the equivalence classes.';
+    body.innerHTML=`
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Final equivalence classes M:</div>
+      <div class="final-m">${S.M.map(cls=>`<div class="final-cls">{${cls.map(escHtml).join(', ')}}</div>`).join('')}</div>
+    `;
+  } else {
+    icon.textContent='✗';
+    title.className='result-title unsat'; title.textContent='UNSAT';
+    desc.textContent='The flat cube is unsatisfiable. A disequality is contradicted by the equivalence classes.';
+    body.innerHTML=`
+      <div class="unsat-detail">
+        ${escHtml(litStr(failInfo.deq))} &mdash; but <b>${escHtml(failInfo.la)}</b> \u2261 <b>${escHtml(failInfo.ra)}</b>
+      </div>
+    `;
+  }
+  document.getElementById('resultOverlay').classList.add('show');
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function renderAll(){
+  renderCube();
+  renderM();
+  renderHistory();
+  renderButtons();
+  renderHint();
+}
+
+function renderCube(){
+  const list=document.getElementById('litList');
+  const info=document.getElementById('cubeInfo');
+  if(!S.cube.length){
+    list.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:14px">Load a formula to see literals here.</div>';
+    info.textContent='';
+    return;
+  }
+  const eq=S.equalities.length, neq=S.disequalities.length;
+  info.textContent=`${eq} equalit${eq===1?'y':'ies'}, ${neq} disequal${neq===1?'ity':'ities'}`;
+  list.innerHTML=S.cube.map(lit=>{
+    let cls='lit-row', badge='', bCls='';
+    if(lit.k==='eq'){cls+=' eq-lit';badge='=';bCls='badge-eq';}
+    else if(lit.k==='neq'){cls+=' neq-lit';badge='≠';bCls='badge-neq';}
+    else{cls+=' pred-lit';badge='pred';bCls='badge-pred';}
+    return `<div class="${cls}">
+      <span class="lit-str">${escHtml(litStr(lit))}</span>
+      <span class="lit-type-badge ${bCls}">${badge}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderM(){
+  const disp=document.getElementById('mDisplay');
+  const badge=document.getElementById('mCountBadge');
+  const satBanner=document.getElementById('satBanner');
+  const unsatBanner=document.getElementById('unsatBanner');
+  const isSat=S.status==='sat';
+  const isUnsat=S.status==='unsat';
+  satBanner.style.display=isSat?'block':'none';
+  unsatBanner.style.display=isUnsat?'block':'none';
+  if(isUnsat){
+    const fail=findFailStep(S.M,S.disequalities);
+    if(fail) document.getElementById('unsatBannerDetail').innerHTML=
+      `Disequality <b style="color:#fca5a5">${escHtml(litStr(fail.deq))}</b> is contradicted — both sides are in the same class.`;
+  }
+  if(!S.M.length){
+    disp.innerHTML='<div class="m-empty">Initialize to see equivalence classes.</div>';
+    badge.textContent='';
+    return;
+  }
+  badge.textContent=`${S.M.length} class${S.M.length===1?'':'es'}`;
+  disp.innerHTML='';
+  // For UNSAT: highlight the class that contains the contradicting pair
+  const failStep=isUnsat?findFailStep(S.M,S.disequalities):null;
+  const failClassIdx=failStep?S.M.findIndex(c=>c.includes(failStep.la)):-1;
+  S.M.forEach((cls,idx)=>{
+    const isMerged=S.lastMerge&&S.lastMerge.mergedIdx===idx;
+    const card=document.createElement('div');
+    card.className='cls-card'+(isMerged?' just-merged':'')+(isSat?' sat-class':'')+(isUnsat&&idx===failClassIdx?' unsat-class':'');
+    card.innerHTML=`
+      <div class="cls-header">Class ${idx+1}</div>
+      <div class="cls-terms">
+        ${cls.map(ts=>{
+          const term=S.terms[ts];
+          const isFunc=term&&term.k==='f';
+          return `<span class="term-chip${isFunc?' is-func':''}">${escHtml(ts)}</span>`;
+        }).join('')}
+      </div>
+    `;
+    disp.appendChild(card);
+  });
+}
+
+function renderHistory(){
+  const list=document.getElementById('histList');
+  if(S.history.length<=1){
+    list.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:13px">No steps yet.</div>';
+    return;
+  }
+  list.innerHTML=S.history.slice(1).map((h,i)=>{
+    const badgeCls={'top':'hb-top','cong':'hb-cong','fail':'hb-fail','sat':'hb-sat','init':'hb-init'}[h.type]||'hb-init';
+    const badgeLabel={'top':'Top-Level','cong':'Congruence','fail':'FAIL','sat':'SAT','init':'Init'}[h.type]||h.type;
+    return `<div class="hentry ${i===S.history.length-2?'hcur':''}">
+      <span class="hnum">${i+1}</span>
+      <span class="hbadge ${badgeCls}">${badgeLabel}</span>
+      <span class="hdetail">${escHtml(h.expl)}</span>
+    </div>`;
+  }).join('');
+  list.scrollTop=list.scrollHeight;
+}
+
+function renderButtons(){
+  const running=S.status==='running';
+  const tops=running?findTopLevelSteps(S.M,S.equalities):[];
+  const congs=running?findCongruenceSteps(S.M,S.terms):[];
+  const fail=running?findFailStep(S.M,S.disequalities):null;
+  const canSAT=running&&!tops.length&&!congs.length&&!fail;
+
+  document.getElementById('btnTopLevel').disabled=!tops.length;
+  document.getElementById('btnCongruence').disabled=!congs.length;
+  document.getElementById('btnFail').disabled=!fail;
+  document.getElementById('btnAutoSolve').disabled=S.status!=='running';
+  // Auto-conclude SAT when no rules remain
+  if(canSAT) concludeSAT();
+
+  document.getElementById('topCount').textContent=tops.length?`${tops.length} applicable`:'';
+  document.getElementById('congCount').textContent=congs.length?`${congs.length} applicable`:'';
+  document.getElementById('failCount').textContent=fail?'Applicable!':'';
+}
+
+function renderHint(){
+  const box=document.getElementById('hintBox');
+  if(S.status==='idle'){ box.innerHTML='Load a flat cube to begin.'; return; }
+  if(S.status==='sat'){ box.innerHTML='<b style="color:var(--green)">SAT</b> &mdash; The cube is satisfiable.'; return; }
+  if(S.status==='unsat'){ box.innerHTML='<b style="color:var(--red)">UNSAT</b> &mdash; A disequality is contradicted.'; return; }
+  const tops=findTopLevelSteps(S.M,S.equalities);
+  const congs=findCongruenceSteps(S.M,S.terms);
+  const fail=findFailStep(S.M,S.disequalities);
+  if(fail){
+    box.innerHTML=`<b>Apply Fail</b>: <code>${escHtml(litStr(fail.deq))}</code> is in the cube but both sides are in the same class.`;
+  } else if(tops.length){
+    box.innerHTML=`<b>Apply Top-Level</b>: ${tops.length} equality${tops.length>1?'s are':' is'} in the cube whose sides are in different classes.`;
+  } else if(congs.length){
+    box.innerHTML=`<b>Apply Congruence</b>: ${congs.length} pair${congs.length>1?'s':''}  of function applications with congruent args in different classes.`;
+  } else {
+    box.innerHTML='No rules apply and no fail &mdash; formula is <b style="color:var(--green)">SAT</b>.';
+  }
+}
+
+// ═══════════════════════════════════════
+// SMT2 PARSE / SERIALIZE
+// ═══════════════════════════════════════
+function tokenizeSMT2(text){
+  const toks=[]; let i=0;
+  while(i<text.length){
+    if(text[i]===';'){while(i<text.length&&text[i]!=='\n')i++;continue;}
+    if(/\s/.test(text[i])){i++;continue;}
+    if(text[i]==='('||text[i]===')'){toks.push(text[i]);i++;continue;}
+    let j=i; while(j<text.length&&!/[\s()]/.test(text[j]))j++;
+    toks.push(text.slice(i,j)); i=j;
+  }
+  return toks;
+}
+function parseSexps(toks){
+  let p=0;
+  function read(){
+    if(toks[p]==='('){p++;const items=[];while(p<toks.length&&toks[p]!==')')items.push(read());p++;return items;}
+    return toks[p++];
+  }
+  const out=[]; while(p<toks.length)out.push(read()); return out;
+}
+function smt2ToLits(text){
+  const sexps=parseSexps(tokenizeSMT2(text));
+  const declared={};
+  const lits=[];
+  function mkTerm(s){
+    if(!Array.isArray(s)) return {k:'v',n:s};
+    return {k:'f',n:s[0],a:s.slice(1).map(mkTerm)};
+  }
+  function mkLit(s){
+    if(!Array.isArray(s)) return null;
+    const h=s[0];
+    if(h==='=')        return {k:'eq', l:mkTerm(s[1]),r:mkTerm(s[2])};
+    if(h==='distinct') return {k:'neq',l:mkTerm(s[1]),r:mkTerm(s[2])};
+    if(h==='not'){
+      const inner=s[1];
+      if(Array.isArray(inner)&&inner[0]==='=')
+        return {k:'neq',l:mkTerm(inner[1]),r:mkTerm(inner[2])};
+      if(Array.isArray(inner))
+        return {k:'npred',n:inner[0],a:inner.slice(1).map(mkTerm)};
+      return {k:'npred',n:inner,a:[]};
+    }
+    return {k:'pred',n:h,a:s.slice(1).map(mkTerm)};
+  }
+  for(const sx of sexps){
+    if(!Array.isArray(sx)) continue;
+    if(sx[0]==='declare-fun') declared[sx[1]]={arity:(sx[2]||[]).length,bool:sx[3]==='Bool'};
+    if(sx[0]==='assert'){const l=mkLit(sx[1]);if(l)lits.push(l);}
+  }
+  function fixTerm(t){
+    if(t.k==='f'&&t.a.length===0&&declared[t.n]&&!declared[t.n].bool) return {k:'v',n:t.n};
+    if(t.k==='f') return {k:'f',n:t.n,a:t.a.map(fixTerm)};
+    return t;
+  }
+  function fixLit(lit){
+    if(lit.k==='eq'||lit.k==='neq') return {...lit,l:fixTerm(lit.l),r:fixTerm(lit.r)};
+    if(lit.k==='pred'||lit.k==='npred') return {...lit,a:lit.a.map(fixTerm)};
+    return lit;
+  }
+  return lits.map(fixLit);
+}
+function litsToSMT2(lits){
+  const vars=new Set(), funcs={};
+  function visitT(t){
+    if(t.k==='v'){vars.add(t.n);}
+    else{funcs[t.n]={arity:t.a.length,bool:false};t.a.forEach(visitT);}
+  }
+  lits.forEach(lit=>{
+    if(lit.k==='eq'||lit.k==='neq'){visitT(lit.l);visitT(lit.r);}
+    else if(lit.k==='pred') {funcs[lit.n]={arity:lit.a.length,bool:true};lit.a.forEach(visitT);}
+    else if(lit.k==='npred'){funcs[lit.n]={arity:lit.a.length,bool:true};lit.a.forEach(visitT);}
+  });
+  Object.keys(funcs).forEach(n=>vars.delete(n));
+  function ts(t){ return t.k==='v'?t.n:`(${t.n} ${t.a.map(ts).join(' ')})`; }
+  const lines=['(set-logic QF_UF)','(declare-sort S 0)'];
+  Object.entries(funcs).forEach(([n,{arity,bool}])=>
+    lines.push(`(declare-fun ${n} (${Array(arity).fill('S').join(' ')}) ${bool?'Bool':'S'})`));
+  vars.forEach(n=>lines.push(`(declare-fun ${n} () S)`));
+  lits.forEach(lit=>{
+    if(lit.k==='eq')    lines.push(`(assert (= ${ts(lit.l)} ${ts(lit.r)}))`);
+    if(lit.k==='neq')   lines.push(`(assert (distinct ${ts(lit.l)} ${ts(lit.r)}))`);
+    if(lit.k==='pred')  lines.push(`(assert (${[lit.n,...lit.a.map(ts)].join(' ')}))`);
+    if(lit.k==='npred') lines.push(`(assert (not (${[lit.n,...lit.a.map(ts)].join(' ')})))`)
+  });
+  lines.push('(check-sat)');
+  return lines.join('\n');
+}
+function downloadSMT2(){
+  const cube=S.cube.length?S.cube:(()=>{
+    try{return parseCube(document.getElementById('formulaInput').value.trim());}catch(e){return[];}
+  })();
+  if(!cube.length){alert('No formula to download.');return;}
+  const blob=new Blob([litsToSMT2(cube)],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='cube.smt2';a.click();URL.revokeObjectURL(a.href);
+}
+function onFileUpload(evt){
+  const file=evt.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const lits=smt2ToLits(e.target.result);
+      if(!lits.length){alert('No assertions found in .smt2 file.');return;}
+      document.getElementById('formulaInput').value=lits.map(litStr).join(', ');
+      initializeCC();
+    }catch(err){alert('Failed to parse .smt2 file: '+err.message);}
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+}
+
+// ═══════════════════════════════════════
+// FILE I/O
+// ═══════════════════════════════════════
+function downloadHistory(){
+  const lines=S.history.map((h,i)=>`Step ${i}: ${h.expl}\n  Classes: ${h.M.map(c=>'{'+c.join(',')+'}').join(' | ')}`);
+  const blob=new Blob([lines.join('\n\n')],{type:'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cc-history.txt'; a.click();
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+['topOverlay','congOverlay','resultOverlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){ if(e.target===this) closeModal(id); });
+});
+
+// ═══════════════════════════════════════
+// ON LOAD
+// ═══════════════════════════════════════
+(function onLoad(){
+  const params=new URLSearchParams(window.location.search);
+  const f=params.get('f')||localStorage.getItem('cc_formula');
+  if(f){
+    document.getElementById('formulaInput').value=decodeURIComponent(f);
+    localStorage.removeItem('cc_formula');
+    initializeCC();
+  } else {
+    renderAll();
+  }
+})();
+</script>
+</body>
+</html>

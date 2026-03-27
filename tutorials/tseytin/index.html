@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tseytin Transformation — Interactive Tutorial</title>
+<style>
+:root {
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --lime:#84cc16;--lime2:#a3e635;--green:#22c55e;
+  --green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.35);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.12);--red-bd:rgba(239,68,68,.35);
+  --yellow:#eab308;--amber:#f59e0b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;min-height:100vh}
+
+.hdr{
+  background:linear-gradient(135deg,#052e16 0%,#14532d 40%,#166534 70%,#052e16 100%);
+  padding:28px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left h1{
+  font-size:26px;font-weight:800;letter-spacing:-0.5px;
+  background:linear-gradient(90deg,#bbf7d0,#86efac,#4ade80);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr-badge{
+  background:rgba(132,204,22,.15);border:1px solid rgba(132,204,22,.3);
+  color:var(--lime2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
+}
+
+.wrap{max-width:1400px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+.formula-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:14px;
+  padding:10px 14px;outline:none;transition:border-color .2s;width:100%
+}
+.formula-input:focus{border-color:var(--lime)}
+.input-hint{font-size:12px;color:var(--muted);margin-top:8px}
+.io-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.input-row{display:flex;gap:10px;align-items:stretch;margin-top:10px}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;
+  border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-lime{background:linear-gradient(135deg,var(--lime),var(--green));color:#000}
+.btn-lime:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--lime);color:var(--lime2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-green{background:linear-gradient(135deg,var(--green),#16a34a);color:#fff}
+
+.main-grid{display:grid;grid-template-columns:300px 1fr;gap:18px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+
+.action-btn{
+  width:100%;margin-bottom:10px;padding:12px 14px;border-radius:10px;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;text-align:left;transition:all .15s;
+  display:flex;flex-direction:column;gap:2px
+}
+.action-btn:last-child{margin-bottom:0}
+.action-btn:not(:disabled):hover{border-color:var(--lime);background:rgba(132,204,22,.08)}
+.action-btn:disabled{opacity:.35;cursor:not-allowed}
+.action-btn .a-name{font-size:13px;font-weight:700;color:var(--lime2)}
+.action-btn .a-desc{font-size:11px;color:var(--muted)}
+.action-btn .a-count{font-size:11px;color:var(--lime);font-weight:600;margin-top:2px}
+
+.ab-green .a-name{color:var(--green)}
+.ab-green:not(:disabled):hover{border-color:var(--green);background:rgba(34,197,94,.08)}
+.ab-red .a-name{color:var(--red)}
+.ab-red:not(:disabled):hover{border-color:var(--red);background:rgba(239,68,68,.08)}
+
+/* tree SVG */
+.tree-wrap{width:100%;overflow:auto;background:var(--bg);border-radius:10px;border:1px solid var(--border);padding:12px;min-height:260px}
+#treeSvg{display:block;margin:0 auto}
+
+/* node colors */
+.node-unprocessed{fill:#1e2535;stroke:#2a3148;stroke-width:2}
+.node-ready{fill:rgba(132,204,22,.18);stroke:var(--lime);stroke-width:2.5}
+.node-done{fill:rgba(34,197,94,.14);stroke:var(--green);stroke-width:2}
+.node-root-done{fill:rgba(34,197,94,.22);stroke:var(--lime2);stroke-width:3}
+.node-text{font-size:13px;fill:var(--text);font-family:'Consolas','Courier New',monospace;font-weight:600;dominant-baseline:central;text-anchor:middle}
+.node-plabel{font-size:11px;fill:var(--lime2);font-family:'Consolas','Courier New',monospace;dominant-baseline:central;text-anchor:middle}
+.edge{stroke:#3a4159;stroke-width:1.5;fill:none}
+.edge-done{stroke:var(--green);opacity:.5}
+.node-cursor{cursor:pointer}
+.node-ready-cursor{cursor:pointer}
+
+/* clauses */
+.clause-line{font-family:'Consolas','Courier New',monospace;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);color:var(--text);display:flex;gap:8px;align-items:baseline}
+.clause-line:last-child{border-bottom:none}
+.clause-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;white-space:nowrap}
+.tag-var{background:rgba(132,204,22,.15);color:var(--lime2)}
+.tag-not{background:rgba(239,68,68,.15);color:var(--red)}
+.tag-and{background:rgba(34,197,94,.15);color:var(--green)}
+.tag-or{background:rgba(245,158,11,.15);color:var(--amber)}
+.tag-imp{background:rgba(147,51,234,.15);color:#c084fc}
+.tag-iff{background:rgba(59,130,246,.15);color:#60a5fa}
+.clause-text{flex:1}
+.final-cnf{
+  font-family:'Consolas','Courier New',monospace;font-size:13px;
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;
+  white-space:pre-wrap;word-break:break-all;color:var(--lime2)
+}
+
+/* step history */
+.hist-list{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto}
+.hist-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px}
+.hist-item .h-step{font-size:11px;color:var(--muted);margin-bottom:3px}
+.hist-item .h-text{color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:12px;line-height:1.5}
+.hist-item.h-done{border-color:var(--green-bd);background:var(--green-bg)}
+.hist-item.h-sat{border-color:var(--green-bd);background:var(--green-bg)}
+.hist-item.h-process{border-color:rgba(132,204,22,.3);background:rgba(132,204,22,.07)}
+
+/* status */
+.status-sat{
+  background:var(--green-bg);border:1px solid var(--green-bd);border-radius:10px;
+  padding:14px 20px;text-align:center;font-size:16px;font-weight:700;color:var(--green)
+}
+
+/* example chips */
+.ex-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ex-chip{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:4px 10px;font-size:12px;font-family:'Consolas','Courier New',monospace;
+  color:var(--muted);cursor:pointer;transition:all .15s
+}
+.ex-chip:hover{border-color:var(--lime);color:var(--lime2)}
+
+/* picker modal */
+.picker-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;
+  display:flex;align-items:center;justify-content:center
+}
+.picker-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:22px;min-width:360px;max-width:540px;max-height:80vh;overflow-y:auto
+}
+.picker-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px}
+.picker-item{
+  width:100%;padding:10px 14px;margin-bottom:8px;border-radius:8px;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;text-align:left;font-family:'Consolas','Courier New',monospace;font-size:13px;
+  transition:all .15s
+}
+.picker-item:hover{border-color:var(--lime);background:rgba(132,204,22,.08);color:var(--lime2)}
+.picker-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);margin-top:4px}
+.picker-cancel:hover{border-color:var(--red);color:var(--red)}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(99,102,241,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <a href="../index.html" class="back-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>Home</a>
+  <div class="hdr-left">
+    <h1>Tseytin Transformation</h1>
+    <p>Convert a propositional formula to equisatisfiable CNF — step by step</p>
+  </div>
+  <div class="hdr-badge">QF_PROP → CNF</div>
+</div>
+
+<div class="wrap">
+
+<!-- Input card -->
+<div class="card" id="inputCard">
+  <div class="card-title">Formula Input</div>
+  <div class="input-row">
+    <input class="formula-input" id="formulaInput" placeholder="e.g. (A -> B) & (!B -> C)" spellcheck="false" oninput="onFormulaChange()">
+    <button class="btn btn-lime" onclick="loadFormula()">Load ▶</button>
+  </div>
+  <div class="input-hint">Operators: <code>!</code> not &nbsp;|&nbsp; <code>&amp;</code> and &nbsp;|&nbsp; <code>|</code> or &nbsp;|&nbsp; <code>-&gt;</code> implies &nbsp;|&nbsp; <code>&lt;-&gt;</code> iff &nbsp;|&nbsp; Atoms: uppercase letters, true, false</div>
+  <div class="ex-chips" id="exChips"></div>
+</div>
+
+<!-- Main grid -->
+<div class="main-grid" id="mainGrid" style="display:none">
+
+  <!-- Left: actions + info -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+
+    <!-- Actions -->
+    <div class="card">
+      <div class="card-title">Actions</div>
+      <button class="action-btn" id="btnProcess" onclick="startProcess()" disabled>
+        <span class="a-name">Process Subformula</span>
+        <span class="a-desc">Pick a ready subformula, assign pᵢ, generate E(C) clauses</span>
+        <span class="a-count" id="processCount"></span>
+      </button>
+      <button class="action-btn ab-green" id="btnAuto" onclick="autoStep()">
+        <span class="a-name">Auto Step</span>
+        <span class="a-desc">Process next ready subformula automatically</span>
+      </button>
+    </div>
+
+    <!-- Legend -->
+    <div class="card">
+      <div class="card-title">Node States</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="28" height="20"><ellipse cx="14" cy="10" rx="13" ry="9" class="node-unprocessed"/></svg>
+          <span style="color:var(--muted)">Unprocessed (children not ready)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="28" height="20"><ellipse cx="14" cy="10" rx="13" ry="9" class="node-ready"/></svg>
+          <span style="color:var(--lime2)">Ready — click to process</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="28" height="20"><ellipse cx="14" cy="10" rx="13" ry="9" class="node-done"/></svg>
+          <span style="color:var(--green)">Processed (pᵢ assigned)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- E(C) rules reference -->
+    <div class="card">
+      <div class="card-title">E(C) Rules</div>
+      <div style="font-size:11px;font-family:'Consolas','Courier New',monospace;line-height:1.8;color:var(--muted)">
+        <div><span style="color:var(--lime2)">var x:</span> (¬pC∨x) ∧ (¬x∨pC)</div>
+        <div><span style="color:var(--red)">¬D:</span> (¬pC∨¬pD) ∧ (pC∨pD)</div>
+        <div><span style="color:var(--green)">C₁∧C₂:</span> (¬pC∨pC₁) ∧ (¬pC∨pC₂) ∧ (pC∨¬pC₁∨¬pC₂)</div>
+        <div><span style="color:var(--amber)">C₁∨C₂:</span> (¬pC∨pC₁∨pC₂) ∧ (¬pC₁∨pC) ∧ (¬pC₂∨pC)</div>
+        <div><span style="color:#c084fc)">C₁→C₂:</span> (¬pC∨¬pC₁∨pC₂) ∧ (pC∨pC₁) ∧ (pC∨¬pC₂)</div>
+        <div><span style="color:#60a5fa">C₁↔C₂:</span> 4 clauses (see appendix)</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card" id="statsCard">
+      <div class="card-title">Progress</div>
+      <div style="font-size:13px;display:flex;flex-direction:column;gap:6px">
+        <div>Nodes: <span id="statNodes" style="color:var(--lime2)">0</span></div>
+        <div>Processed: <span id="statDone" style="color:var(--green)">0</span></div>
+        <div>Clauses so far: <span id="statClauses" style="color:var(--amber)">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: tree + clauses -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card">
+      <div class="card-title">Formula Tree</div>
+      <div class="tree-wrap" id="treeWrap">
+        <svg id="treeSvg"></svg>
+      </div>
+    </div>
+
+    <!-- Clauses so far -->
+    <div class="card" id="clausesCard">
+      <div class="card-title">Generated Clauses</div>
+      <div id="clausesList" style="display:flex;flex-direction:column;gap:2px"></div>
+      <div id="finalCnfWrap" style="margin-top:14px;display:none">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Final CNF</div>
+        <div class="final-cnf" id="finalCnf"></div>
+      </div>
+    </div>
+
+    <!-- SAT status -->
+    <div id="statusBanner" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Step History — full width -->
+<div class="card" id="histCard" style="display:none">
+  <div class="card-title">
+    <span>Step History</span>
+    <button class="btn btn-ghost btn-sm" onclick="undoStep()">← Undo</button>
+  </div>
+  <div class="hist-list" id="histList"></div>
+</div>
+
+</div><!-- wrap -->
+
+<!-- Picker overlay -->
+<div class="picker-overlay" id="pickerOverlay" style="display:none" onclick="closePicker(event)">
+  <div class="picker-box">
+    <div class="picker-title" id="pickerTitle">Choose a ready subformula:</div>
+    <div id="pickerItems"></div>
+    <button class="btn picker-item picker-cancel" onclick="closePicker()">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ─── Parser ──────────────────────────────────────────────────────────────────
+// Grammar (precedence low→high):
+//   expr   : iff
+//   iff    : imp (<-> imp)*
+//   imp    : disj (-> disj)*
+//   disj   : conj (| conj)*
+//   conj   : neg (& neg)*
+//   neg    : ! neg | atom
+//   atom   : ( expr ) | IDENT | true | false
+
+let _tokens, _pos;
+
+function tokenize(src) {
+  const toks = [];
+  let i = 0;
+  while (i < src.length) {
+    if (/\s/.test(src[i])) { i++; continue; }
+    if (src.slice(i,i+3) === '<->') { toks.push('<->'); i+=3; continue; }
+    if (src.slice(i,i+2) === '->') { toks.push('->'); i+=2; continue; }
+    if ('!&|()'.includes(src[i])) { toks.push(src[i]); i++; continue; }
+    if (/[A-Za-z_]/.test(src[i])) {
+      let j=i; while(j<src.length && /[A-Za-z0-9_]/.test(src[j])) j++;
+      toks.push(src.slice(i,j)); i=j; continue;
+    }
+    throw new Error('Unknown char: ' + src[i]);
+  }
+  return toks;
+}
+
+function peek() { return _tokens[_pos]; }
+function consume(t) { if(t && _tokens[_pos]!==t) throw new Error('Expected '+t+' got '+_tokens[_pos]); return _tokens[_pos++]; }
+
+let _nodeId;
+function mkNode(type, ...children) {
+  const id = 'n'+(++_nodeId);
+  const label = nodeLabel({type,...(children.length?{children}:{})});
+  return {id, type, children: children.length?children:undefined, label};
+}
+function mkAtom(name) {
+  const id = 'n'+(++_nodeId);
+  return {id, type:'var', name, label:name};
+}
+
+function parseExpr() { return parseIff(); }
+function parseIff() {
+  let l = parseImp();
+  while(peek()==='<->'){consume('<->'); l = mkNode('iff',l,parseImp());}
+  return l;
+}
+function parseImp() {
+  let l = parseDisj();
+  while(peek()==='->'){ consume('->'); l = mkNode('imp',l,parseDisj()); }
+  return l;
+}
+function parseDisj() {
+  let l = parseConj();
+  while(peek()==='|'){ consume('|'); l = mkNode('or',l,parseConj()); }
+  return l;
+}
+function parseConj() {
+  let l = parseNeg();
+  while(peek()==='&'){ consume('&'); l = mkNode('and',l,parseNeg()); }
+  return l;
+}
+function parseNeg() {
+  if(peek()==='!'){ consume('!'); return mkNode('not',parseNeg()); }
+  return parseAtom();
+}
+function parseAtom() {
+  if(peek()==='('){ consume('('); const e=parseExpr(); consume(')'); return e; }
+  const t=consume();
+  if(t==='true') return {id:'n'+(++_nodeId),type:'true',label:'⊤'};
+  if(t==='false') return {id:'n'+(++_nodeId),type:'false',label:'⊥'};
+  return mkAtom(t);
+}
+
+function nodeLabel(n) {
+  switch(n.type){
+    case 'var': return n.name||'?';
+    case 'true': return '⊤';
+    case 'false': return '⊥';
+    case 'not': return '¬';
+    case 'and': return '∧';
+    case 'or': return '∨';
+    case 'imp': return '→';
+    case 'iff': return '↔';
+    default: return '?';
+  }
+}
+
+function parse(src) {
+  _nodeId = 0;
+  _tokens = tokenize(src.trim());
+  _pos = 0;
+  const tree = parseExpr();
+  if (_pos < _tokens.length) throw new Error('Unexpected token: '+_tokens[_pos]);
+  return tree;
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let S = null; // {tree, processed:{id->pi}, pCounter, clauses:[{tag,text,nodeId}], history:[snapshot], done:false}
+
+function initState(tree) {
+  S = {
+    tree,
+    processed: {},   // nodeId -> 'p1','p2',...
+    pCounter: 1,
+    clauses: [],
+    history: [],
+    done: false
+  };
+}
+
+// ─── Tree utils ───────────────────────────────────────────────────────────────
+function allNodes(node, acc=[]) {
+  acc.push(node);
+  if(node.children) node.children.forEach(c=>allNodes(c,acc));
+  return acc;
+}
+
+function isReady(node) {
+  if(S.processed[node.id]) return false; // already done
+  if(!node.children || node.children.length===0) return true; // leaf
+  return node.children.every(c=>S.processed[c.id]);
+}
+
+function readyNodes() {
+  return allNodes(S.tree).filter(isReady);
+}
+
+// ─── E(C) clause generation ───────────────────────────────────────────────────
+function litStr(varName, neg=false) {
+  return neg ? '¬'+varName : varName;
+}
+
+function clauseStr(lits) {
+  return '(' + lits.join(' ∨ ') + ')';
+}
+
+function generateClauses(node, pi) {
+  const pC = pi;
+  const clauses = [];
+  const tag = node.type;
+
+  switch(node.type) {
+    case 'var': {
+      const x = node.name;
+      clauses.push(clauseStr([litStr(pC,true), litStr(x)]));
+      clauses.push(clauseStr([litStr(x,true), litStr(pC)]));
+      break;
+    }
+    case 'true': {
+      // p_C is always true → just unit clause (p_C)
+      clauses.push(clauseStr([litStr(pC)]));
+      break;
+    }
+    case 'false': {
+      // p_C is always false → just unit clause (¬p_C)
+      clauses.push(clauseStr([litStr(pC,true)]));
+      break;
+    }
+    case 'not': {
+      const pD = S.processed[node.children[0].id];
+      clauses.push(clauseStr([litStr(pC,true), litStr(pD,true)]));
+      clauses.push(clauseStr([litStr(pC), litStr(pD)]));
+      break;
+    }
+    case 'and': {
+      const pC1 = S.processed[node.children[0].id];
+      const pC2 = S.processed[node.children[1].id];
+      clauses.push(clauseStr([litStr(pC,true), litStr(pC1)]));
+      clauses.push(clauseStr([litStr(pC,true), litStr(pC2)]));
+      clauses.push(clauseStr([litStr(pC), litStr(pC1,true), litStr(pC2,true)]));
+      break;
+    }
+    case 'or': {
+      const pC1 = S.processed[node.children[0].id];
+      const pC2 = S.processed[node.children[1].id];
+      clauses.push(clauseStr([litStr(pC,true), litStr(pC1), litStr(pC2)]));
+      clauses.push(clauseStr([litStr(pC1,true), litStr(pC)]));
+      clauses.push(clauseStr([litStr(pC2,true), litStr(pC)]));
+      break;
+    }
+    case 'imp': {
+      const pC1 = S.processed[node.children[0].id];
+      const pC2 = S.processed[node.children[1].id];
+      clauses.push(clauseStr([litStr(pC,true), litStr(pC1,true), litStr(pC2)]));
+      clauses.push(clauseStr([litStr(pC), litStr(pC1)]));
+      clauses.push(clauseStr([litStr(pC), litStr(pC2,true)]));
+      break;
+    }
+    case 'iff': {
+      const pC1 = S.processed[node.children[0].id];
+      const pC2 = S.processed[node.children[1].id];
+      clauses.push(clauseStr([litStr(pC,true), litStr(pC1), litStr(pC2,true)]));
+      clauses.push(clauseStr([litStr(pC,true), litStr(pC1,true), litStr(pC2)]));
+      clauses.push(clauseStr([litStr(pC), litStr(pC1,true), litStr(pC2,true)]));
+      clauses.push(clauseStr([litStr(pC), litStr(pC1), litStr(pC2)]));
+      break;
+    }
+  }
+  return clauses;
+}
+
+// ─── Snapshot / undo ─────────────────────────────────────────────────────────
+function saveSnapshot(label, kind) {
+  S.history.push({
+    processed: {...S.processed},
+    pCounter: S.pCounter,
+    clauses: S.clauses.map(c=>({...c})),
+    done: S.done,
+    label, kind
+  });
+}
+
+function undoStep() {
+  if(!S || S.history.length===0) return;
+  const snap = S.history.pop();
+  S.processed = snap.processed;
+  S.pCounter = snap.pCounter;
+  S.clauses = snap.clauses;
+  S.done = snap.done;
+  renderAll();
+}
+
+// ─── Process a node ───────────────────────────────────────────────────────────
+function processNode(node) {
+  saveSnapshot('before', 'snapshot');
+  const pi = 'p' + S.pCounter++;
+  S.processed[node.id] = pi;
+  const clauses = generateClauses(node, pi);
+  const tag = node.type;
+  for(const c of clauses) {
+    S.clauses.push({tag, text:c, nodeId:node.id, pi});
+  }
+
+  const isRoot = node.id === S.tree.id;
+  let label;
+  if(isRoot) {
+    // Add unit clause for root
+    S.clauses.push({tag:'root', text:'('+pi+')', nodeId:node.id, pi});
+    S.done = true;
+    label = `Processed root [${node.label}] → ${pi} — CNF complete`;
+  } else {
+    label = `Processed [${nodeFullStr(node)}] → ${pi} — ${clauses.length} clause(s)`;
+  }
+  S.history[S.history.length-1].label = label;
+  S.history[S.history.length-1].kind = isRoot ? 'sat' : 'process';
+
+  renderAll();
+}
+
+// ─── Full string of node (short) ─────────────────────────────────────────────
+function nodeFullStr(node) {
+  if(!node.children) return node.label;
+  if(node.type==='not') return '¬' + nodeFullStr(node.children[0]);
+  const op = node.label;
+  return nodeFullStr(node.children[0]) + op + nodeFullStr(node.children[1]);
+}
+
+// ─── Actions ─────────────────────────────────────────────────────────────────
+function startProcess() {
+  const ready = readyNodes();
+  if(ready.length===0) return;
+  if(ready.length===1){ processNode(ready[0]); return; }
+
+  // Show picker
+  const items = document.getElementById('pickerItems');
+  items.innerHTML = '';
+  document.getElementById('pickerTitle').textContent = 'Choose a ready subformula:';
+  for(const n of ready) {
+    const btn = document.createElement('button');
+    btn.className = 'btn picker-item';
+    const pi = 'p' + S.pCounter;
+    btn.innerHTML = '<span style="color:var(--lime2)">' + pi + '</span> &nbsp;← &nbsp;' + escHtml(nodeFullStr(n));
+    btn.onclick = () => { closePicker(); processNode(n); };
+    items.appendChild(btn);
+  }
+  document.getElementById('pickerOverlay').style.display = 'flex';
+}
+
+function autoStep() {
+  if(!S || S.done) return;
+  const ready = readyNodes();
+  if(ready.length===0) return;
+  // Pick leftmost (deepest first — BFS post-order approximation: just pick first ready)
+  processNode(ready[0]);
+}
+
+function closePicker(e) {
+  if(e && e.target !== document.getElementById('pickerOverlay')) return;
+  document.getElementById('pickerOverlay').style.display = 'none';
+}
+
+// ─── Load formula ─────────────────────────────────────────────────────────────
+function loadFormula() {
+  const src = document.getElementById('formulaInput').value.trim();
+  if(!src) return;
+  let tree;
+  try { tree = parse(src); }
+  catch(e) { alert('Parse error: ' + e.message); return; }
+  initState(tree);
+  document.getElementById('mainGrid').style.display = '';
+  document.getElementById('histCard').style.display = '';
+  renderAll();
+}
+
+function onFormulaChange() {
+  // just allow typing
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderTree();
+  renderClauses();
+  renderButtons();
+  renderHistory();
+  renderStats();
+  renderStatus();
+}
+
+function renderButtons() {
+  if(!S) return;
+  const ready = readyNodes();
+  const btnP = document.getElementById('btnProcess');
+  const btnA = document.getElementById('btnAuto');
+  const pc = document.getElementById('processCount');
+  if(S.done) {
+    btnP.disabled = true;
+    btnA.disabled = true;
+    pc.textContent = 'Transformation complete';
+  } else {
+    btnP.disabled = ready.length===0;
+    btnA.disabled = ready.length===0;
+    pc.textContent = ready.length + ' node(s) ready';
+  }
+}
+
+function renderStats() {
+  if(!S) return;
+  const nodes = allNodes(S.tree);
+  document.getElementById('statNodes').textContent = nodes.length;
+  document.getElementById('statDone').textContent = Object.keys(S.processed).length;
+  document.getElementById('statClauses').textContent = S.clauses.length;
+}
+
+function renderStatus() {
+  const el = document.getElementById('statusBanner');
+  if(!S||!S.done) { el.style.display='none'; return; }
+  el.style.display='';
+  el.innerHTML = '<div class="status-sat">✓ Transformation Complete — CNF generated with ' + S.clauses.length + ' clause(s)</div>';
+}
+
+function renderHistory() {
+  if(!S) return;
+  const list = document.getElementById('histList');
+  list.innerHTML = '';
+  [...S.history].reverse().forEach((snap, ri) => {
+    const i = S.history.length - 1 - ri;
+    if(snap.kind==='snapshot') return; // skip raw snapshots — but we repurpose them
+    const div = document.createElement('div');
+    div.className = 'hist-item h-' + snap.kind;
+    div.innerHTML = '<div class="h-step">Step '+(i+1)+'</div><div class="h-text">'+escHtml(snap.label)+'</div>';
+    list.appendChild(div);
+  });
+}
+
+function renderClauses() {
+  if(!S) return;
+  const list = document.getElementById('clausesList');
+  list.innerHTML = '';
+  for(const c of S.clauses) {
+    const div = document.createElement('div');
+    div.className = 'clause-line';
+    const tagClass = {
+      var:'tag-var', not:'tag-not', and:'tag-and', or:'tag-or',
+      imp:'tag-imp', iff:'tag-iff', root:'tag-and', true:'tag-var', false:'tag-var'
+    }[c.tag] || 'tag-var';
+    const tagLabel = {
+      var:'VAR', not:'NOT', and:'AND', or:'OR', imp:'IMP', iff:'IFF',
+      root:'ROOT', true:'TRUE', false:'FALSE'
+    }[c.tag] || c.tag.toUpperCase();
+    div.innerHTML = '<span class="clause-tag '+tagClass+'">'+tagLabel+'</span>'
+                  + '<span class="clause-text" style="font-family:Consolas,monospace">'+escHtml(c.text)+'</span>'
+                  + '<span style="font-size:11px;color:var(--lime2)">'+escHtml(c.pi)+'</span>';
+    list.appendChild(div);
+  }
+
+  // Final CNF
+  const wrap = document.getElementById('finalCnfWrap');
+  if(S.done) {
+    wrap.style.display='';
+    const allClauses = S.clauses.map(c=>c.text);
+    document.getElementById('finalCnf').textContent = allClauses.join('\n∧ ');
+  } else {
+    wrap.style.display='none';
+  }
+}
+
+// ─── Tree layout & SVG render ─────────────────────────────────────────────────
+const NODE_RX = 28, NODE_RY = 18, V_GAP = 60, H_GAP = 16;
+
+function subtreeWidth(node) {
+  if(!node.children || node.children.length===0) return 2*NODE_RX + H_GAP;
+  const w = node.children.reduce((s,c)=>s+subtreeWidth(c), 0);
+  return Math.max(w, 2*NODE_RX + H_GAP);
+}
+
+function layoutTree(node, x, y, positions) {
+  positions[node.id] = {x, y};
+  if(!node.children || node.children.length===0) return;
+  const totalW = node.children.reduce((s,c)=>s+subtreeWidth(c),0);
+  let cx = x - totalW/2;
+  for(const child of node.children) {
+    const cw = subtreeWidth(child);
+    layoutTree(child, cx + cw/2, y + V_GAP + NODE_RY, positions);
+    cx += cw;
+  }
+}
+
+function renderTree() {
+  if(!S) return;
+  const svg = document.getElementById('treeSvg');
+  const positions = {};
+  const totalW = subtreeWidth(S.tree);
+  const nodes = allNodes(S.tree);
+  // compute height
+  let maxY = 0;
+  layoutTree(S.tree, totalW/2, NODE_RY + 10, positions);
+  for(const n of nodes) if(positions[n.id]) maxY = Math.max(maxY, positions[n.id].y);
+  const svgW = Math.max(totalW + 40, 400);
+  const svgH = maxY + NODE_RY + 20;
+  svg.setAttribute('width', svgW);
+  svg.setAttribute('height', svgH);
+  svg.setAttribute('viewBox', '0 0 '+svgW+' '+svgH);
+
+  // Defs
+  svg.innerHTML = `<defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#3a4159"/>
+    </marker>
+    <marker id="arr-done" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#22c55e" opacity=".5"/>
+    </marker>
+  </defs>`;
+
+  // Edges first
+  for(const n of nodes) {
+    if(!n.children) continue;
+    const p = positions[n.id];
+    for(const c of n.children) {
+      const cp = positions[c.id];
+      const isDone = S.processed[n.id] && S.processed[c.id];
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', p.x); line.setAttribute('y1', p.y+NODE_RY);
+      line.setAttribute('x2', cp.x); line.setAttribute('y2', cp.y-NODE_RY);
+      line.setAttribute('class','edge'+(isDone?' edge-done':''));
+      line.setAttribute('marker-end', isDone ? 'url(#arr-done)' : 'url(#arr)');
+      svg.appendChild(line);
+    }
+  }
+
+  // Nodes
+  for(const n of nodes) {
+    const {x,y} = positions[n.id];
+    const isDone = !!S.processed[n.id];
+    const isReadyNode = isReady(n);
+    const isRoot = n.id === S.tree.id;
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('transform',`translate(${x},${y})`);
+    if(!isDone && isReadyNode) { g.style.cursor='pointer'; g.onclick=()=>processNode(n); }
+
+    const ellipseClass = isDone
+      ? (isRoot ? 'node-root-done' : 'node-done')
+      : (isReadyNode ? 'node-ready' : 'node-unprocessed');
+
+    const el = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    el.setAttribute('cx',0); el.setAttribute('cy',0);
+    el.setAttribute('rx',NODE_RX); el.setAttribute('ry',NODE_RY);
+    el.setAttribute('class', ellipseClass);
+    g.appendChild(el);
+
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('class','node-text');
+    lbl.setAttribute('x',0); lbl.setAttribute('y', isDone ? -5 : 0);
+    lbl.textContent = n.label;
+    g.appendChild(lbl);
+
+    if(isDone) {
+      const pi = S.processed[n.id];
+      const plbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      plbl.setAttribute('class','node-plabel');
+      plbl.setAttribute('x',0); plbl.setAttribute('y',7);
+      plbl.textContent = pi;
+      g.appendChild(plbl);
+    }
+
+    svg.appendChild(g);
+  }
+}
+
+// ─── Examples ────────────────────────────────────────────────────────────────
+const EXAMPLES = [
+  { label:'A', formula:'A' },
+  { label:'¬A∨B', formula:'!A | B' },
+  { label:'A→B', formula:'A -> B' },
+  { label:'(A→B)→(¬B→C)', formula:'(A -> B) -> (!B -> C)' },
+  { label:'A∧B∧¬(A∧B)', formula:'(A & B) & !(A & B)' },
+  { label:'(A↔B)∧(¬C↔D)', formula:'(A <-> B) & (!C <-> D)' },
+  { label:'(A∧B∨C∧¬D)∧…', formula:'((A & B) | (C & !D)) & (E | !F) & (G -> H)' },
+];
+
+function buildExamples() {
+  const chips = document.getElementById('exChips');
+  chips.innerHTML = '';
+  for(const ex of EXAMPLES) {
+    const span = document.createElement('span');
+    span.className = 'ex-chip';
+    span.textContent = ex.label;
+    span.title = ex.formula;
+    span.onclick = () => {
+      document.getElementById('formulaInput').value = ex.formula;
+      loadFormula();
+    };
+    chips.appendChild(span);
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildExamples();
+</script>
+</body>
+</html>
