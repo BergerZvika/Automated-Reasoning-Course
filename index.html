@@ -57,6 +57,44 @@ body{
 }
 .card:hover .arrow{opacity:1;transform:translateX(3px)}
 
+/* install button */
+.install-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:14px;padding:7px 16px;
+  background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);
+  border-radius:8px;color:#a5b4fc;font-size:.8rem;font-weight:600;
+  cursor:pointer;transition:background .2s,border-color .2s;
+}
+.install-btn:hover{background:rgba(99,102,241,.22);border-color:#6366f1}
+
+/* modal */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:#161b27;border:1px solid #2a3148;border-radius:16px;
+  padding:28px 32px;max-width:640px;width:90%;max-height:80vh;
+  overflow-y:auto;position:relative;
+}
+.modal h3{font-size:1.05rem;font-weight:700;color:#e2e8f0;margin-bottom:18px}
+.modal-close{
+  position:absolute;top:14px;right:16px;background:none;border:none;
+  color:#8892a4;font-size:1.2rem;cursor:pointer;line-height:1;
+}
+.modal-close:hover{color:#e2e8f0}
+.install-section{margin-bottom:20px}
+.install-section h4{
+  font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:#6366f1;margin-bottom:8px;
+}
+.install-section pre{
+  background:#0d1117;border:1px solid #2a3148;border-radius:8px;
+  padding:12px 14px;font-family:'Consolas','Courier New',monospace;
+  font-size:.78rem;color:#c9d1d9;line-height:1.7;white-space:pre-wrap;
+}
+
 /* accent palettes per lab */
 .c-indigo {--accent:#6366f1;--accent-bg:rgba(99,102,241,.12)}
 .c-lime   {--accent:#84cc16;--accent-bg:rgba(132,204,22,.12)}
@@ -74,7 +112,60 @@ body{
 <header class="page-header">
   <h1>Automated Reasoning — Interactive Labs</h1>
   <p>Step-by-step algorithm visualizations ordered by lecture</p>
+  <button class="install-btn" onclick="document.getElementById('installModal').classList.add('open')">
+    ⚙ Installation Guide
+  </button>
 </header>
+
+<!-- Install modal -->
+<div class="modal-overlay" id="installModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('installModal').classList.remove('open')">✕</button>
+    <h3>Recommended Installations</h3>
+
+    <div class="install-section">
+      <h4>Python</h4>
+      <pre>sudo apt-get update
+sudo apt-get install python3.6</pre>
+    </div>
+
+    <div class="install-section">
+      <h4>PySMT</h4>
+      <pre>pip install PySMT
+pysmt-install --z3</pre>
+    </div>
+
+    <div class="install-section">
+      <h4>MiniSat</h4>
+      <pre>sudo apt install minisat</pre>
+    </div>
+
+    <div class="install-section">
+      <h4>cvc5</h4>
+      <pre>git clone -b cvc5 https://github.com/cvc5/cvc5.git
+cd cvc5
+./configure.sh --auto-download
+cd build
+make             # use -jN for parallel build with N threads
+make check       # to run default set of tests
+make install     # to install into the prefix specified above</pre>
+    </div>
+
+    <div class="install-section">
+      <h4>Dependencies</h4>
+      <pre>sudo apt update
+sudo dnf install make
+sudo dnf install cmake
+sudo apt install g++
+sudo apt install python3-pip
+sudo apt install python3.10-venv
+sudo apt install m4
+sudo apt-get install -y git build-essential cmake python3 python3-pip curl bison flex
+sudo pip install toml
+sudo apt install libgmp-dev -y</pre>
+    </div>
+  </div>
+</div>
 
 <main class="grid">
 
