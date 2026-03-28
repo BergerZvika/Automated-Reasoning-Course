@@ -142,18 +142,8 @@ pysmt-install --z3</pre>
 
     <div class="install-section">
       <h4>cvc5</h4>
-      <pre>git clone -b cvc5 https://github.com/cvc5/cvc5.git
-cd cvc5
-./configure.sh --auto-download
-cd build
-make             # use -jN for parallel build with N threads
-make check       # to run default set of tests
-make install     # to install into the prefix specified above</pre>
-    </div>
-
-    <div class="install-section">
-      <h4>Dependencies</h4>
-      <pre>sudo apt update
+      <pre># Dependencies
+sudo apt update
 sudo dnf install make
 sudo dnf install cmake
 sudo apt install g++
@@ -162,7 +152,16 @@ sudo apt install python3.10-venv
 sudo apt install m4
 sudo apt-get install -y git build-essential cmake python3 python3-pip curl bison flex
 sudo pip install toml
-sudo apt install libgmp-dev -y</pre>
+sudo apt install libgmp-dev -y
+
+# Build
+git clone -b cvc5 https://github.com/cvc5/cvc5.git
+cd cvc5
+./configure.sh --auto-download
+cd build
+make             # use -jN for parallel build with N threads
+make check       # to run default set of tests
+make install     # to install into the prefix specified above</pre>
     </div>
   </div>
 </div>
