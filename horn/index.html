@@ -29,6 +29,26 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
 }
 .hdr p{color:var(--muted);margin-top:5px;font-size:14px}
+/* ── files section ─────────────────────────────── */
+.files-section{max-width:960px;margin:28px auto 8px;padding:0 16px}
+.files-section-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#475569;margin-bottom:14px}
+.files-panel{background:#0d1117;border:1px solid #1e293b;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.files-panel-hdr{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#111827;border-bottom:1px solid #1e293b;cursor:pointer;font-size:.8rem;font-weight:600;color:#94a3b8;user-select:none;transition:background .15s}
+.files-panel-hdr:hover{background:#1a2438}
+.files-panel-hdr .chevron{margin-left:auto;transition:transform .25s;font-size:.65rem}
+.files-panel-hdr.open .chevron{transform:rotate(180deg)}
+.file-rows{display:block}
+.file-rows.collapsed{display:none}
+.file-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #161d2e;text-decoration:none;transition:background .15s}
+.file-row:last-child{border-bottom:none}
+.file-row:hover{background:#131c2e}
+.file-name{font-size:.8rem;color:#cbd5e1;font-family:'Consolas','Courier New',monospace;flex:1}
+.file-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px}
+.badge-py{background:#14291e;color:#4ade80}
+.badge-smt2{background:#0f2233;color:#60a5fa}
+.badge-cnf{background:#1e1030;color:#c084fc}
+.file-view{font-size:.7rem;font-weight:600;color:#6366f1;padding:2px 9px;border:1px solid rgba(99,102,241,.25);border-radius:5px;white-space:nowrap;transition:background .15s}
+.file-row:hover .file-view{background:rgba(99,102,241,.12)}
 .hdr-badge{background:var(--lime-bg);border:1px solid var(--lime-bd);color:#bef264;font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px}
 
 .algo-bar{background:rgba(132,204,22,.07);border:1px solid rgba(132,204,22,.18);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--muted);line-height:1.8}
@@ -335,7 +355,252 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   </div>
 </div>
 
+<div class="files-section">
+  <div class="files-section-title">Lab Files</div>
+
+  <div class="files-panel">
+    <div class="files-panel-hdr open" onclick="togglePanel(this)">
+      <span>🐍</span> Source Code <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows">
+      <a class="file-row" href="horn-solver.py" target="_blank">
+        <span class="file-name">horn-solver.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn-solver-debug.py" target="_blank">
+        <span class="file-name">horn-solver-debug.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="naive-solver.py" target="_blank">
+        <span class="file-name">naive-solver.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="generate_horn_cnf.py" target="_blank">
+        <span class="file-name">generate_horn_cnf.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="files-panel">
+    <div class="files-panel-hdr" onclick="togglePanel(this)">
+      <span>📁</span> Benchmarks <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows collapsed">
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_1.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_1.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_2.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_2.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_3.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_3.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_4.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_4.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_5.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_5.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_6.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_6.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_7.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_7.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_8.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_8.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_9.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_9.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_10.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_10.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_11.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_11.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_12.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_12.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_13.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_13.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_14.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_14.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_15.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_15.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_16.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_16.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_17.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_17.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_18.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_18.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_19.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_19.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_20.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_20.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_21.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_21.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_22.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_22.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_23.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_23.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_24.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_24.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_25.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_25.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_26.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_26.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_27.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_27.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_28.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_28.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_29.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_29.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_30.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_30.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_31.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_31.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_32.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_32.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_33.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_33.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_34.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_34.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_35.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_35.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_36.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_36.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_37.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_37.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_38.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_38.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_39.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_39.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="horn_cnf_benchmarks/horn_cnf_40.cnf" target="_blank">
+        <span class="file-name">horn_cnf_benchmarks/horn_cnf_40.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+
 <script>
+function togglePanel(hdr){
+  hdr.classList.toggle('open');
+  hdr.nextElementSibling.classList.toggle('collapsed');
+}
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let S = {
   formula:[],      // current active clauses [[int,...],...]  (mutates each step)

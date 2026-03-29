@@ -29,6 +29,26 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 }
 .hdr-left p{color:var(--muted);margin-top:5px;font-size:14px}
 .hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+/* ── files section ─────────────────────────────── */
+.files-section{max-width:960px;margin:28px auto 8px;padding:0 16px}
+.files-section-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#475569;margin-bottom:14px}
+.files-panel{background:#0d1117;border:1px solid #1e293b;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.files-panel-hdr{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#111827;border-bottom:1px solid #1e293b;cursor:pointer;font-size:.8rem;font-weight:600;color:#94a3b8;user-select:none;transition:background .15s}
+.files-panel-hdr:hover{background:#1a2438}
+.files-panel-hdr .chevron{margin-left:auto;transition:transform .25s;font-size:.65rem}
+.files-panel-hdr.open .chevron{transform:rotate(180deg)}
+.file-rows{display:block}
+.file-rows.collapsed{display:none}
+.file-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #161d2e;text-decoration:none;transition:background .15s}
+.file-row:last-child{border-bottom:none}
+.file-row:hover{background:#131c2e}
+.file-name{font-size:.8rem;color:#cbd5e1;font-family:'Consolas','Courier New',monospace;flex:1}
+.file-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px}
+.badge-py{background:#14291e;color:#4ade80}
+.badge-smt2{background:#0f2233;color:#60a5fa}
+.badge-cnf{background:#1e1030;color:#c084fc}
+.file-view{font-size:.7rem;font-weight:600;color:#6366f1;padding:2px 9px;border:1px solid rgba(99,102,241,.25);border-radius:5px;white-space:nowrap;transition:background .15s}
+.file-row:hover .file-view{background:rgba(99,102,241,.12)}
 .hdr-badge{
   background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);
   color:var(--violet2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px
@@ -230,7 +250,42 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 
 </div><!-- wrap -->
 
+<div class="files-section">
+  <div class="files-section-title">Lab Files</div>
+
+  <div class="files-panel">
+    <div class="files-panel-hdr open" onclick="togglePanel(this)">
+      <span>🐍</span> Source Code <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows">
+      <a class="file-row" href="ackermannization.py" target="_blank">
+        <span class="file-name">ackermannization.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="files-panel">
+    <div class="files-panel-hdr" onclick="togglePanel(this)">
+      <span>📁</span> Benchmarks <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows collapsed">
+      <a class="file-row" href="benchmarks/uf1.smt2" target="_blank">
+        <span class="file-name">benchmarks/uf1.smt2</span>
+        <span class="file-badge badge-smt2">SMT2</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+
 <script>
+function togglePanel(hdr){
+  hdr.classList.toggle('open');
+  hdr.nextElementSibling.classList.toggle('collapsed');
+}
 const EXAMPLES=[
   {label:'UNSAT: congruence violation',    formula:'f(a)!=f(b) & a=b'},
   {label:'SAT: non-injective function',    formula:'f(a)=f(b) & a!=b'},

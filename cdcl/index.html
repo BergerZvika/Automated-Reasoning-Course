@@ -30,6 +30,26 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
 }
 .hdr p{color:var(--muted);margin-top:5px;font-size:14px}
+/* ── files section ─────────────────────────────── */
+.files-section{max-width:960px;margin:28px auto 8px;padding:0 16px}
+.files-section-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#475569;margin-bottom:14px}
+.files-panel{background:#0d1117;border:1px solid #1e293b;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.files-panel-hdr{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#111827;border-bottom:1px solid #1e293b;cursor:pointer;font-size:.8rem;font-weight:600;color:#94a3b8;user-select:none;transition:background .15s}
+.files-panel-hdr:hover{background:#1a2438}
+.files-panel-hdr .chevron{margin-left:auto;transition:transform .25s;font-size:.65rem}
+.files-panel-hdr.open .chevron{transform:rotate(180deg)}
+.file-rows{display:block}
+.file-rows.collapsed{display:none}
+.file-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #161d2e;text-decoration:none;transition:background .15s}
+.file-row:last-child{border-bottom:none}
+.file-row:hover{background:#131c2e}
+.file-name{font-size:.8rem;color:#cbd5e1;font-family:'Consolas','Courier New',monospace;flex:1}
+.file-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px}
+.badge-py{background:#14291e;color:#4ade80}
+.badge-smt2{background:#0f2233;color:#60a5fa}
+.badge-cnf{background:#1e1030;color:#c084fc}
+.file-view{font-size:.7rem;font-weight:600;color:#6366f1;padding:2px 9px;border:1px solid rgba(99,102,241,.25);border-radius:5px;white-space:nowrap;transition:background .15s}
+.file-row:hover .file-view{background:rgba(99,102,241,.12)}
 .hdr-badge{background:rgba(20,184,166,.15);border:1px solid rgba(20,184,166,.3);color:#5eead4;font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px}
 
 .wrap{max-width:1440px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
@@ -501,7 +521,137 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   </div>
 </div>
 
+<div class="files-section">
+  <div class="files-section-title">Lab Files</div>
+
+  <div class="files-panel">
+    <div class="files-panel-hdr open" onclick="togglePanel(this)">
+      <span>🐍</span> Source Code <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows">
+      <a class="file-row" href="cdcl-solver.py" target="_blank">
+        <span class="file-name">cdcl-solver.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="cdcl-solver-debug.py" target="_blank">
+        <span class="file-name">cdcl-solver-debug.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="basic-cdcl-solver.py" target="_blank">
+        <span class="file-name">basic-cdcl-solver.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="basic-cdcl-solver-debug.py" target="_blank">
+        <span class="file-name">basic-cdcl-solver-debug.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="dpll-solver.py" target="_blank">
+        <span class="file-name">dpll-solver.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="files-panel">
+    <div class="files-panel-hdr" onclick="togglePanel(this)">
+      <span>📁</span> Benchmarks <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows collapsed">
+      <a class="file-row" href="benchmarks/01.cnf" target="_blank">
+        <span class="file-name">benchmarks/01.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/02.cnf" target="_blank">
+        <span class="file-name">benchmarks/02.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/03.cnf" target="_blank">
+        <span class="file-name">benchmarks/03.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/04.cnf" target="_blank">
+        <span class="file-name">benchmarks/04.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/05.cnf" target="_blank">
+        <span class="file-name">benchmarks/05.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/06.cnf" target="_blank">
+        <span class="file-name">benchmarks/06.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/07.cnf" target="_blank">
+        <span class="file-name">benchmarks/07.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/08.cnf" target="_blank">
+        <span class="file-name">benchmarks/08.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/09.cnf" target="_blank">
+        <span class="file-name">benchmarks/09.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/10.cnf" target="_blank">
+        <span class="file-name">benchmarks/10.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/empty.cnf" target="_blank">
+        <span class="file-name">benchmarks/empty.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/example1.cnf" target="_blank">
+        <span class="file-name">benchmarks/example1.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/example2.cnf" target="_blank">
+        <span class="file-name">benchmarks/example2.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/example3.cnf" target="_blank">
+        <span class="file-name">benchmarks/example3.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/example4.cnf" target="_blank">
+        <span class="file-name">benchmarks/example4.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/example5.cnf" target="_blank">
+        <span class="file-name">benchmarks/example5.cnf</span>
+        <span class="file-badge badge-cnf">CNF</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+
 <script>
+function togglePanel(hdr){
+  hdr.classList.toggle('open');
+  hdr.nextElementSibling.classList.toggle('collapsed');
+}
 // ── STATE ────────────────────────────────────────────────────────────────────
 let S = {
   formula:[],   // original clauses [[int,...],...]
