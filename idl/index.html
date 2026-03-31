@@ -154,6 +154,9 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .edge-weight.relaxed{fill:#22c55e}
 .edge-weight.cycle{fill:#f97316}
 .dist-label{fill:#22d3ee;font-size:11px;font-weight:700;font-family:'Consolas',monospace;text-anchor:middle;pointer-events:none}
+.input-tab{flex:1;padding:7px 10px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.input-tab.active{background:var(--cyan-bg);color:var(--accent2)}
+.input-tab:hover:not(.active){background:var(--surface2);color:var(--text)}
 </style>
 </head>
 <body>
@@ -188,19 +191,40 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 
     <!-- Input -->
     <div class="card">
-      <div class="card-title">Constraints
-        <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">format: x - y &lt;= c</span>
+      <div class="card-title" style="margin-bottom:10px">Input</div>
+
+      <!-- Tab switcher -->
+      <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <button id="tab-manual" class="input-tab active" onclick="switchTab('manual')">✏️ Manual</button>
+        <button id="tab-smt2"   class="input-tab"        onclick="switchTab('smt2')">📄 SMT2</button>
       </div>
-      <textarea class="constraint-input" id="constraintInput" spellcheck="false"></textarea>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-        <span style="font-size:12px;color:var(--muted);align-self:center">Examples:</span>
-        <button class="exbtn" onclick="loadExample('unsat')">Slide (UNSAT)</button>
-        <button class="exbtn" onclick="loadExample('sat')">Simple (SAT)</button>
+
+      <!-- Manual panel -->
+      <div id="panel-manual">
+        <textarea class="constraint-input" id="constraintInput" spellcheck="false"></textarea>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <span style="font-size:12px;color:var(--muted);align-self:center">Examples:</span>
+          <button class="exbtn" onclick="loadExample('unsat')">Slide (UNSAT)</button>
+          <button class="exbtn" onclick="loadExample('sat')">Simple (SAT)</button>
+        </div>
+        <div class="ihint">One per line: <code style="background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:11px">x - y &lt;= 5</code> &nbsp; Ops: <code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:11px">&lt;= &lt; &gt;= &gt; =</code></div>
       </div>
-      <div class="ihint">
-        One constraint per line. Supported: <code style="background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:11px">x - y &lt;= 5</code> &nbsp;
-        Variables: any identifier. Constants: integers.
+
+      <!-- SMT2 panel -->
+      <div id="panel-smt2" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="btn btn-g btn-sm" style="flex:1" onclick="document.getElementById('smt2FileInput').click()">↑ Upload .smt2 file</button>
+          <input type="file" id="smt2FileInput" accept=".smt2,.smt" style="display:none" onchange="onSmt2File(event)">
+        </div>
+        <textarea class="constraint-input" id="smt2Input" spellcheck="false" placeholder="(set-logic QF_IDL)&#10;(declare-const x Int)&#10;(declare-const y Int)&#10;(assert (&lt;= (- x y) 5))&#10;(assert (&lt;= (- y x) (- 5)))&#10;(check-sat)"></textarea>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <span style="font-size:12px;color:var(--muted);align-self:center">Examples:</span>
+          <button class="exbtn" onclick="loadSmt2Example('unsat')">Slide (UNSAT)</button>
+          <button class="exbtn" onclick="loadSmt2Example('sat')">Simple (SAT)</button>
+        </div>
+        <div class="ihint">Paste SMT-LIB2 or upload a <code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:11px">.smt2</code> file. Supports <code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:11px">QF_IDL</code> assertions with <code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:11px">(&lt;= (- x y) c)</code>.</div>
       </div>
+
       <div style="margin-top:12px">
         <button class="btn btn-cyan" style="width:100%" onclick="initSolver()">Initialize Graph ▶</button>
       </div>
@@ -344,6 +368,198 @@ function loadExample(name){
   document.getElementById('constraintInput').value = EXAMPLES[name];
 }
 loadExample('unsat');
+
+// ── TAB SWITCHER ─────────────────────────────────────────────────────────────
+let activeTab = 'manual';
+function switchTab(tab){
+  activeTab = tab;
+  document.getElementById('panel-manual').style.display = tab==='manual' ? '' : 'none';
+  document.getElementById('panel-smt2').style.display   = tab==='smt2'   ? '' : 'none';
+  document.getElementById('tab-manual').classList.toggle('active', tab==='manual');
+  document.getElementById('tab-smt2').classList.toggle('active',   tab==='smt2');
+}
+
+// ── SMT2 EXAMPLES ────────────────────────────────────────────────────────────
+const SMT2_EXAMPLES = {
+  unsat: `(set-logic QF_IDL)
+(declare-const x Int)
+(declare-const y Int)
+(declare-const z Int)
+(declare-const w Int)
+(assert (<= (- x y)    5))
+(assert (<= (- y x) (- 5)))
+(assert (<= (- y z) (- 2)))
+(assert (<= (- x z) (- 3)))
+(assert (<= (- w x)    2))
+(assert (<= (- x w) (- 2)))
+(assert (<= (- z w) (- 1)))
+(check-sat)`,
+  sat: `(set-logic QF_IDL)
+(declare-const x Int)
+(declare-const y Int)
+(declare-const z Int)
+(declare-const w Int)
+(assert (<= (- x y)    5))
+(assert (<= (- y x) (- 5)))
+(assert (<= (- y z) (- 2)))
+(assert (<= (- x z) (- 3)))
+(assert (<= (- w x)    2))
+(assert (<= (- z w) (- 1)))
+(check-sat)`,
+};
+function loadSmt2Example(name){ document.getElementById('smt2Input').value = SMT2_EXAMPLES[name]; }
+
+// ── SMT2 FILE UPLOAD ─────────────────────────────────────────────────────────
+function onSmt2File(evt){
+  const file = evt.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('smt2Input').value = e.target.result;
+    switchTab('smt2');
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+
+// ── SMT2 PARSER ──────────────────────────────────────────────────────────────
+// Parses QF_IDL SMT-LIB2 assertions into {from, to, weight, label}
+function parseSmt2(text){
+  // Strip comments (;...)
+  text = text.replace(/;[^\n]*/g, '');
+
+  // Tokenise into s-expressions using a simple approach: extract all assert forms
+  const result = [];
+  const assertRe = /\(\s*assert\s+(.+?)\s*\)(?=\s*[\n\r(]|\s*$)/gs;
+  let m;
+  while((m = assertRe.exec(text)) !== null){
+    // Parse the inner expression as an s-expr
+    try{
+      const edges = smtAssertToEdges(m[1].trim());
+      result.push(...edges);
+    } catch(e){
+      // skip non-IDL assertions (check-sat, get-model, etc.)
+    }
+  }
+  if(result.length === 0) throw new Error('No IDL assertions found. Make sure the file uses QF_IDL format.');
+  return result;
+}
+
+// Convert one assert body to edges. Handles:
+//   (<= (- x y) c)        x - y <= c
+//   (<= (- x y) (- c))    x - y <= -c
+//   (= (- x y) c)         x - y = c  → two edges
+//   (< > >= forms)
+function smtAssertToEdges(expr){
+  // Full tokeniser for s-expressions
+  const tokens = tokeniseSexpr(expr);
+  return parseSexprEdge(tokens);
+}
+
+function tokeniseSexpr(s){
+  const toks = [];
+  let i = 0;
+  while(i < s.length){
+    if(/\s/.test(s[i])){ i++; continue; }
+    if(s[i]==='('||s[i]===')'){ toks.push(s[i++]); continue; }
+    let j=i;
+    while(j<s.length && !/[\s()]/.test(s[j])) j++;
+    toks.push(s.slice(i,j)); i=j;
+  }
+  return toks;
+}
+
+function parseSexprEdge(toks){
+  // Parse a flat token list into edges
+  // Expected structure: ( op arg1 arg2 )
+  // where arg can be ( - x ) = negative constant, or ( - x y ) = difference
+  let i = 0;
+  function peek(){ return toks[i]; }
+  function consume(){ return toks[i++]; }
+
+  function parseAtom(){
+    if(peek()==='('){
+      consume(); // (
+      const head = consume();
+      if(head==='-'){
+        const a = consume();
+        if(peek()===')'){
+          // (- c) = negative constant
+          consume();
+          return {kind:'const', val:-parseInt(a)};
+        } else {
+          const b = consume(); consume(); // )
+          return {kind:'diff', lv:a, rv:b};
+        }
+      }
+      // Other s-expr — skip
+      let depth=1;
+      while(depth>0){ const t=consume(); if(t==='(')depth++; else if(t===')')depth--; }
+      return null;
+    } else {
+      const t = consume();
+      const n = parseInt(t);
+      if(!isNaN(n)) return {kind:'const', val:n};
+      return {kind:'var', name:t};
+    }
+  }
+
+  if(peek()!=='(') return [];
+  consume(); // (
+  const op = consume(); // <=, <, >=, >, =, not, and, or
+  if(!['<=','<','>=','>','='].includes(op)){
+    // not/and/or etc. — try to recurse on sub-expressions
+    let depth=1, result=[];
+    while(depth>0){
+      if(peek()==='('){
+        const sub = extractSexpr(toks, i);
+        i += sub.length;
+        try{ result.push(...parseSexprEdge(sub)); } catch(e){}
+      } else {
+        if(consume()===')') depth--;
+      }
+    }
+    return result;
+  }
+
+  const lhs = parseAtom();
+  const rhs = parseAtom();
+  consume(); // )
+
+  if(!lhs||!rhs) return [];
+
+  // We need: lhs = (- x y) or (- x), rhs = const or vice-versa
+  let lv, rv, c, flipped=false;
+  if(lhs.kind==='diff' && rhs.kind==='const'){
+    lv=lhs.lv; rv=lhs.rv; c=rhs.val;
+  } else if(lhs.kind==='const' && rhs.kind==='diff'){
+    // c op (x-y)  →  (x-y) inv_op c
+    lv=rhs.lv; rv=rhs.rv; c=lhs.val; flipped=true;
+  } else if(lhs.kind==='var' && rhs.kind==='var'){
+    // (op x y) → x - y op 0
+    lv=lhs.name; rv=rhs.name; c=0;
+  } else {
+    return [];
+  }
+
+  // Map operator (considering flip)
+  const effOp = flipped ? {'>':'<','<':'>','>=':'<=','<=':'>=','=':'='}[op]||op : op;
+
+  const edges = [];
+  const makeEdge=(from,to,w,lbl)=>edges.push({from,to,weight:w,label:lbl});
+  if(effOp==='<=') makeEdge(lv,rv,c,`${lv} − ${rv} ≤ ${c}`);
+  else if(effOp==='<') makeEdge(lv,rv,c-1,`${lv} − ${rv} ≤ ${c-1}`);
+  else if(effOp==='>=') makeEdge(rv,lv,-c,`${rv} − ${lv} ≤ ${-c}`);
+  else if(effOp==='>') makeEdge(rv,lv,-c-1,`${rv} − ${lv} ≤ ${-c-1}`);
+  else if(effOp==='='){ makeEdge(lv,rv,c,`${lv} − ${rv} ≤ ${c}`); makeEdge(rv,lv,-c,`${rv} − ${lv} ≤ ${-c}`); }
+  return edges;
+}
+
+function extractSexpr(toks, start){
+  // Return the token slice for the s-expr starting at start (inclusive parens)
+  const out=[]; let depth=0, i=start;
+  do{ const t=toks[i++]; out.push(t); if(t==='(')depth++; else if(t===')')depth--; } while(depth>0&&i<toks.length);
+  return out;
+}
 
 // ── PARSER ───────────────────────────────────────────────────────────────────
 // Parses "x - y <= c" or "x - y < c" (strict) into {from, to, weight}
@@ -511,10 +727,17 @@ let S = {
 };
 
 function initSolver(){
-  const text = document.getElementById('constraintInput').value;
   let edges;
-  try{ edges = parseConstraints(text); }
-  catch(e){ alert(e.message); return; }
+  try{
+    if(activeTab === 'smt2'){
+      const text = document.getElementById('smt2Input').value;
+      if(!text.trim()){ alert('Please enter or upload an SMT2 formula.'); return; }
+      edges = parseSmt2(text);
+    } else {
+      const text = document.getElementById('constraintInput').value;
+      edges = parseConstraints(text);
+    }
+  } catch(e){ alert(e.message); return; }
 
   const varSet = new Set();
   edges.forEach(e=>{ varSet.add(e.from); varSet.add(e.to); });
