@@ -204,10 +204,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <div id="panel-manual">
         <textarea class="constraint-input" id="constraintInput" spellcheck="false"></textarea>
         <div id="manual-view" class="input-view" style="display:none"></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">
           <span style="font-size:12px;color:var(--muted);align-self:center">Examples:</span>
           <button class="exbtn" onclick="loadExample('unsat')">Slide (UNSAT)</button>
           <button class="exbtn" onclick="loadExample('sat')">Simple (SAT)</button>
+          <button class="exbtn" style="margin-left:auto;border-color:rgba(6,182,212,.3);color:var(--accent2)" onclick="downloadAsSmt2()">↓ Download .smt2</button>
         </div>
         <div class="ihint">One per line: <code style="background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:11px">x - y &lt;= 5</code> &nbsp; Ops: <code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:11px">&lt;= &lt; &gt;= &gt; =</code></div>
       </div>
@@ -370,6 +371,38 @@ function loadExample(name){
   document.getElementById('constraintInput').value = EXAMPLES[name];
 }
 loadExample('unsat');
+
+function downloadAsSmt2(){
+  const text = document.getElementById('constraintInput').value;
+  let parsed;
+  try{ parsed = parseConstraints(text); } catch(e){ alert(e.message); return; }
+  const {edges} = parsed;
+
+  // Collect variables in sorted order
+  const vars = [...new Set(edges.flatMap(e=>[e.from, e.to]))].sort();
+
+  // Build SMT-LIB2 output
+  const lines = [
+    '(set-logic QF_IDL)',
+    ...vars.map(v=>`(declare-const ${v} Int)`),
+    '',
+    ...edges.map(e=>{
+      const w = e.weight;
+      const rhs = w < 0 ? `(- ${-w})` : `${w}`;
+      return `(assert (<= (- ${e.from} ${e.to}) ${rhs}))`;
+    }),
+    '',
+    '(check-sat)',
+    '(get-model)',
+  ];
+
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'constraints.smt2';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 // ── TAB SWITCHER ─────────────────────────────────────────────────────────────
 let activeTab = 'manual';
