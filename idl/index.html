@@ -441,18 +441,42 @@ function onSmt2File(evt){
 function parseSmt2(text){
   text = text.replace(/;[^\n]*/g, '');
   const allLines = [], edgeToLine = [], allEdges = [];
-  const assertRe = /\(\s*assert\s+(.+?)\s*\)(?=\s*[\n\r(]|\s*$)/gs;
-  let m;
-  while((m = assertRe.exec(text)) !== null){
+
+  // Find every (assert BODY) by counting balanced parentheses.
+  // A regex with .+? fails for nested forms like (<= (- y x) (- 5))
+  // because the non-greedy match stops at the first ) followed by whitespace+(.
+  let i = 0;
+  while(i < text.length){
+    const ai = text.indexOf('(assert', i);
+    if(ai === -1) break;
+    // Skip past '(assert' and any whitespace to find start of BODY
+    let j = ai + 7;
+    while(j < text.length && /\s/.test(text[j])) j++;
+    const bodyStart = j;
+    // Walk forward counting parens; the outer ) of (assert ...) is when depth hits 0
+    let depth = 0;
+    let bodyEnd = -1;
+    while(j < text.length){
+      if(text[j] === '(') depth++;
+      else if(text[j] === ')'){
+        if(depth === 0){ bodyEnd = j; break; }
+        depth--;
+      }
+      j++;
+    }
+    if(bodyEnd === -1){ i = ai + 1; continue; }
+    const body = text.slice(bodyStart, bodyEnd).trim();
+    i = bodyEnd + 1;
     try{
-      const edges = smtAssertToEdges(m[1].trim());
+      const edges = smtAssertToEdges(body);
       if(edges.length > 0){
         const lineIdx = allLines.length;
-        allLines.push(m[1].trim());
+        allLines.push(body);
         for(const e of edges){ edgeToLine.push(lineIdx); allEdges.push(e); }
       }
     } catch(e){}
   }
+
   if(allEdges.length === 0) throw new Error('No IDL assertions found. Make sure the file uses QF_IDL format.');
   return {edges: allEdges, allLines, edgeToLine};
 }
