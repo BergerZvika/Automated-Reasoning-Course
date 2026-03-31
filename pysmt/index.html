@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PySMT — Interactive Lab</title>
+<style>
+:root{
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --accent:#22c55e;--accent2:#4ade80;--accent3:#86efac;
+  --green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.32);
+  --cyan-bg:rgba(6,182,212,.12);--cyan-bd:rgba(6,182,212,.32);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+/* ── Header ── */
+.hdr{
+  background:linear-gradient(135deg,#052e16 0%,#14532d 40%,#166534 70%,#052e16 100%);
+  padding:26px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr h1{
+  font-size:26px;font-weight:800;
+  background:linear-gradient(90deg,#bbf7d0,#86efac,#4ade80);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-badge{background:var(--green-bg);border:1px solid var(--green-bd);color:var(--accent2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;z-index:1;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(34,197,94,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+
+/* ── Layout ── */
+.wrap{max-width:1340px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+
+/* ── Info bar ── */
+.algo-bar{background:var(--green-bg);border:1px solid var(--green-bd);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--muted);line-height:1.8}
+.algo-bar b{color:var(--text)}
+.algo-bar code{background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--accent2);font-family:'Consolas','Courier New',monospace}
+
+/* ── Example tabs ── */
+.tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.tab-btn.active{background:var(--green-bg);border-color:var(--green-bd);color:var(--accent2)}
+.tab-btn:hover:not(.active){border-color:var(--accent);color:var(--accent3)}
+.tab-pane{display:none}
+.tab-pane.active{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+@media(max-width:960px){.tab-pane.active{grid-template-columns:1fr}}
+
+/* ── Code block ── */
+.code-wrap{background:#0d1117;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.code-hdr{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#111827;border-bottom:1px solid #1e2d45}
+.code-fname{font-family:'Consolas','Courier New',monospace;font-size:.78rem;color:#94a3b8;flex:1}
+.code-badge{font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:4px;background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.3)}
+.code-body{display:flex;overflow-x:auto;max-height:480px;overflow-y:auto}
+.code-nums{padding:14px 0;text-align:right;user-select:none;color:#30405a;min-width:46px;flex-shrink:0;background:#0d1117;position:sticky;left:0}
+.code-nums span{display:block;padding:0 12px 0 8px;font-size:.75rem;line-height:1.65;font-family:'Consolas',monospace}
+.code-pre{flex:1;margin:0;padding:14px 20px;white-space:pre;color:#c9d1d9;background:transparent;font-family:'Consolas','Courier New',monospace;font-size:.78rem;line-height:1.65}
+
+/* ── Syntax highlight colours (match viewer.js) ── */
+.code-pre .k{color:#ff7b72}
+.code-pre .fn{color:#d2a8ff}
+.code-pre .s{color:#a5d6ff}
+.code-pre .n{color:#79c0ff}
+.code-pre .cm{color:#4d6080;font-style:italic}
+.code-pre .op{color:#e6edf3}
+.code-pre .dc{color:#ffa657}
+
+/* ── Explanation panel ── */
+.expl-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.expl-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.expl-desc{font-size:13px;color:var(--muted);line-height:1.6}
+.api-list{display:flex;flex-direction:column;gap:8px}
+.api-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px}
+.api-fn{font-family:'Consolas','Courier New',monospace;font-size:12px;color:var(--accent2);font-weight:700;margin-bottom:3px}
+.api-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.concept-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;background:var(--green-bg);border:1px solid var(--green-bd);color:var(--accent2);margin-bottom:8px}
+
+/* ── Files section ── */
+.files-section{max-width:1340px;margin:8px auto 28px;padding:0 20px}
+.files-section-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#475569;margin-bottom:14px}
+.files-panel{background:#0d1117;border:1px solid #1e293b;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.files-panel-hdr{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#111827;border-bottom:1px solid #1e293b;cursor:pointer;font-size:.8rem;font-weight:600;color:#94a3b8;user-select:none;transition:background .15s}
+.files-panel-hdr:hover{background:#1a2438}
+.files-panel-hdr .chevron{margin-left:auto;transition:transform .25s;font-size:.65rem}
+.files-panel-hdr.open .chevron{transform:rotate(180deg)}
+.file-rows{display:block}.file-rows.collapsed{display:none}
+.file-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #161d2e;text-decoration:none;transition:background .15s}
+.file-row:last-child{border-bottom:none}
+.file-row:hover{background:#131c2e}
+.file-name{font-size:.8rem;color:#cbd5e1;font-family:'Consolas','Courier New',monospace;flex:1}
+.file-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px;background:#14291e;color:#4ade80}
+.file-view{font-size:.7rem;font-weight:600;color:#6366f1;padding:2px 9px;border:1px solid rgba(99,102,241,.25);border-radius:5px;white-space:nowrap;transition:background .15s}
+.file-row:hover .file-view{background:rgba(99,102,241,.12)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a href="../index.html" class="back-btn">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>
+    Home
+  </a>
+  <div class="hdr-left">
+    <h1>PySMT Lab</h1>
+    <p>Python API for SMT solving — formulas, solvers, and models</p>
+  </div>
+  <span class="hdr-badge">Python / PySMT</span>
+</div>
+
+<div class="wrap">
+
+<!-- Info bar -->
+<div class="algo-bar">
+  <b>PySMT</b> is a Python library providing a unified API to SMT solvers (Z3, MathSAT, CVC4…).
+  &nbsp;·&nbsp; Build formulas with <code>Symbol</code>, <code>And</code>, <code>Or</code>, <code>Plus</code>, <code>Equals</code>, etc.
+  &nbsp;·&nbsp; Solve them with <code>Solver</code> or <code>is_sat</code>.
+  &nbsp;·&nbsp; Retrieve models with <code>get_value</code> / <code>get_model</code>.
+  &nbsp;·&nbsp; Install: <code>pip install pysmt</code> then <code>pysmt-install --z3</code>
+</div>
+
+<!-- Examples -->
+<div class="card">
+  <div class="card-title">Code Examples</div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('hello')">Hello World</button>
+    <button class="tab-btn" onclick="showTab('basic')">Basic SAT</button>
+    <button class="tab-btn" onclick="showTab('lia')">LIA / Real</button>
+    <button class="tab-btn" onclick="showTab('portfolio')">Portfolio</button>
+    <button class="tab-btn" onclick="showTab('quantifiers')">Quantifiers</button>
+  </div>
+
+  <!-- Hello World -->
+  <div class="tab-pane active" id="tab-hello">
+    <div class="code-wrap">
+      <div class="code-hdr">
+        <span class="code-fname">pysmt-hello_world.py</span>
+        <span class="code-badge">Python</span>
+      </div>
+      <div class="code-body">
+        <div class="code-nums" id="nums-hello"></div>
+        <pre class="code-pre" id="code-hello"></pre>
+      </div>
+    </div>
+    <div class="expl-card">
+      <div>
+        <span class="concept-badge">Hello World</span>
+        <div class="expl-title">Letter-value puzzle</div>
+        <div class="expl-desc">Assign integer values 1–10 to the letters in "hello" and "world" such that their sums are equal and both equal 25.</div>
+      </div>
+      <div class="api-list">
+        <div class="api-item">
+          <div class="api-fn">Symbol(name, type)</div>
+          <div class="api-desc">Creates a typed variable. Use <code>INT</code>, <code>REAL</code>, or <code>BOOL</code> from <code>pysmt.typing</code>.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">LE(a, b) / GE(a, b)</div>
+          <div class="api-desc">Less-than-or-equal / Greater-than-or-equal constraints between two terms.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">And(...) / Plus(...)</div>
+          <div class="api-desc"><code>And</code> takes any number of formulas. <code>Plus</code> sums a list of terms. Both accept generators.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">Equals(a, b)</div>
+          <div class="api-desc">Equality constraint between two terms. Different from Python's <code>==</code> which compares objects.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">Solver(logic="QF_LIA")</div>
+          <div class="api-desc">Context-manager solver. <code>QF_LIA</code> = Quantifier-Free Linear Integer Arithmetic.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">solver.get_value(symbol)</div>
+          <div class="api-desc">Returns the model value as a PySMT constant. Use <code>.is_true()</code> for booleans, or compare with <code>TRUE()</code>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Basic SAT -->
+  <div class="tab-pane" id="tab-basic">
+    <div class="code-wrap">
+      <div class="code-hdr">
+        <span class="code-fname">pysmt-basic.py</span>
+        <span class="code-badge">Python</span>
+      </div>
+      <div class="code-body">
+        <div class="code-nums" id="nums-basic"></div>
+        <pre class="code-pre" id="code-basic"></pre>
+      </div>
+    </div>
+    <div class="expl-card">
+      <div>
+        <span class="concept-badge">Boolean SAT</span>
+        <div class="expl-title">Basic propositional solving</div>
+        <div class="expl-desc">Create Boolean symbols, build a formula with <code>And</code>/<code>Or</code>/<code>Not</code>, solve it, and inspect model values.</div>
+      </div>
+      <div class="api-list">
+        <div class="api-item">
+          <div class="api-fn">Symbol(name, BOOL)</div>
+          <div class="api-desc">Boolean variable. Import <code>BOOL</code> from <code>pysmt.shortcuts</code> directly.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">Solver(name="z3")</div>
+          <div class="api-desc">Instantiate a specific backend solver by name. Requires that solver to be installed via <code>pysmt-install</code>.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">solver.add_assertion(f)</div>
+          <div class="api-desc">Assert a formula to the solver. Multiple calls are implicitly conjoined.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">solver.check_sat()</div>
+          <div class="api-desc">Returns <code>True</code> if SAT, <code>False</code> if UNSAT.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">value.is_true() / value == TRUE()</div>
+          <div class="api-desc">Model values are PySMT objects, NOT Python booleans. Always use <code>.is_true()</code> or compare with <code>TRUE()</code>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIA -->
+  <div class="tab-pane" id="tab-lia">
+    <div class="code-wrap">
+      <div class="code-hdr">
+        <span class="code-fname">pysmt-lia.py</span>
+        <span class="code-badge">Python</span>
+      </div>
+      <div class="code-body">
+        <div class="code-nums" id="nums-lia"></div>
+        <pre class="code-pre" id="code-lia"></pre>
+      </div>
+    </div>
+    <div class="expl-card">
+      <div>
+        <span class="concept-badge">LIA / LIRA</span>
+        <div class="expl-title">Integer and Real arithmetic</div>
+        <div class="expl-desc">Mix integer and real variables in the same formula. PySMT keeps them typed; Z3 handles mixed-arithmetic via LIRA logic.</div>
+      </div>
+      <div class="api-list">
+        <div class="api-item">
+          <div class="api-fn">Symbol("x", INT) / Symbol("y", REAL)</div>
+          <div class="api-desc">Import <code>INT</code> and <code>REAL</code> from <code>pysmt.typing</code>. A symbol's type is fixed at creation.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">Int(n) / Real(r)</div>
+          <div class="api-desc">Typed numeric constants. Always use these instead of bare Python literals to avoid type mismatches.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">Plus(x, Int(5))</div>
+          <div class="api-desc">Arithmetic addition. Also available: <code>Minus</code>, <code>Times</code>, <code>Div</code>.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">y &lt; Real(5.0)</div>
+          <div class="api-desc">PySMT overloads Python comparison operators on symbols, producing PySMT formula objects (not Python booleans).</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">solver.get_model()</div>
+          <div class="api-desc">Returns a <code>Model</code> object. Print it directly to see all variable assignments.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portfolio -->
+  <div class="tab-pane" id="tab-portfolio">
+    <div class="code-wrap">
+      <div class="code-hdr">
+        <span class="code-fname">pysmt_portfolio.py</span>
+        <span class="code-badge">Python</span>
+      </div>
+      <div class="code-body">
+        <div class="code-nums" id="nums-portfolio"></div>
+        <pre class="code-pre" id="code-portfolio"></pre>
+      </div>
+    </div>
+    <div class="expl-card">
+      <div>
+        <span class="concept-badge">Portfolio</span>
+        <div class="expl-title">Running multiple solvers in parallel</div>
+        <div class="expl-desc">A <code>Portfolio</code> solver races several backends and returns the first answer. Useful when different solvers are faster on different inputs.</div>
+      </div>
+      <div class="api-list">
+        <div class="api-item">
+          <div class="api-fn">Portfolio(["z3","msat"], logic=…)</div>
+          <div class="api-desc">Accepts a list of solver names and an explicit <code>logic</code>. Spawns all solvers simultaneously and returns the first result.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">from pysmt.logics import QF_BOOL</div>
+          <div class="api-desc">Logic objects from <code>pysmt.logics</code> are more precise than string names and enable solver selection optimisation.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">is_sat(formula)</div>
+          <div class="api-desc">Shorthand from <code>pysmt.shortcuts</code> — creates a solver, checks, and disposes. Good for one-shot checks.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quantifiers -->
+  <div class="tab-pane" id="tab-quantifiers">
+    <div class="code-wrap">
+      <div class="code-hdr">
+        <span class="code-fname">quantifiers.py</span>
+        <span class="code-badge">Python</span>
+      </div>
+      <div class="code-body">
+        <div class="code-nums" id="nums-quantifiers"></div>
+        <pre class="code-pre" id="code-quantifiers"></pre>
+      </div>
+    </div>
+    <div class="expl-card">
+      <div>
+        <span class="concept-badge">Quantifiers</span>
+        <div class="expl-title">Universal quantification with ForAll</div>
+        <div class="expl-desc">Check whether <code>∀x. x+1 &lt; x</code> is satisfiable. This is a contradiction — no integer satisfies it — so the result is UNSAT.</div>
+      </div>
+      <div class="api-list">
+        <div class="api-item">
+          <div class="api-fn">ForAll([vars], formula)</div>
+          <div class="api-desc">Universal quantifier. The first argument is a list of bound variables. Produces a quantified formula.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">Exists([vars], formula)</div>
+          <div class="api-desc">Existential quantifier — not used here but works the same way. For satisfiability, ∃x.φ(x) is checked directly.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">LT(a, b)</div>
+          <div class="api-desc">Strict less-than. Equivalent to <code>a &lt; b</code> using operator overloading.</div>
+        </div>
+        <div class="api-item">
+          <div class="api-fn">Quantified logic</div>
+          <div class="api-desc">Quantified formulas go beyond QF (quantifier-free) logics. Z3 supports them via AUFLIA, LIA, etc. Not all solvers handle quantifiers.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- card -->
+
+</div><!-- wrap -->
+
+<!-- Files section -->
+<div class="files-section">
+  <div class="files-section-title">Lab Files</div>
+  <div class="files-panel">
+    <div class="files-panel-hdr open" onclick="togglePanel(this)">
+      <span>🐍</span> Python Examples <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows">
+      <a class="file-row" href="pysmt-hello_world.py" target="_blank">
+        <span class="file-name">pysmt-hello_world.py</span>
+        <span class="file-badge">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="pysmt-basic.py" target="_blank">
+        <span class="file-name">pysmt-basic.py</span>
+        <span class="file-badge">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="pysmt-lia.py" target="_blank">
+        <span class="file-name">pysmt-lia.py</span>
+        <span class="file-badge">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="pysmt_portfolio.py" target="_blank">
+        <span class="file-name">pysmt_portfolio.py</span>
+        <span class="file-badge">PY</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="quantifiers.py" target="_blank">
+        <span class="file-name">quantifiers.py</span>
+        <span class="file-badge">PY</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script id="lab-files-data">
+window.LAB_FILES={"pysmt-hello_world.py": "from pysmt.shortcuts import Symbol, LE, GE, Int, And, Equals, Plus, Solver\nfrom pysmt.typing import INT\n\nhello = [Symbol(s, INT) for s in \"hello\"]\nworld = [Symbol(s, INT) for s in \"world\"]\n\nletters = set(hello+world)\n\ndomains = And(And(LE(Int(1), l),\n                  GE(Int(10), l)) for l in letters)\n\nsum_hello = Plus(hello)\nsum_world = Plus(world)\n\nproblem = And(Equals(sum_hello, sum_world),\n              Equals(sum_hello, Int(25)))\n\nformula = And(domains, problem)\n\nprint(\"Serialization of the formula:\")\nprint(formula)\n\nwith Solver(logic=\"QF_LIA\") as solver:\n    solver.add_assertion(domains)\n    if not solver.solve():\n        print(\"Domain is not SAT!!!\")\n        exit()\n    solver.add_assertion(problem)\n    if solver.solve():\n        for l in letters:\n            print(\"%s = %s\" %(l, solver.get_value(l)))\n    else:\n        print(\"No solution found\")", "pysmt-basic.py": "from pysmt.shortcuts import Solver, And, Or, Not, BOOL, Symbol, TRUE\n\nsolver = Solver(name=\"z3\")\n\na = Symbol(\"a\", BOOL)\nb = Symbol(\"b\", BOOL)\n\nv = []\nfor i in range(0, 5):\n    v += [ Symbol(\"x\" + str(i), BOOL) ]\n\nsolver.add_assertion(And(a, b))\n# solver.add_assertion(Not(And(a, b)))\nsolver.add_assertion(Or(v))\nr = solver.check_sat()\nprint(\"result: \", r)\nprint(\"********************************\")\nprint(\"model values:\")\nfor var in v:\n    val = solver.get_value(var)\n    print(var, \":\", val)\nprint(\"********************************\")\n\na_val = solver.get_value(a)\nprint(\"a_val:\", a_val)\nprint(\"type of a_val:\", type(a_val))\nprint(\"********************************\")\n\n# a_val is not a Boolean\nprint(a_val == True)\n\n# a_val is a pysmt object\nprint(a_val == TRUE())\nprint(a_val.is_true())\n", "pysmt-lia.py": "from pysmt.shortcuts import Solver, Symbol, Plus, Equals, Int, Real\nfrom pysmt.typing import INT, REAL, BOOL\n\nx = Symbol(\"x\", INT)\ny = Symbol(\"y\", REAL)\n\nformula1 = Equals(Plus(x, Int(5)), Int(10))\nformula2 = y < Real(5.0)\nformula3 = y > Real(4.0)\n\nwith Solver(name=\"z3\") as solver:\n    solver.add_assertion(formula1)\n    solver.add_assertion(formula2)\n    solver.add_assertion(formula3)\n\n    if solver.solve():\n        model = solver.get_model()\n        print(model)\n    else:\n        print(\"No solution exists\")\n\n\n\n", "pysmt_portfolio.py": "from pysmt.shortcuts import Symbol, And, Equals, Int, is_sat, Portfolio\nfrom pysmt.typing import BOOL, INT\nfrom pysmt.logics import QF_BOOL\n\ndef main():\n    # Create Boolean and Integer Symbols\n    A = Symbol(\"A\", BOOL)\n    B = Symbol(\"B\", BOOL)\n\n    # Build a formula\n    formula = And(A, B)\n\n    # Use a Portfolio solver strategy\n    with Portfolio([\"z3\", \"msat\"], logic=QF_BOOL) as solver:\n        solver.add_assertion(formula)\n\n        # Check satisfiability\n        if solver.solve():\n            model = solver.get_model()\n            print(\"Satisfiable! The model is:\\n\", model)\n        else:\n            print(\"Unsatisfiable!\")\n\nif __name__ == '__main__':\n    main()", "quantifiers.py": "from pysmt.shortcuts import Solver, Symbol, Plus, Int, ForAll, Plus, LT\nfrom pysmt.typing import INT\n\nx = Symbol(\"x\", INT)\n\nformula = ForAll([x], LT(Plus(x, Int(1)), x))\nprint(formula)\n\nsolver = Solver(name=\"z3\")\nsolver.add_assertion(formula)\nr = solver.check_sat()\nprint(\"result: \", r)\n\n\n\n\n\n\n\n\n\n"};
+</script>
+<script src="../viewer.js"></script>
+<script>
+function togglePanel(hdr){
+  hdr.classList.toggle('open');
+  hdr.nextElementSibling.classList.toggle('collapsed');
+}
+
+// ── TAB SWITCHING ──────────────────────────────────────────────────────────────
+const TABS = ['hello','basic','lia','portfolio','quantifiers'];
+function showTab(id){
+  TABS.forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active', t===id);
+  });
+  document.querySelectorAll('.tab-btn').forEach((btn,i)=>{
+    btn.classList.toggle('active', TABS[i]===id);
+  });
+}
+
+// ── PYTHON SYNTAX HIGHLIGHTER ─────────────────────────────────────────────────
+const PY_KW = new Set(['False','None','True','and','as','assert','async','await',
+  'break','class','continue','def','del','elif','else','except','finally','for',
+  'from','global','if','import','in','is','lambda','nonlocal','not','or','pass',
+  'raise','return','try','while','with','yield']);
+const PY_BI = new Set(['abs','all','any','bool','bytes','dict','enumerate','float',
+  'format','frozenset','int','isinstance','iter','len','list','map','max','min',
+  'next','object','open','print','range','repr','reversed','set','sorted','str',
+  'sum','super','tuple','type','zip']);
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function t(cls,s){return `<span class="${cls}">${s}</span>`;}
+
+function hlPy(src){
+  const lines = src.split('\n');
+  let inTriple = false, tripleQ = '';
+  const out = [];
+  for(const line of lines){
+    let res = '', i = 0;
+    if(inTriple){
+      const end = line.indexOf(tripleQ);
+      if(end === -1){ out.push(t('s', esc(line))); continue; }
+      res += t('s', esc(line.slice(0, end+3)));
+      i = end+3; inTriple = false;
+    }
+    while(i < line.length){
+      const c = line[i];
+      if(c === '#'){ res += t('cm', esc(line.slice(i))); break; }
+      if((c==='"'||c==="'") && line[i+1]===c && line[i+2]===c){
+        const q=c+c+c, end=line.indexOf(q,i+3);
+        if(end===-1){ res+=t('s',esc(line.slice(i))); inTriple=true; tripleQ=q; i=line.length; }
+        else{ res+=t('s',esc(line.slice(i,end+3))); i=end+3; }
+        continue;
+      }
+      if(c==='"'||c==="'"){
+        let j=i+1; while(j<line.length&&line[j]!==c){if(line[j]==='\\')j++;j++;}
+        res+=t('s',esc(line.slice(i,j+1))); i=j+1; continue;
+      }
+      if(c==='@'){
+        let j=i+1; while(j<line.length&&/[\w.]/.test(line[j]))j++;
+        res+=t('dc',esc(line.slice(i,j))); i=j; continue;
+      }
+      if(/[0-9]/.test(c)&&(i===0||/\W/.test(line[i-1]))){
+        let j=i; while(j<line.length&&/[0-9._xXbBeEfFlLjJ]/.test(line[j]))j++;
+        res+=t('n',esc(line.slice(i,j))); i=j; continue;
+      }
+      if(/[a-zA-Z_]/.test(c)){
+        let j=i; while(j<line.length&&/\w/.test(line[j]))j++;
+        const w=line.slice(i,j);
+        if(PY_KW.has(w)) res+=t('k',esc(w));
+        else if(PY_BI.has(w)||line[j]==='(') res+=t('fn',esc(w));
+        else res+=esc(w);
+        i=j; continue;
+      }
+      if(/[+\-*\/=<>!&|^~%:,;.[\]{}()]/.test(c)){ res+=t('op',esc(c)); i++; continue; }
+      res+=esc(c); i++;
+    }
+    out.push(res);
+  }
+  return out.join('\n');
+}
+
+function renderCode(fileKey, codeId, numsId){
+  const src = (window.LAB_FILES && window.LAB_FILES[fileKey]) || '';
+  const lines = src.split('\n');
+  // strip trailing blank lines
+  while(lines.length && !lines[lines.length-1].trim()) lines.pop();
+  document.getElementById(numsId).innerHTML =
+    lines.map((_,i)=>`<span>${i+1}</span>`).join('');
+  document.getElementById(codeId).innerHTML = hlPy(lines.join('\n'));
+}
+
+// ── RENDER ALL EXAMPLES ───────────────────────────────────────────────────────
+renderCode('pysmt-hello_world.py', 'code-hello',       'nums-hello');
+renderCode('pysmt-basic.py',       'code-basic',       'nums-basic');
+renderCode('pysmt-lia.py',         'code-lia',         'nums-lia');
+renderCode('pysmt_portfolio.py',   'code-portfolio',   'nums-portfolio');
+renderCode('quantifiers.py',       'code-quantifiers', 'nums-quantifiers');
+</script>
+</body>
+</html>
