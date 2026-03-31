@@ -1438,9 +1438,10 @@ function openInSatSolver() {
   const f=G.frames[G.current];
   const cnf=f.fstate&&f.fstate.cnf;
   if (!cnf) return;
+  const cnfFormatted=cnf.split('\n').filter(Boolean).join(', ');
   const solver=G.satSolver||'dpll';
   const key=solver==='basic-cdcl'?'basic_cdcl_formula':solver==='cdcl'?'cdcl_formula':'dpll_formula';
-  localStorage.setItem(key, cnf);
+  localStorage.setItem(key, cnfFormatted);
   window.open('../'+solver+'/', '_blank');
 }
 
