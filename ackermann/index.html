@@ -578,13 +578,11 @@ function runAck(){
   document.getElementById('av-phi').textContent=src;
   document.getElementById('av-fapps').textContent=fapps.length
     ?fapps.map(fa=>`${fa.key}  →  ${fm.get(fa.key)}`).join('\n'):'(none)';
-  document.getElementById('av-map').textContent=fapps.length
-    ?[...fm.entries()].map(([k,v])=>k+' → '+v).join('\n'):'(none)';
   document.getElementById('av-phi-prime').textContent=ppStr;
   document.getElementById('av-axioms').textContent=axioms.length
     ?axioms.map(ax=>pFml(ax,false)).join('\n'):'(none)';
   document.getElementById('av-ack').textContent=ackStr;
-  ['phi','fapps','map','phi-prime','axioms','ack'].forEach(id=>
+  ['phi','fapps','phi-prime','axioms','ack'].forEach(id=>
     document.getElementById('at-'+id).classList.remove('active'));
 
   // UI
@@ -601,10 +599,10 @@ function runAck(){
 // ── FLOW STEP ORDER ───────────────────────────────────────────────
 const FLOW_STEPS=['input','collect','map','replace','axioms','ack','sat'];
 const TRACE_ACTIVE={
-  input:['phi'],collect:['fapps'],map:['map'],
+  input:['phi'],collect:['fapps'],map:['fapps'],
   replace:['phi-prime'],axioms:['axioms'],ack:['ack'],sat:['ack']
 };
-const TRACE_IDS=['phi','fapps','map','phi-prime','axioms','ack'];
+const TRACE_IDS=['phi','fapps','phi-prime','axioms','ack'];
 
 function renderAll(){
   const f=G.frames[G.current];if(!f)return;
