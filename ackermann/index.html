@@ -171,9 +171,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <div class="card-title">Algorithm Flow</div>
     <div class="flow-step" id="fs-input">φ — Input</div>
     <div class="flow-arrow">↓</div>
-    <div class="flow-step" id="fs-collect">Find F-apps</div>
-    <div class="flow-arrow">↓</div>
-    <div class="flow-step" id="fs-map">Map → Fresh k<sub>i</sub></div>
+    <div class="flow-step" id="fs-fapps">F-apps & Fresh k<sub>i</sub></div>
     <div class="flow-arrow">↓</div>
     <div class="flow-step" id="fs-replace">Replace → φ'</div>
     <div class="flow-arrow">↓</div>
@@ -508,28 +506,23 @@ function runAck(){
     `<div class="info-section"><div class="info-section-title">Formula φ</div><div class="info-content">${esc(src)}</div></div>`+
     `<div class="info-section"><div class="info-section-title">Concept</div><div class="info-text">`+
     `<b>Ackermanization</b> reduces a QF_UF formula (uninterpreted functions + equality) to a QF_EQ formula (pure equality, no functions).<br><br>`+
-    `Steps:<br>1. Collect all unique function applications<br>2. Map each to a fresh constant k<sub>i</sub><br>`+
-    `3. Replace applications in φ → φ'<br>4. Add congruence axioms enforcing function semantics<br>5. Ack(φ) = Axioms → φ'  (if no axioms: just φ')<br><br>`+
+    `Steps:<br>1. Collect all unique function applications & map each to a fresh constant k<sub>i</sub><br>`+
+    `2. Replace applications in φ → φ'<br>3. Add congruence axioms enforcing function semantics<br>4. Ack(φ) = Axioms → φ'  (if no axioms: just φ')<br><br>`+
     `<b>Theorem:</b> φ is SAT (in QF_UF) iff Ack(φ) is SAT (in QF_EQ).</div></div>`,
     'Input: '+src,'h-blue');
 
-  // Frame 2 — Collect
+  // Frame 2 — Collect + Map (combined)
   const fappLines=fapps.length===0
     ?'(none — no function applications found)'
     :fapps.map((fa,i)=>`${fa.key}   [${fa.name}/${fa.args.length}]`).join('\n');
-  addFrame('collect','Find F-applications','COLLECT','badge-violet',
-    `<div class="info-section"><div class="info-section-title">Unique f-applications (bottom-up order)</div><div class="info-content">${esc(fappLines)}</div></div>`+
-    `<div class="info-text">We scan φ <b>bottom-up</b> (innermost subterms first) and collect each unique subterm of the form <code>f(t₁,...,tₙ)</code>. Nested applications like <code>f(g(a))</code> yield both <code>g(a)</code> and <code>f(g(a))</code> as separate entries.</div>`,
-    `Collected ${fapps.length} f-app(s): `+(fapps.map(f=>f.key).join(', ')||'none'),'h-violet');
-
-  // Frame 3 — Map
   const mapLines=fapps.length===0
     ?'(no mapping needed)'
     :fapps.map(fa=>`${fa.key.padEnd(20)}→  ${fm.get(fa.key)}`).join('\n');
-  addFrame('map','Map → Fresh Constants','MAP','badge-violet',
+  addFrame('fapps','F-apps & Fresh Constants','FAPPS','badge-violet',
+    `<div class="info-section"><div class="info-section-title">Unique f-applications (bottom-up order)</div><div class="info-content">${esc(fappLines)}</div></div>`+
     `<div class="info-section"><div class="info-section-title">Fresh constant mapping</div><div class="info-content">${esc(mapLines)}</div></div>`+
-    `<div class="info-text">Each unique application receives a new constant <code>k₀, k₁, ...</code> not present in φ. Two distinct applications get <b>different</b> constants. The constants are unconstrained — the congruence axioms will restrict them.</div>`,
-    'Map: '+[...fm.entries()].map(([k,v])=>k+'→'+v).join(', '),'h-violet');
+    `<div class="info-text">We scan φ <b>bottom-up</b> and collect each unique subterm of the form <code>f(t₁,...,tₙ)</code>. Each is then assigned a fresh constant <code>k₀, k₁, ...</code> not present in φ. The constants are unconstrained — congruence axioms will restrict them.</div>`,
+    `F-apps: `+(fapps.map(f=>f.key).join(', ')||'none')+' → '+(fapps.length?[...fm.entries()].map(([k,v])=>k+'→'+v).join(', '):'—'),'h-violet');
 
   // Frame 4 — Replace
   const ppStr=pFml(phiPrime,false);
@@ -598,9 +591,9 @@ function runAck(){
 }
 
 // ── FLOW STEP ORDER ───────────────────────────────────────────────
-const FLOW_STEPS=['input','collect','map','replace','axioms','ack','sat'];
+const FLOW_STEPS=['input','fapps','replace','axioms','ack','sat'];
 const TRACE_ACTIVE={
-  input:['phi'],collect:['fapps'],map:['fapps'],
+  input:['phi'],fapps:['fapps'],
   replace:['phi-prime'],axioms:['axioms'],ack:['ack'],sat:['ack']
 };
 const TRACE_IDS=['phi','fapps','phi-prime','axioms','ack'];
