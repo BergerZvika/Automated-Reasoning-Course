@@ -369,9 +369,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       </div>
       <div id="stepBody" style="font-size:13px;line-height:1.6;color:var(--muted)">Load a formula to begin.</div>
       <div style="margin-top:16px;display:flex;gap:8px">
-        <button class="btn btn-blue" id="btnNext" onclick="nextStep()" disabled>Next →</button>
         <button class="btn btn-ghost btn-sm" id="btnBack" onclick="prevStep()" disabled>← Back</button>
+        <button class="btn btn-blue" id="btnNext" onclick="nextStep()" disabled>Next →</button>
         <button class="btn btn-ghost btn-sm" id="btnAuto" onclick="autoPlay()" style="margin-left:auto">Auto ▶</button>
+        <button class="btn btn-ghost btn-sm" id="btnOpenSat" onclick="openInSatSolver()" disabled title="Open current CNF in the SAT Solver lab">↗ SAT Solver</button>
+        <button class="btn btn-ghost btn-sm" id="btnOpenT" onclick="openInTSolver()" disabled title="Open current UF literals in the Theory Solver lab">↗ T-Solver</button>
       </div>
     </div>
 
@@ -1426,6 +1428,35 @@ function renderInfoPanel() {
   document.getElementById('stepBody').innerHTML=f.bodyHtml;
   document.getElementById('btnNext').disabled=G.current>=G.frames.length-1;
   document.getElementById('btnBack').disabled=G.current<=0;
+  // Open-in buttons: enable when relevant data is present
+  const hasCnf=!!(f.fstate&&f.fstate.cnf);
+  const hasUf =!!(f.fstate&&f.fstate.uf);
+  document.getElementById('btnOpenSat').disabled=!hasCnf;
+  document.getElementById('btnOpenT').disabled=!hasUf;
+}
+
+function openInSatSolver() {
+  if (!G.frames.length||G.current<0) return;
+  const f=G.frames[G.current];
+  const cnf=f.fstate&&f.fstate.cnf;
+  if (!cnf) return;
+  const solver=G.satSolver||'dpll';
+  const key=solver==='basic-cdcl'?'basic_cdcl_formula':solver==='cdcl'?'cdcl_formula':'dpll_formula';
+  localStorage.setItem(key, cnf);
+  window.open('../'+solver+'/', '_blank');
+}
+
+function openInTSolver() {
+  if (!G.frames.length||G.current<0) return;
+  const f=G.frames[G.current];
+  const uf=f.fstate&&f.fstate.uf;
+  if (!uf) return;
+  const formula=uf.split('\n').filter(Boolean).join(', ');
+  const th=G.theorySolver||'union-find';
+  const key=th==='cc'?'cc_formula':'uf_formula';
+  const lab=th==='cc'?'cc':'uf';
+  localStorage.setItem(key, formula);
+  window.open('../'+lab+'/', '_blank');
 }
 
 function renderHistory() {

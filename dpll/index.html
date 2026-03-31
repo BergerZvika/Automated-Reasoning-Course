@@ -1326,8 +1326,15 @@ document.getElementById('upOverlay').addEventListener('click', e => { if(e.targe
 document.getElementById('heurOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeHeuristic(); });
 document.getElementById('resultOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeResult(); });
 
-// Boot
-loadExample('simple');
+// Boot — accept formula forwarded from DPLL(T) via localStorage
+const _dpllIncoming = localStorage.getItem('dpll_formula');
+if (_dpllIncoming) {
+  document.getElementById('formulaInput').value = _dpllIncoming;
+  localStorage.removeItem('dpll_formula');
+  loadFormula();
+} else {
+  loadExample('simple');
+}
 </script>
 <script src="../viewer.js"></script>
 </body>
