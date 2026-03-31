@@ -159,6 +159,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .input-tab{flex:1;padding:7px 10px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
 .input-tab.active{background:var(--cyan-bg);color:var(--accent2)}
 .input-tab:hover:not(.active){background:var(--surface2);color:var(--text)}
+
+/* ── Input view (read-only with row highlighting) ── */
+.input-view{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow-y:auto;max-height:250px;min-height:170px;padding:6px 0;font-family:'Consolas','Courier New',monospace;font-size:13px;line-height:1.7}
+.irow{padding:2px 14px 2px 11px;border-left:3px solid transparent;transition:background .2s,color .2s,border-color .2s;white-space:pre;color:var(--text)}
+.irow.done{color:var(--muted);opacity:.55}
+.irow.active{background:var(--cyan-bg);border-left-color:var(--accent);color:var(--accent2);font-weight:600}
 </style>
 </head>
 <body>
@@ -204,6 +210,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <!-- Manual panel -->
       <div id="panel-manual">
         <textarea class="constraint-input" id="constraintInput" spellcheck="false"></textarea>
+        <div id="manual-view" class="input-view" style="display:none"></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
           <span style="font-size:12px;color:var(--muted);align-self:center">Examples:</span>
           <button class="exbtn" onclick="loadExample('unsat')">Slide (UNSAT)</button>
@@ -219,6 +226,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
           <input type="file" id="smt2FileInput" accept=".smt2,.smt" style="display:none" onchange="onSmt2File(event)">
         </div>
         <textarea class="constraint-input" id="smt2Input" spellcheck="false" placeholder="(set-logic QF_IDL)&#10;(declare-const x Int)&#10;(declare-const y Int)&#10;(assert (&lt;= (- x y) 5))&#10;(assert (&lt;= (- y x) (- 5)))&#10;(check-sat)"></textarea>
+        <div id="smt2-view" class="input-view" style="display:none"></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
           <span style="font-size:12px;color:var(--muted);align-self:center">Examples:</span>
           <button class="exbtn" onclick="loadSmt2Example('unsat')">Slide (UNSAT)</button>
@@ -431,24 +439,22 @@ function onSmt2File(evt){
 // ── SMT2 PARSER ──────────────────────────────────────────────────────────────
 // Parses QF_IDL SMT-LIB2 assertions into {from, to, weight, label}
 function parseSmt2(text){
-  // Strip comments (;...)
   text = text.replace(/;[^\n]*/g, '');
-
-  // Tokenise into s-expressions using a simple approach: extract all assert forms
-  const result = [];
+  const allLines = [], edgeToLine = [], allEdges = [];
   const assertRe = /\(\s*assert\s+(.+?)\s*\)(?=\s*[\n\r(]|\s*$)/gs;
   let m;
   while((m = assertRe.exec(text)) !== null){
-    // Parse the inner expression as an s-expr
     try{
       const edges = smtAssertToEdges(m[1].trim());
-      result.push(...edges);
-    } catch(e){
-      // skip non-IDL assertions (check-sat, get-model, etc.)
-    }
+      if(edges.length > 0){
+        const lineIdx = allLines.length;
+        allLines.push(m[1].trim());
+        for(const e of edges){ edgeToLine.push(lineIdx); allEdges.push(e); }
+      }
+    } catch(e){}
   }
-  if(result.length === 0) throw new Error('No IDL assertions found. Make sure the file uses QF_IDL format.');
-  return result;
+  if(allEdges.length === 0) throw new Error('No IDL assertions found. Make sure the file uses QF_IDL format.');
+  return {edges: allEdges, allLines, edgeToLine};
 }
 
 // Convert one assert body to edges. Handles:
@@ -571,34 +577,31 @@ function extractSexpr(toks, start){
 // ── PARSER ───────────────────────────────────────────────────────────────────
 // Parses "x - y <= c" or "x - y < c" (strict) into {from, to, weight}
 function parseConstraints(text){
-  const lines = text.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//'));
-  const result = [];
-  for(const line of lines){
-    // Match: var - var op int
+  const rawLines = text.split('\n');
+  const allLines = [], edgeToLine = [], result = [];
+  for(const rawLine of rawLines){
+    const line = rawLine.trim();
+    if(!line || line.startsWith('//')) continue;
+    const lineIdx = allLines.length;
+    allLines.push(line);
     const m = line.match(/^([a-zA-Z_]\w*)\s*-\s*([a-zA-Z_]\w*)\s*(<=|<|>=|>|=)\s*(-?\d+)$/);
     if(!m) throw new Error(`Cannot parse: "${line}"`);
     let [,lv,rv,op,cs] = m;
     let c = parseInt(cs);
-    // Normalise to "from - to <= weight"
-    // x - y <= c  → edge x→y weight c
-    // x - y <  c  → edge x→y weight c-1  (integers)
-    // x - y >= c  → y - x <= -c  → edge y→x weight -c
-    // x - y >  c  → y - x <= -c-1 → edge y→x weight -c-1
-    // x - y = c   → two edges
     if(op==='<'){
-      result.push({from:lv, to:rv, weight:c-1, label:`${lv} − ${rv} ≤ ${c-1}`});
+      result.push({from:lv, to:rv, weight:c-1, label:`${lv} − ${rv} ≤ ${c-1}`}); edgeToLine.push(lineIdx);
     } else if(op==='<='){
-      result.push({from:lv, to:rv, weight:c, label:`${lv} − ${rv} ≤ ${c}`});
+      result.push({from:lv, to:rv, weight:c, label:`${lv} − ${rv} ≤ ${c}`}); edgeToLine.push(lineIdx);
     } else if(op==='>='){
-      result.push({from:rv, to:lv, weight:-c, label:`${rv} − ${lv} ≤ ${-c}`});
+      result.push({from:rv, to:lv, weight:-c, label:`${rv} − ${lv} ≤ ${-c}`}); edgeToLine.push(lineIdx);
     } else if(op==='>'){
-      result.push({from:rv, to:lv, weight:-c-1, label:`${rv} − ${lv} ≤ ${-c-1}`});
+      result.push({from:rv, to:lv, weight:-c-1, label:`${rv} − ${lv} ≤ ${-c-1}`}); edgeToLine.push(lineIdx);
     } else if(op==='='){
-      result.push({from:lv, to:rv, weight:c, label:`${lv} − ${rv} ≤ ${c}`});
-      result.push({from:rv, to:lv, weight:-c, label:`${rv} − ${lv} ≤ ${-c}`});
+      result.push({from:lv, to:rv, weight:c, label:`${lv} − ${rv} ≤ ${c}`}); edgeToLine.push(lineIdx);
+      result.push({from:rv, to:lv, weight:-c, label:`${rv} − ${lv} ≤ ${-c}`}); edgeToLine.push(lineIdx);
     }
   }
-  return result;
+  return {edges: result, allLines, edgeToLine};
 }
 
 // ── NODE LAYOUT ───────────────────────────────────────────────────────────────
@@ -752,17 +755,18 @@ let S = {
 };
 
 function initSolver(){
-  let edges;
+  let parsed;
   try{
     if(activeTab === 'smt2'){
       const text = document.getElementById('smt2Input').value;
       if(!text.trim()){ alert('Please enter or upload an SMT2 formula.'); return; }
-      edges = parseSmt2(text);
+      parsed = parseSmt2(text);
     } else {
       const text = document.getElementById('constraintInput').value;
-      edges = parseConstraints(text);
+      parsed = parseConstraints(text);
     }
   } catch(e){ alert(e.message); return; }
+  const edges = parsed.edges;
 
   const varSet = new Set();
   edges.forEach(e=>{ varSet.add(e.from); varSet.add(e.to); });
@@ -788,6 +792,9 @@ function initSolver(){
     cycleNodes: [],
     edgeIdx: 0,        // next edge to process within current round
     roundUpdated: [],  // edges relaxed so far in current round
+    edgeToLine: parsed.edgeToLine,
+    allLines: parsed.allLines,
+    activeTab,
   };
 
   // Show panels
@@ -797,6 +804,17 @@ function initSolver(){
   document.getElementById('histCard').style.display='';
   document.getElementById('resultDiv').style.display='none';
   document.getElementById('resultDiv').innerHTML='';
+
+  // Populate read-only view div, hide textarea
+  const viewId = activeTab==='smt2' ? 'smt2-view' : 'manual-view';
+  const textareaId = activeTab==='smt2' ? 'smt2Input' : 'constraintInput';
+  const viewDiv = document.getElementById(viewId);
+  viewDiv.innerHTML = parsed.allLines.map((l,i)=>
+    `<div class="irow" data-idx="${i}">${l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+  ).join('');
+  document.getElementById(textareaId).style.display = 'none';
+  viewDiv.style.display = '';
+
   updateBtns();
   renderCList();
   renderDistTable([]);
@@ -814,6 +832,7 @@ function doConstraintStep(){
   if(S.edgeIdx === 0) S.round++;
 
   const e = S.edges[S.edgeIdx];
+  if(S.edgeToLine) highlightInputRow(S.edgeToLine[S.edgeIdx]);
   const nd = S.dist[e.from] + e.weight;
   const relaxed = nd < S.dist[e.to];
 
@@ -1092,6 +1111,23 @@ function resetSolver(){
   document.getElementById('stateCard').style.display='none';
   document.getElementById('histCard').style.display='none';
   document.getElementById('resultDiv').style.display='none';
+  // Restore textareas, hide view divs
+  document.getElementById('manual-view').style.display='none';
+  document.getElementById('smt2-view').style.display='none';
+  document.getElementById('constraintInput').style.display='';
+  document.getElementById('smt2Input').style.display='';
+}
+
+function highlightInputRow(lineIdx){
+  const viewId = S.activeTab==='smt2' ? 'smt2-view' : 'manual-view';
+  const viewDiv = document.getElementById(viewId);
+  viewDiv.querySelectorAll('.irow').forEach(r=>{
+    const idx = parseInt(r.dataset.idx);
+    r.classList.toggle('active', idx===lineIdx);
+    r.classList.toggle('done', idx<lineIdx);
+  });
+  const activeRow = viewDiv.querySelector(`.irow[data-idx="${lineIdx}"]`);
+  if(activeRow) activeRow.scrollIntoView({block:'nearest', behavior:'smooth'});
 }
 
 // Initial load
