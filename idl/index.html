@@ -627,31 +627,49 @@ let nodeStates = {}; // varName → 'idle'|'cycle'
 function edgeKey(e){ return `${e.from}->${e.to}`; }
 
 function drawGraph(){
-  const svg = document.getElementById('graph-svg');
   const el = document.getElementById('edge-layer');
   const nl = document.getElementById('node-layer');
   el.innerHTML = ''; nl.innerHTML = '';
 
-  // Draw edges
-  gEdges.forEach((e,i)=>{
+  // 1. Compute paths + initial label positions for all edges
+  const edgeData = gEdges.map(e => {
     const p1 = gPos[e.from], p2 = gPos[e.to];
-    if(!p1||!p2) return;
+    if(!p1||!p2) return null;
     const state = edgeStates[edgeKey(e)] || 'idle';
-
-    // Check if reverse edge exists → curve to avoid overlap
     const hasReverse = gEdges.some(e2=>e2.from===e.to&&e2.to===e.from);
     const path = edgePath(p1, p2, hasReverse, R);
+    return {e, state, path, lx:path.lx, ly:path.ly};
+  }).filter(Boolean);
 
+  // 2. Collision resolution — spread overlapping labels apart (10 iterations)
+  const MIN_DIST = 20;
+  for(let iter=0; iter<10; iter++){
+    for(let a=0; a<edgeData.length; a++){
+      for(let b=a+1; b<edgeData.length; b++){
+        const A=edgeData[a], B=edgeData[b];
+        const dx=A.lx-B.lx, dy=A.ly-B.ly;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<MIN_DIST && dist>0.01){
+          const push=(MIN_DIST-dist)/2;
+          const nx=dx/dist*push, ny=dy/dist*push;
+          A.lx+=nx; A.ly+=ny;
+          B.lx-=nx; B.ly-=ny;
+        }
+      }
+    }
+  }
+
+  // 3. Draw edges and labels
+  edgeData.forEach(({e, state, path, lx, ly})=>{
     const pathEl = document.createElementNS('http://www.w3.org/2000/svg','path');
     pathEl.setAttribute('d', path.d);
     pathEl.setAttribute('class', `edge-path ${state}`);
     pathEl.setAttribute('marker-end', `url(#arr${state==='idle'?'':'-'+state})`);
     el.appendChild(pathEl);
 
-    // Weight label
     const wt = document.createElementNS('http://www.w3.org/2000/svg','text');
-    wt.setAttribute('x', path.lx);
-    wt.setAttribute('y', path.ly);
+    wt.setAttribute('x', lx);
+    wt.setAttribute('y', ly);
     wt.setAttribute('class', `edge-weight ${state}`);
     wt.textContent = e.weight;
     el.appendChild(wt);
