@@ -90,6 +90,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .abtn .an{font-size:13px;font-weight:700;flex:1}
 .abtn .ar{font-size:10px;font-family:'Consolas',monospace;opacity:.75}
 .abtn.na{opacity:.35;cursor:not-allowed}
+.ab-constraint{background:rgba(6,182,212,.08);border-color:rgba(6,182,212,.2);color:var(--accent3)}
+.ab-constraint:not(.na):hover{background:rgba(6,182,212,.18);border-color:var(--accent2)}
 .ab-step{background:var(--cyan-bg);border-color:var(--cyan-bd);color:var(--accent2)}
 .ab-step:not(.na):hover{background:rgba(6,182,212,.22);border-color:var(--accent)}
 .ab-auto{background:var(--green-bg);border-color:var(--green-bd);color:#86efac}
@@ -234,6 +236,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <div class="card" id="actionsCard" style="display:none">
       <div class="card-title">Algorithm — Bellman-Ford</div>
 
+      <button class="abtn ab-constraint" id="btnConstraint" onclick="doConstraintStep()">
+        <span style="font-size:16px">⟶</span>
+        <span class="an">Next Constraint</span>
+        <span class="ar" id="constraintLabel">edge 0 / 0</span>
+      </button>
       <button class="abtn ab-step" id="btnStep" onclick="doStep()">
         <span style="font-size:16px">⟳</span>
         <span class="an">Next Relaxation Round</span>
@@ -779,6 +786,8 @@ function initSolver(){
     lastUpdated: [],
     cycleEdges: [],
     cycleNodes: [],
+    edgeIdx: 0,        // next edge to process within current round
+    roundUpdated: [],  // edges relaxed so far in current round
   };
 
   // Show panels
@@ -797,53 +806,121 @@ function initSolver(){
   document.getElementById('stepLabel').textContent = `round 0 / ${vars.length}`;
 }
 
-// ── BELLMAN-FORD STEP ─────────────────────────────────────────────────────────
+// ── BELLMAN-FORD: CONSTRAINT-LEVEL STEP ──────────────────────────────────────
+function doConstraintStep(){
+  if(S.status!=='running') return;
+
+  // Start of a new round?
+  if(S.edgeIdx === 0) S.round++;
+
+  const e = S.edges[S.edgeIdx];
+  const nd = S.dist[e.from] + e.weight;
+  const relaxed = nd < S.dist[e.to];
+
+  if(relaxed){
+    S.dist[e.to] = nd;
+    S.pred[e.to] = e.from;
+    S.roundUpdated.push(e);
+  }
+
+  // Rebuild edge visual states for this moment
+  edgeStates = {};
+  S.edges.forEach(ex=>{ edgeStates[edgeKey(ex)] = 'idle'; });
+  S.roundUpdated.forEach(ex=>{ edgeStates[edgeKey(ex)] = 'relaxed'; });
+  edgeStates[edgeKey(e)] = relaxed ? 'relaxed' : 'active';
+
+  S.edgeIdx++;
+
+  // Build explanation
+  const badge = `<span class="expl-badge" style="background:var(--cyan-bg);color:var(--accent2);border:1px solid var(--cyan-bd)">Round ${S.round}, Edge ${S.edgeIdx}/${S.edges.length}</span>`;
+  const prevTo = relaxed ? nd - 0 + (S.dist[e.to] - nd) : S.dist[e.to];
+  const sum = S.dist[e.from] + e.weight;
+  const rule = `<div class="rule-box">d[${e.from}] + ${e.weight} = ${sum} &nbsp;${relaxed?'<':'≥'}&nbsp; d[${e.to}]${relaxed?' → updated':''}</div>`;
+  if(relaxed){
+    setExpl(`${badge}<br><span style="color:#86efac">✓ Relaxed: d[${e.to}] updated to <b>${nd}</b></span>${rule}`);
+    addHist(`R${S.round} E${S.edgeIdx}`, `d[${e.to}] := ${nd}  (via ${e.from}→${e.to}:${e.weight})`);
+  } else {
+    setExpl(`${badge}<br><span style="color:var(--muted)">No change: d[${e.to}] stays ${S.dist[e.to]}</span>${rule}`);
+  }
+
+  renderDistTable(relaxed ? [e.to] : []);
+  drawGraph();
+  renderCList();
+  updateBtns();
+
+  // End of round?
+  if(S.edgeIdx >= S.edges.length) finalizeRound();
+}
+
+// ── BELLMAN-FORD: FULL-ROUND STEP ────────────────────────────────────────────
 function doStep(){
   if(S.status!=='running') return;
-  S.round++;
 
-  const updated = [];
+  // If mid-round, finish it; otherwise run a fresh full round
+  if(S.edgeIdx === 0) S.round++;
+
   edgeStates = {};
   S.edges.forEach(e=>{ edgeStates[edgeKey(e)] = 'idle'; });
 
-  for(const e of S.edges){
+  while(S.edgeIdx < S.edges.length){
+    const e = S.edges[S.edgeIdx];
     const nd = S.dist[e.from] + e.weight;
-    edgeStates[edgeKey(e)] = 'active';
     if(nd < S.dist[e.to]){
       S.dist[e.to] = nd;
       S.pred[e.to] = e.from;
+      S.roundUpdated.push(e);
       edgeStates[edgeKey(e)] = 'relaxed';
-      updated.push(e);
     }
+    S.edgeIdx++;
   }
-  S.lastUpdated = updated;
 
-  const isLastRound = S.round === S.vars.length;
+  renderRound(S.roundUpdated, false);
+  drawGraph();
+  renderCList();
+  renderDistTable(S.roundUpdated.map(e=>e.to));
+  finalizeRound();
+}
+
+// ── END-OF-ROUND LOGIC ────────────────────────────────────────────────────────
+function finalizeRound(){
+  const updated = [...S.roundUpdated];
+  S.lastUpdated = updated;
+  S.roundUpdated = [];
+  S.edgeIdx = 0;
+
   const isExtraRound = S.round > S.vars.length;
+  const isLastRound  = S.round === S.vars.length;
 
   if(isExtraRound && updated.length > 0){
-    // Still relaxing after |V| rounds → negative cycle
     detectCycle(updated[0]);
   } else if(isLastRound){
-    // Do one extra check round
-    S.status = 'running';
+    // Automatically run the extra detection round
     renderRound(updated, false);
-    // Automatically do the extra round
-    doStep();
+    S.round++;   // extra round
+    edgeStates = {};
+    S.edges.forEach(e=>{ edgeStates[edgeKey(e)] = 'idle'; });
+    const extraUpdated = [];
+    for(const e of S.edges){
+      const nd = S.dist[e.from] + e.weight;
+      if(nd < S.dist[e.to]){
+        S.dist[e.to] = nd;
+        S.pred[e.to] = e.from;
+        extraUpdated.push(e);
+        edgeStates[edgeKey(e)] = 'relaxed';
+      }
+    }
+    S.roundUpdated = [];
+    if(extraUpdated.length > 0) detectCycle(extraUpdated[0]);
+    else { S.status='sat'; renderRound([], false); showSAT(); }
     return;
-  } else if(updated.length === 0 && S.round <= S.vars.length){
-    // No updates → SAT
+  } else if(updated.length === 0){
     S.status = 'sat';
-    renderRound(updated, false);
     showSAT();
     return;
   }
 
-  renderRound(updated, false);
-  if(S.status==='running'){
-    document.getElementById('stepLabel').textContent = `round ${S.round} / ${S.vars.length}`;
-    updateBtns();
-  }
+  updateBtns();
+  document.getElementById('stepLabel').textContent = `round ${S.round} / ${S.vars.length}`;
 }
 
 function detectCycle(startEdge){
@@ -962,9 +1039,12 @@ function addHist(badge, detail){
 
 function updateBtns(){
   const running = S.status==='running';
+  document.getElementById('btnConstraint').classList.toggle('na', !running);
   document.getElementById('btnStep').classList.toggle('na', !running);
   document.getElementById('btnAuto').classList.toggle('na', !running);
   document.getElementById('stepLabel').textContent = `round ${S.round} / ${S.vars.length}`;
+  document.getElementById('constraintLabel').textContent =
+    S.edgeIdx > 0 ? `edge ${S.edgeIdx} / ${S.edges.length}` : `round ${S.round+1}, ${S.edges.length} edges`;
 }
 
 // ── SAT / UNSAT DISPLAY ───────────────────────────────────────────────────────
@@ -1000,7 +1080,7 @@ function showUNSAT(cyclePath, weight){
 function autoSolve(){
   if(S.status!=='running') return;
   let guard = 0;
-  while(S.status==='running' && guard++<100) doStep();
+  while(S.status==='running' && guard++<500) doConstraintStep();
 }
 
 function resetSolver(){
