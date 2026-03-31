@@ -71,11 +71,3 @@ Reduction from QF_UF to QF_EQ by replacing function applications with fresh cons
 - `ackermannization.py` — Python implementation
 - `ackerman.html` — standalone interactive demo
 
-### pySMT Examples — `pysmt/`
-Example scripts using the [pySMT](https://github.com/pysmt/pysmt) library.
-
-- `pysmt-hello_world.py` — getting started
-- `pysmt-basic.py` — basic formula construction
-- `pysmt-lia.py` — Linear Integer Arithmetic
-- `pysmt_portfolio.py` — portfolio solving
-- `quantifiers.py` — quantified formulas
