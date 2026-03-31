@@ -6,22 +6,23 @@ Course materials for an Automated Reasoning course, including solver implementat
 
 ## Interactive Labs
 
-Step-by-step algorithm visualizations — open `labs/index.html` in a browser to start.
+Step-by-step algorithm visualizations — open `index.html` in a browser to start.
 
-| Lab | Topic | Lecture |
-|---|---|---|
-| [Horn Clause Solver](labs/horn/index.html) | Linear-time SAT for Horn CNF via unit propagation | 2 |
-| [DPLL](labs/dpll/index.html) | Davis–Putnam–Logemann–Loveland backtracking SAT solver | 4 |
-| [Basic CDCL](labs/basic-cdcl/index.html) | Conflict-Driven Clause Learning without backjumping | 5 |
-| [CDCL](labs/cdcl/index.html) | Full CDCL with UIP analysis and non-chronological backjumping | 5 |
-| [Tseytin Transformation](labs/tseytin/index.html) | Convert propositional formula to equisatisfiable CNF | 7 |
-| [Term Flattening](labs/flatten/index.html) | EUF pre-processing — flatten a cube one rule at a time | 7 |
-| [Congruence Closure](labs/cc/index.html) | EUF theory solver using equivalence classes | 8 |
-| [Union-Find](labs/uf/index.html) | Union-Find with path compression and union by rank | 9 |
-| [DPLL(T)](labs/dpllt/index.html) | DPLL modulo theories — SAT solver + theory solver cooperation | 9 |
-| [Ackermanization](labs/ackermann/index.html) | Reduce QF_UF to QF_EQ by replacing function apps with constants | — |
-| [Bit Blasting](labs/bitblasting/index.html) | Reduce QF_BV to propositional logic — one Boolean variable per bit | 10–11 |
-| [Prenex Normal Form](labs/pnf/index.html) | Convert first-order formulas to PNF in four steps | 13 |
+| Lab | Topic |
+|---|---|
+| [Horn Clause Solver](horn/index.html) | Linear-time SAT for Horn CNF via unit propagation |
+| [Tseytin Transformation](tseytin/index.html) | Convert propositional formula to equisatisfiable CNF |
+| [DPLL](dpll/index.html) | Davis–Putnam–Logemann–Loveland backtracking SAT solver |
+| [Basic CDCL](basic-cdcl/index.html) | Conflict-Driven Clause Learning without backjumping |
+| [CDCL](cdcl/index.html) | Full CDCL with UIP analysis and non-chronological backjumping |
+| [Term Flattening](flatten/index.html) | EUF pre-processing — flatten a cube one rule at a time |
+| [Congruence Closure](cc/index.html) | EUF theory solver using equivalence classes |
+| [Union-Find](uf/index.html) | Union-Find with path compression and union by rank |
+| [DPLL(T)](dpll-t/index.html) | DPLL modulo theories — SAT solver + theory solver cooperation |
+| [Integer Difference Logic](idl/index.html) | QF_IDL satisfiability via constraint graph and Bellman-Ford |
+| [Ackermanization](ackermann/index.html) | Reduce QF_UF to QF_EQ by replacing function apps with constants |
+| [Bit Blasting](bitblasting/index.html) | Reduce QF_BV to propositional logic — one Boolean variable per bit |
+| [Prenex Normal Form](pnf/index.html) | Convert first-order formulas to PNF in four steps |
 
 ---
 
