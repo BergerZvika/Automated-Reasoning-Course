@@ -1292,6 +1292,15 @@ document.addEventListener('click', () => {
 });
 
 function loadFormula() {
+  if (!G.satChosen || !G.theoryChosen) {
+    const missing=[];
+    if (!G.satChosen)    missing.push('SAT Solver (click the SAT Solver box in the diagram)');
+    if (!G.theoryChosen) missing.push('Theory Solver (click the Theory Solver box in the diagram)');
+    alert('Please select a solver before running:\n\n• ' + missing.join('\n• '));
+    if (!G.satChosen)    document.getElementById('comp-dpll').classList.add('needs-pick');
+    if (!G.theoryChosen) document.getElementById('comp-theory').classList.add('needs-pick');
+    return;
+  }
   const src=document.getElementById('formulaInput').value.trim();
   if (!src) return;
   try {
