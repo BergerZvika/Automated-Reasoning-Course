@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integer Difference Logic — Interactive Lab</title>
+<style>
+:root{
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --accent:#06b6d4;--accent2:#22d3ee;--accent3:#67e8f9;
+  --green:#22c55e;--green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.3);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.12);--red-bd:rgba(239,68,68,.35);
+  --cyan-bg:rgba(6,182,212,.12);--cyan-bd:rgba(6,182,212,.32);
+  --orange:#f97316;--orange-bg:rgba(249,115,22,.12);--orange-bd:rgba(249,115,22,.35);
+  --yellow:#f59e0b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+/* ── Header ── */
+.hdr{
+  background:linear-gradient(135deg,#022c3a 0%,#0c4a6e 40%,#0e7490 70%,#022c3a 100%);
+  padding:26px 36px;border-bottom:1px solid var(--border);
+  position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px
+}
+.hdr-left{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.hdr h1{
+  font-size:26px;font-weight:800;
+  background:linear-gradient(90deg,#a5f3fc,#67e8f9,#22d3ee);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+.hdr p{color:var(--muted);margin-top:5px;font-size:14px}
+.hdr-badge{background:var(--cyan-bg);border:1px solid var(--cyan-bd);color:var(--accent2);font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(160deg,#252d40 0%,#1a2132 100%);border:1px solid rgba(255,255,255,.1);border-bottom-color:rgba(0,0,0,.4);border-radius:12px;color:#7d8fa8;font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #0b0f1a,0 5px 12px rgba(0,0,0,.55);transform:translateY(0);transition:all .13s cubic-bezier(.2,.8,.4,1);position:relative;z-index:1;overflow:hidden}
+.back-btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);transform:skewX(-20deg);transition:left .4s ease}
+.back-btn:hover::after{left:120%}
+.back-btn:hover{color:#c5d0e0;border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 0 #0b0f1a,0 8px 20px rgba(0,0,0,.6),0 0 24px rgba(6,182,212,.12);transform:translateY(-3px)}
+.back-btn:active{color:#94a3b8;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 #0b0f1a,0 2px 6px rgba(0,0,0,.4);transform:translateY(3px)}
+.back-btn svg{flex-shrink:0;transition:transform .2s ease}
+.back-btn:hover svg{transform:scale(1.15)}
+
+/* ── Files section ── */
+.files-section{max-width:960px;margin:28px auto 8px;padding:0 16px}
+.files-section-title{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#475569;margin-bottom:14px}
+.files-panel{background:#0d1117;border:1px solid #1e293b;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.files-panel-hdr{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#111827;border-bottom:1px solid #1e293b;cursor:pointer;font-size:.8rem;font-weight:600;color:#94a3b8;user-select:none;transition:background .15s}
+.files-panel-hdr:hover{background:#1a2438}
+.files-panel-hdr .chevron{margin-left:auto;transition:transform .25s;font-size:.65rem}
+.files-panel-hdr.open .chevron{transform:rotate(180deg)}
+.file-rows{display:block}.file-rows.collapsed{display:none}
+.file-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #161d2e;text-decoration:none;transition:background .15s}
+.file-row:last-child{border-bottom:none}
+.file-row:hover{background:#131c2e}
+.file-name{font-size:.8rem;color:#cbd5e1;font-family:'Consolas','Courier New',monospace;flex:1}
+.file-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:4px}
+.badge-py{background:#14291e;color:#4ade80}
+.badge-smt2{background:#0f2233;color:#60a5fa}
+.file-view{font-size:.7rem;font-weight:600;color:#6366f1;padding:2px 9px;border:1px solid rgba(99,102,241,.25);border-radius:5px;white-space:nowrap;transition:background .15s}
+.file-row:hover .file-view{background:rgba(99,102,241,.12)}
+
+/* ── Layout ── */
+.wrap{max-width:1340px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.main-grid{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+@media(max-width:960px){.main-grid{grid-template-columns:1fr}}
+
+/* ── Buttons ── */
+.btn{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;font-family:inherit}
+.btn-cyan{background:linear-gradient(135deg,var(--accent),#0891b2);color:#fff}.btn-cyan:hover{opacity:.88}
+.btn-g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-g:hover{background:var(--border)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.exbtn{padding:4px 11px;font-size:12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'Consolas',monospace}
+.exbtn:hover{border-color:var(--accent);color:var(--accent2)}
+
+/* ── Info bar ── */
+.algo-bar{background:var(--cyan-bg);border:1px solid var(--cyan-bd);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--muted);line-height:1.8}
+.algo-bar b{color:var(--text)}
+.algo-bar code{background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--accent2)}
+
+/* ── Input area ── */
+.constraint-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:13px;padding:10px 14px;outline:none;resize:vertical;min-height:170px;line-height:1.7;transition:border-color .2s}
+.constraint-input:focus{border-color:var(--accent)}
+.ihint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6}
+
+/* ── Action buttons ── */
+.abtn{width:100%;padding:11px 14px;border-radius:10px;border:2px solid transparent;cursor:pointer;text-align:left;transition:all .2s;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-family:inherit}
+.abtn .an{font-size:13px;font-weight:700;flex:1}
+.abtn .ar{font-size:10px;font-family:'Consolas',monospace;opacity:.75}
+.abtn.na{opacity:.35;cursor:not-allowed}
+.ab-step{background:var(--cyan-bg);border-color:var(--cyan-bd);color:var(--accent2)}
+.ab-step:not(.na):hover{background:rgba(6,182,212,.22);border-color:var(--accent)}
+.ab-auto{background:var(--green-bg);border-color:var(--green-bd);color:#86efac}
+.ab-auto:not(.na):hover{background:rgba(34,197,94,.2);border-color:var(--green)}
+.ab-reset{background:var(--surface2);border-color:var(--border);color:var(--muted)}
+.ab-reset:not(.na):hover{background:var(--border)}
+
+/* ── Constraint list ── */
+.clist{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.crow{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:1px solid transparent;transition:all .3s;font-family:'Consolas',monospace;font-size:13px}
+.crow.idle{background:var(--surface2);border-color:var(--border)}
+.crow.active{background:var(--cyan-bg);border-color:var(--cyan-bd);color:var(--accent2)}
+.crow.relaxed{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25);color:#86efac}
+.crow.neg{background:var(--red-bg);border-color:var(--red-bd);color:#fca5a5;animation:flash-r .8s infinite}
+@keyframes flash-r{0%,100%{border-color:rgba(239,68,68,.35)}50%{border-color:#ef4444}}
+.crow.cycle{background:var(--orange-bg);border-color:var(--orange-bd);color:#fdba74;animation:flash-o .8s infinite}
+@keyframes flash-o{0%,100%{border-color:rgba(249,115,22,.35)}50%{border-color:#f97316}}
+.cidx{font-size:10px;color:var(--muted);min-width:18px}
+
+/* ── Distance table ── */
+.dist-table{width:100%;border-collapse:collapse;font-size:13px;font-family:'Consolas',monospace}
+.dist-table th{padding:6px 12px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.dist-table td{padding:7px 12px;border:1px solid var(--border);text-align:center;transition:all .3s}
+.dist-table td.updated{background:var(--cyan-bg);color:var(--accent2);font-weight:700}
+.dist-table td.cycle-node{background:var(--orange-bg);color:#fdba74;font-weight:700}
+.dist-table td.inf{color:var(--muted);opacity:.5}
+
+/* ── Explanation ── */
+.expl-box{font-size:13px;line-height:1.65;color:var(--text);padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);min-height:60px}
+.expl-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;margin-bottom:6px}
+.rule-box{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-family:'Consolas',monospace;font-size:12px;color:#a5b4fc;margin-top:7px;line-height:1.8}
+
+/* ── Result ── */
+.result-banner{padding:16px 20px;border-radius:12px;border:2px solid;display:flex;align-items:center;gap:14px;font-size:15px;font-weight:700}
+.rb-unsat{background:var(--red-bg);border-color:var(--red-bd);color:#fca5a5}
+.rb-sat{background:var(--green-bg);border-color:var(--green-bd);color:#86efac}
+.rb-icon{font-size:28px;flex-shrink:0}
+.rb-body{display:flex;flex-direction:column;gap:3px}
+.rb-sub{font-size:12px;font-weight:400;opacity:.8;margin-top:2px}
+
+/* ── History ── */
+.hist-list{display:flex;flex-direction:column;gap:3px;max-height:180px;overflow-y:auto}
+.hentry{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;font-size:12px}
+.hentry.hcur{background:var(--surface2);border:1px solid var(--border)}
+.hnum{min-width:22px;color:var(--muted);font-size:11px;font-family:'Consolas',monospace}
+.hbadge{font-size:11px;font-weight:700;min-width:80px}
+.hdetail{color:var(--muted);font-family:'Consolas',monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── SVG Graph ── */
+#graph-svg{width:100%;height:380px;display:block}
+.graph-wrap{background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;position:relative}
+.node-circle{fill:#0e4c6e;stroke:#22d3ee;stroke-width:2.5;transition:fill .3s,stroke .3s}
+.node-circle.cycle{fill:#7c2d12;stroke:#f97316;stroke-width:3}
+.node-label{fill:#e2e8f0;font-size:16px;font-weight:800;font-family:'Segoe UI',sans-serif;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.edge-path{fill:none;stroke-width:2;transition:stroke .3s,stroke-width .3s,opacity .3s}
+.edge-path.idle{stroke:#2a4a6a}
+.edge-path.active{stroke:#22d3ee;stroke-width:2.5}
+.edge-path.relaxed{stroke:#22c55e;stroke-width:2.5}
+.edge-path.cycle{stroke:#f97316;stroke-width:3.5;filter:drop-shadow(0 0 4px #f97316)}
+.edge-weight{fill:#94a3b8;font-size:12px;font-weight:700;font-family:'Consolas',monospace;text-anchor:middle;dominant-baseline:middle;transition:fill .3s}
+.edge-weight.active{fill:#22d3ee}
+.edge-weight.relaxed{fill:#22c55e}
+.edge-weight.cycle{fill:#f97316}
+.dist-label{fill:#22d3ee;font-size:11px;font-weight:700;font-family:'Consolas',monospace;text-anchor:middle;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a href="../index.html" class="back-btn">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><polyline points="9,21 9,12 15,12 15,21"/></svg>
+    Home
+  </a>
+  <div class="hdr-left">
+    <h1>Integer Difference Logic Lab</h1>
+    <p>Constraint graphs &amp; negative-cycle detection for IDL satisfiability</p>
+  </div>
+  <span class="hdr-badge">IDL / QF_IDL</span>
+</div>
+
+<div class="wrap">
+
+<!-- Info bar -->
+<div class="algo-bar">
+  <b>IDL constraint</b>: of the form <code>x − y ≤ c</code> with integer variables and constant c.
+  &nbsp;·&nbsp; Build a <b>directed weighted graph</b>: each constraint <code>x−y≤c</code> adds edge x→y with weight c.
+  &nbsp;·&nbsp; <b>UNSAT</b> iff the graph contains a <b>negative-weight cycle</b>.
+  &nbsp;·&nbsp; Detection via <b>Bellman-Ford</b>: if distances still decrease after |V| rounds, a negative cycle exists.
+</div>
+
+<!-- Main grid -->
+<div class="main-grid">
+
+  <!-- LEFT PANEL -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+
+    <!-- Input -->
+    <div class="card">
+      <div class="card-title">Constraints
+        <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">format: x - y &lt;= c</span>
+      </div>
+      <textarea class="constraint-input" id="constraintInput" spellcheck="false"></textarea>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <span style="font-size:12px;color:var(--muted);align-self:center">Examples:</span>
+        <button class="exbtn" onclick="loadExample('unsat')">Slide (UNSAT)</button>
+        <button class="exbtn" onclick="loadExample('sat')">Simple (SAT)</button>
+      </div>
+      <div class="ihint">
+        One constraint per line. Supported: <code style="background:var(--surface2);padding:1px 5px;border-radius:3px;font-size:11px">x - y &lt;= 5</code> &nbsp;
+        Variables: any identifier. Constants: integers.
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn btn-cyan" style="width:100%" onclick="initSolver()">Initialize Graph ▶</button>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card" id="actionsCard" style="display:none">
+      <div class="card-title">Algorithm — Bellman-Ford</div>
+
+      <button class="abtn ab-step" id="btnStep" onclick="doStep()">
+        <span style="font-size:16px">⟳</span>
+        <span class="an">Next Relaxation Round</span>
+        <span class="ar" id="stepLabel">round 0 / 0</span>
+      </button>
+      <button class="abtn ab-auto" id="btnAuto" onclick="autoSolve()">
+        <span style="font-size:16px">▶▶</span>
+        <span class="an">Auto Solve</span>
+      </button>
+      <button class="abtn ab-reset" onclick="resetSolver()">
+        <span style="font-size:16px">↺</span>
+        <span class="an">Reset</span>
+      </button>
+
+      <!-- Constraints list -->
+      <div style="margin-top:14px">
+        <div class="card-title" style="margin-bottom:8px">Constraint Graph Edges</div>
+        <div class="clist" id="clist"></div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="card" id="histCard" style="display:none">
+      <div class="card-title">History</div>
+      <div class="hist-list" id="histList"></div>
+    </div>
+
+  </div><!-- end left -->
+
+  <!-- RIGHT PANEL -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+
+    <!-- Graph -->
+    <div class="card" id="graphCard" style="display:none">
+      <div class="card-title">Constraint Graph
+        <span id="graphStatus" style="font-size:11px;font-weight:600"></span>
+      </div>
+      <div class="graph-wrap">
+        <svg id="graph-svg" viewBox="0 0 500 400">
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#2a4a6a"/>
+            </marker>
+            <marker id="arr-active" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#22d3ee"/>
+            </marker>
+            <marker id="arr-relaxed" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#22c55e"/>
+            </marker>
+            <marker id="arr-cycle" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#f97316"/>
+            </marker>
+          </defs>
+          <g id="edge-layer"></g>
+          <g id="node-layer"></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Distance table + explanation -->
+    <div class="card" id="stateCard" style="display:none">
+      <div class="card-title">Bellman-Ford State
+        <span id="roundLabel" style="font-size:11px;font-weight:400;color:var(--muted)"></span>
+      </div>
+      <div style="overflow-x:auto;margin-bottom:12px">
+        <table class="dist-table" id="distTable"></table>
+      </div>
+      <div class="expl-box" id="explBox">
+        <span style="color:var(--muted)">Initialize the graph to begin.</span>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="resultDiv" style="display:none"></div>
+
+  </div><!-- end right -->
+</div><!-- end main-grid -->
+
+</div><!-- wrap -->
+
+<!-- Files section -->
+<div class="files-section">
+  <div class="files-section-title">Lab Files</div>
+  <div class="files-panel">
+    <div class="files-panel-hdr open" onclick="togglePanel(this)">
+      <span>🐍</span> Source Code <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows">
+      <a class="file-row" href="idl-solver.py" target="_blank">
+        <span class="file-name">idl-solver.py</span>
+        <span class="file-badge badge-py">PY</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+  <div class="files-panel">
+    <div class="files-panel-hdr" onclick="togglePanel(this)">
+      <span>📁</span> Benchmarks <span class="chevron">▼</span>
+    </div>
+    <div class="file-rows collapsed">
+      <a class="file-row" href="benchmarks/example.smt2" target="_blank">
+        <span class="file-name">benchmarks/example.smt2</span>
+        <span class="file-badge badge-smt2">SMT2</span>
+        <span class="file-view">View</span>
+      </a>
+      <a class="file-row" href="benchmarks/example-sat.smt2" target="_blank">
+        <span class="file-name">benchmarks/example-sat.smt2</span>
+        <span class="file-badge badge-smt2">SMT2</span>
+        <span class="file-view">View</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script id="lab-files-data">
+window.LAB_FILES={"idl-solver.py": "\"\"\"\nidl-solver.py  —  Decision procedure for Integer Difference Logic (IDL)\n                  using Bellman-Ford negative-cycle detection.\n\nUsage:\n    python idl-solver.py constraints.txt\n\nConstraint file format (one per line):\n    x - y <= 5\n    y - x <= -5\n    ...\n\nAlgorithm:\n    1. Build a directed weighted graph: constraint \"x - y <= c\" → edge x→y weight c\n    2. Initialise all distances to 0\n    3. Run n rounds of Bellman-Ford edge relaxation (n = number of variables)\n    4. If any edge can still be relaxed after round n → NEGATIVE CYCLE → UNSAT\n    5. Otherwise SAT; the final distances give a satisfying model\n\"\"\"\nimport sys, re\nfrom collections import defaultdict\n\n# ── PARSER ────────────────────────────────────────────────────────────────────\ndef parse_constraints(text):\n    edges = []\n    for line in text.strip().splitlines():\n        line = line.strip()\n        if not line or line.startswith('#') or line.startswith('//'):\n            continue\n        m = re.match(r'([A-Za-z_]\\w*)\\s*-\\s*([A-Za-z_]\\w*)\\s*(<=|<|>=|>|=)\\s*(-?\\d+)', line)\n        if not m:\n            raise ValueError(f\"Cannot parse: {line!r}\")\n        lv, rv, op, cs = m.groups()\n        c = int(cs)\n        if op == '<=':\n            edges.append((lv, rv, c))\n        elif op == '<':\n            edges.append((lv, rv, c - 1))\n        elif op == '>=':\n            edges.append((rv, lv, -c))\n        elif op == '>':\n            edges.append((rv, lv, -c - 1))\n        elif op == '=':\n            edges.append((lv, rv, c))\n            edges.append((rv, lv, -c))\n    return edges\n\n# ── BELLMAN-FORD ──────────────────────────────────────────────────────────────\ndef solve(edges):\n    # Collect variables\n    vars_ = sorted({v for e in edges for v in (e[0], e[1])})\n    n = len(vars_)\n\n    dist = {v: 0 for v in vars_}\n    pred = {v: None for v in vars_}\n\n    print(f\"Variables: {', '.join(vars_)}\")\n    print(f\"Edges: {len(edges)}\")\n    print(f\"Initial distances: {dist}\")\n    print()\n\n    # Bellman-Ford: n rounds\n    for rnd in range(1, n + 2):  # +1 extra round for cycle detection\n        updated = []\n        for (u, v, w) in edges:\n            if dist[u] + w < dist[v]:\n                dist[v] = dist[u] + w\n                pred[v] = u\n                updated.append((u, v, w, dist[v]))\n\n        if rnd <= n:\n            print(f\"Round {rnd}: {len(updated)} update(s)\")\n            for u, v, w, nd in updated:\n                print(f\"  d[{v}] = d[{u}] + {w} = {nd}\")\n            if not updated:\n                print(f\"  → No changes, early SAT\")\n                break\n        else:\n            # Extra round — check for negative cycle\n            if updated:\n                print(f\"\\nRound {n+1} (extra): still {len(updated)} update(s) → NEGATIVE CYCLE\")\n                # Trace cycle\n                v = updated[0][1]\n                for _ in range(n):\n                    v = pred[v] or v\n                cycle = [v]\n                cur = pred[v]\n                visited = {v}\n                while cur and cur != v and cur not in visited:\n                    cycle.insert(0, cur)\n                    visited.add(cur)\n                    cur = pred[cur]\n                cycle.insert(0, v)\n                weight = sum(\n                    w for (u, vv, w) in edges\n                    if any(cycle[i]==u and cycle[i+1]==vv for i in range(len(cycle)-1))\n                )\n                path = ' → '.join(cycle)\n                print(f\"Negative cycle: {path}  (weight = {weight})\")\n                print(\"\\nResult: UNSAT\")\n                return False, dist, cycle\n            else:\n                break\n\n    print(f\"\\nDistances: {dist}\")\n    print(\"Result: SAT\")\n    return True, dist, []\n\n# ── MAIN ──────────────────────────────────────────────────────────────────────\nif __name__ == '__main__':\n    if len(sys.argv) < 2:\n        print(__doc__)\n        print(\"Running built-in slide example (UNSAT)...\")\n        text = \"\"\"\nx - y <= 5\ny - x <= -5\ny - z <= -2\nx - z <= -3\nw - x <= 2\nx - w <= -2\nz - w <= -1\n\"\"\"\n    else:\n        with open(sys.argv[1]) as f:\n            text = f.read()\n\n    try:\n        edges = parse_constraints(text)\n        sat, dist, cycle = solve(edges)\n    except ValueError as e:\n        print(f\"Error: {e}\", file=sys.stderr)\n        sys.exit(1)\n", "benchmarks/example.smt2": "; IDL example from lecture slides — UNSAT (negative cycle x→z→w→x, weight -2)\n(set-logic QF_IDL)\n(declare-const x Int)\n(declare-const y Int)\n(declare-const z Int)\n(declare-const w Int)\n(assert (<= (- x y)    5))   ; x - y <= 5\n(assert (<= (- y x)   -5))   ; y - x <= -5\n(assert (<= (- y z)   -2))   ; y - z <= -2\n(assert (<= (- x z)   -3))   ; x - z <= -3\n(assert (<= (- w x)    2))   ; w - x <= 2\n(assert (<= (- x w)   -2))   ; x - w <= -2\n(assert (<= (- z w)   -1))   ; z - w <= -1\n(check-sat)\n; Expected: unsat\n; Negative cycle: x -> z (-3) -> w (-1) -> x (2), total = -2\n", "benchmarks/example-sat.smt2": "; IDL example — SAT (same as slide but without x - w <= -2, breaking the negative cycle)\n(set-option :produce-models true)\n(set-logic QF_IDL)\n(declare-const x Int)\n(declare-const y Int)\n(declare-const z Int)\n(declare-const w Int)\n(assert (<= (- x y)    5))   ; x - y <= 5\n(assert (<= (- y x)   -5))   ; y - x <= -5\n(assert (<= (- y z)   -2))   ; y - z <= -2\n(assert (<= (- x z)   -3))   ; x - z <= -3\n(assert (<= (- w x)    2))   ; w - x <= 2\n(assert (<= (- z w)   -1))   ; z - w <= -1\n(check-sat)\n(get-model)\n; Expected: sat\n"};
+</script>
+<script src="../viewer.js"></script>
+<script>
+function togglePanel(hdr){
+  hdr.classList.toggle('open');
+  hdr.nextElementSibling.classList.toggle('collapsed');
+}
+
+// ── EXAMPLES ─────────────────────────────────────────────────────────────────
+const EXAMPLES = {
+  unsat: `x - y <= 5\ny - x <= -5\ny - z <= -2\nx - z <= -3\nw - x <= 2\nx - w <= -2\nz - w <= -1`,
+  sat:   `x - y <= 5\ny - x <= -5\ny - z <= -2\nx - z <= -3\nw - x <= 2\nz - w <= -1`,
+};
+
+function loadExample(name){
+  document.getElementById('constraintInput').value = EXAMPLES[name];
+}
+loadExample('unsat');
+
+// ── PARSER ───────────────────────────────────────────────────────────────────
+// Parses "x - y <= c" or "x - y < c" (strict) into {from, to, weight}
+function parseConstraints(text){
+  const lines = text.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//'));
+  const result = [];
+  for(const line of lines){
+    // Match: var - var op int
+    const m = line.match(/^([a-zA-Z_]\w*)\s*-\s*([a-zA-Z_]\w*)\s*(<=|<|>=|>|=)\s*(-?\d+)$/);
+    if(!m) throw new Error(`Cannot parse: "${line}"`);
+    let [,lv,rv,op,cs] = m;
+    let c = parseInt(cs);
+    // Normalise to "from - to <= weight"
+    // x - y <= c  → edge x→y weight c
+    // x - y <  c  → edge x→y weight c-1  (integers)
+    // x - y >= c  → y - x <= -c  → edge y→x weight -c
+    // x - y >  c  → y - x <= -c-1 → edge y→x weight -c-1
+    // x - y = c   → two edges
+    if(op==='<'){
+      result.push({from:lv, to:rv, weight:c-1, label:`${lv} − ${rv} ≤ ${c-1}`});
+    } else if(op==='<='){
+      result.push({from:lv, to:rv, weight:c, label:`${lv} − ${rv} ≤ ${c}`});
+    } else if(op==='>='){
+      result.push({from:rv, to:lv, weight:-c, label:`${rv} − ${lv} ≤ ${-c}`});
+    } else if(op==='>'){
+      result.push({from:rv, to:lv, weight:-c-1, label:`${rv} − ${lv} ≤ ${-c-1}`});
+    } else if(op==='='){
+      result.push({from:lv, to:rv, weight:c, label:`${lv} − ${rv} ≤ ${c}`});
+      result.push({from:rv, to:lv, weight:-c, label:`${rv} − ${lv} ≤ ${-c}`});
+    }
+  }
+  return result;
+}
+
+// ── NODE LAYOUT ───────────────────────────────────────────────────────────────
+// Assign positions in a circle or grid
+function layoutNodes(vars){
+  const n = vars.length;
+  const cx = 250, cy = 190, r = 145;
+  // Special case: 4 vars → square like the slide
+  if(n===4){
+    const order = vars.includes('x')&&vars.includes('y')&&vars.includes('z')&&vars.includes('w')
+      ? ['x','y','z','w'] : vars;
+    return {
+      [order[0]]:{x:110,y:80},
+      [order[1]]:{x:390,y:80},
+      [order[2]]:{x:110,y:320},
+      [order[3]]:{x:390,y:320},
+    };
+  }
+  const pos = {};
+  vars.forEach((v,i)=>{
+    const angle = (2*Math.PI*i/n) - Math.PI/2;
+    pos[v] = {x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle)};
+  });
+  return pos;
+}
+
+// ── GRAPH SVG ─────────────────────────────────────────────────────────────────
+const R = 26; // node radius
+let gPos = {}, gEdges = [], gVars = [];
+let edgeStates = {}; // edgeKey → 'idle'|'active'|'relaxed'|'cycle'
+let nodeStates = {}; // varName → 'idle'|'cycle'
+
+function edgeKey(e){ return `${e.from}->${e.to}`; }
+
+function drawGraph(){
+  const svg = document.getElementById('graph-svg');
+  const el = document.getElementById('edge-layer');
+  const nl = document.getElementById('node-layer');
+  el.innerHTML = ''; nl.innerHTML = '';
+
+  // Draw edges
+  gEdges.forEach((e,i)=>{
+    const p1 = gPos[e.from], p2 = gPos[e.to];
+    if(!p1||!p2) return;
+    const state = edgeStates[edgeKey(e)] || 'idle';
+
+    // Check if reverse edge exists → curve to avoid overlap
+    const hasReverse = gEdges.some(e2=>e2.from===e.to&&e2.to===e.from);
+    const path = edgePath(p1, p2, hasReverse, R);
+
+    const pathEl = document.createElementNS('http://www.w3.org/2000/svg','path');
+    pathEl.setAttribute('d', path.d);
+    pathEl.setAttribute('class', `edge-path ${state}`);
+    pathEl.setAttribute('marker-end', `url(#arr${state==='idle'?'':'-'+state})`);
+    el.appendChild(pathEl);
+
+    // Weight label
+    const wt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    wt.setAttribute('x', path.lx);
+    wt.setAttribute('y', path.ly);
+    wt.setAttribute('class', `edge-weight ${state}`);
+    wt.textContent = e.weight;
+    el.appendChild(wt);
+  });
+
+  // Draw nodes
+  gVars.forEach(v=>{
+    const p = gPos[v];
+    const ns = nodeStates[v] || 'idle';
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+
+    const circ = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circ.setAttribute('cx', p.x); circ.setAttribute('cy', p.y); circ.setAttribute('r', R);
+    circ.setAttribute('class', `node-circle ${ns}`);
+    g.appendChild(circ);
+
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('x', p.x); lbl.setAttribute('y', p.y);
+    lbl.setAttribute('class','node-label');
+    lbl.textContent = v;
+    g.appendChild(lbl);
+
+    nl.appendChild(g);
+  });
+
+  // Draw distance labels below nodes
+  gVars.forEach(v=>{
+    const p = gPos[v];
+    if(S.dist===null) return;
+    const d = S.dist[v];
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('x', p.x);
+    lbl.setAttribute('y', p.y + R + 14);
+    lbl.setAttribute('class','dist-label');
+    lbl.textContent = d === Infinity ? '∞' : d;
+    nl.appendChild(lbl);
+  });
+}
+
+function edgePath(p1, p2, curve, r){
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ux = dx/len, uy = dy/len;
+
+  if(!curve){
+    const sx = p1.x+ux*r, sy = p1.y+uy*r;
+    const ex = p2.x-ux*(r+6), ey = p2.y-uy*(r+6);
+    const mx = (sx+ex)/2, my = (sy+ey)/2;
+    return {d:`M${sx},${sy} L${ex},${ey}`, lx:mx, ly:my-7};
+  } else {
+    // Curve the edge away from center
+    const sx = p1.x+ux*r, sy = p1.y+uy*r;
+    const ex = p2.x-ux*(r+6), ey = p2.y-uy*(r+6);
+    const mx = (sx+ex)/2 - uy*28, my = (sy+ey)/2 + ux*28;
+    const lx = (sx+ex)/2 - uy*38, ly = (sy+ey)/2 + ux*38 - 6;
+    return {d:`M${sx},${sy} Q${mx},${my} ${ex},${ey}`, lx, ly};
+  }
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let S = {
+  edges: [],
+  vars: [],
+  dist: null,
+  pred: null,
+  round: 0,
+  maxRounds: 0,
+  status: 'idle',   // idle | running | sat | unsat
+  history: [],
+  lastUpdated: [],  // edges updated in last round
+  cycleEdges: [],   // edges in negative cycle
+  cycleNodes: [],
+};
+
+function initSolver(){
+  const text = document.getElementById('constraintInput').value;
+  let edges;
+  try{ edges = parseConstraints(text); }
+  catch(e){ alert(e.message); return; }
+
+  const varSet = new Set();
+  edges.forEach(e=>{ varSet.add(e.from); varSet.add(e.to); });
+  const vars = [...varSet].sort();
+
+  gVars = vars;
+  gEdges = edges;
+  gPos = layoutNodes(vars);
+  edgeStates = {};
+  nodeStates = {};
+  edges.forEach(e=>{ edgeStates[edgeKey(e)] = 'idle'; });
+
+  S = {
+    edges, vars,
+    dist: Object.fromEntries(vars.map(v=>[v,0])),
+    pred: Object.fromEntries(vars.map(v=>[v,null])),
+    round: 0,
+    maxRounds: vars.length + 1,
+    status: 'running',
+    history: [],
+    lastUpdated: [],
+    cycleEdges: [],
+    cycleNodes: [],
+  };
+
+  // Show panels
+  document.getElementById('actionsCard').style.display='';
+  document.getElementById('graphCard').style.display='';
+  document.getElementById('stateCard').style.display='';
+  document.getElementById('histCard').style.display='';
+  document.getElementById('resultDiv').style.display='none';
+  document.getElementById('resultDiv').innerHTML='';
+  updateBtns();
+  renderCList();
+  renderDistTable([]);
+  drawGraph();
+  setExpl(`<span style="color:var(--muted)">All distances initialised to <b>0</b>. Ready to run Bellman-Ford relaxation rounds.<br>Each round tries to relax every edge: if <b>d[u] + w(u,v) &lt; d[v]</b>, update d[v].</span>`);
+  addHist('Init', `${vars.length} vars, ${edges.length} edges`);
+  document.getElementById('stepLabel').textContent = `round 0 / ${vars.length}`;
+}
+
+// ── BELLMAN-FORD STEP ─────────────────────────────────────────────────────────
+function doStep(){
+  if(S.status!=='running') return;
+  S.round++;
+
+  const updated = [];
+  edgeStates = {};
+  S.edges.forEach(e=>{ edgeStates[edgeKey(e)] = 'idle'; });
+
+  for(const e of S.edges){
+    const nd = S.dist[e.from] + e.weight;
+    edgeStates[edgeKey(e)] = 'active';
+    if(nd < S.dist[e.to]){
+      S.dist[e.to] = nd;
+      S.pred[e.to] = e.from;
+      edgeStates[edgeKey(e)] = 'relaxed';
+      updated.push(e);
+    }
+  }
+  S.lastUpdated = updated;
+
+  const isLastRound = S.round === S.vars.length;
+  const isExtraRound = S.round > S.vars.length;
+
+  if(isExtraRound && updated.length > 0){
+    // Still relaxing after |V| rounds → negative cycle
+    detectCycle(updated[0]);
+  } else if(isLastRound){
+    // Do one extra check round
+    S.status = 'running';
+    renderRound(updated, false);
+    // Automatically do the extra round
+    doStep();
+    return;
+  } else if(updated.length === 0 && S.round <= S.vars.length){
+    // No updates → SAT
+    S.status = 'sat';
+    renderRound(updated, false);
+    showSAT();
+    return;
+  }
+
+  renderRound(updated, false);
+  if(S.status==='running'){
+    document.getElementById('stepLabel').textContent = `round ${S.round} / ${S.vars.length}`;
+    updateBtns();
+  }
+}
+
+function detectCycle(startEdge){
+  S.status = 'unsat';
+
+  // Walk back through predecessors from startEdge.to for |V| steps to land inside cycle
+  let v = startEdge.to;
+  for(let i=0; i<S.vars.length; i++) v = S.pred[v] || v;
+
+  // Now trace the cycle
+  const cycleNodes = [v];
+  let cur = S.pred[v];
+  const visited = new Set([v]);
+  while(cur && cur!==v && !visited.has(cur)){
+    cycleNodes.unshift(cur);
+    visited.add(cur);
+    cur = S.pred[cur];
+  }
+  cycleNodes.unshift(v); // close cycle
+
+  S.cycleNodes = [...new Set(cycleNodes)];
+
+  // Mark cycle edges
+  S.cycleEdges = [];
+  for(let i=0; i<cycleNodes.length-1; i++){
+    const from = cycleNodes[i], to = cycleNodes[i+1];
+    const e = S.edges.find(e=>e.from===from&&e.to===to);
+    if(e) S.cycleEdges.push(e);
+  }
+
+  // Compute cycle weight
+  const cycleWeight = S.cycleEdges.reduce((s,e)=>s+e.weight, 0);
+
+  // Update visual states
+  edgeStates = {};
+  S.edges.forEach(e=>{ edgeStates[edgeKey(e)] = 'idle'; });
+  S.cycleEdges.forEach(e=>{ edgeStates[edgeKey(e)] = 'cycle'; });
+  nodeStates = {};
+  S.cycleNodes.forEach(v=>{ nodeStates[v] = 'cycle'; });
+
+  drawGraph();
+  renderCList();
+  renderDistTable(S.cycleNodes);
+
+  const cyclePath = S.cycleNodes.join(' → ');
+  setExpl(`<span class="expl-badge" style="background:var(--red-bg);color:#fca5a5;border:1px solid var(--red-bd)">UNSAT — Negative Cycle Detected</span><br>
+    <span style="color:var(--text)">Cycle: <b style="color:#fdba74">${cyclePath}</b><br>
+    Cycle weight: <b style="color:#f97316">${cycleWeight}</b> (negative!)<br>
+    Edges can still be relaxed after round ${S.vars.length} — distances diverge, proving unsatisfiability.</span>
+    <div class="rule-box">Negative cycle ⟹ the constraints are <b>UNSATISFIABLE</b></div>`);
+
+  addHist('UNSAT', `cycle: ${cyclePath} (weight ${cycleWeight})`);
+  showUNSAT(cyclePath, cycleWeight);
+  updateBtns();
+}
+
+function renderRound(updated, isFinal){
+  const updNames = updated.map(e=>`d[${e.to}]=${S.dist[e.to]}`);
+  if(updated.length===0){
+    setExpl(`<span class="expl-badge" style="background:var(--cyan-bg);color:var(--accent2);border:1px solid var(--cyan-bd)">Round ${S.round} — No Changes</span><br>
+      <span style="color:var(--text)">No edge could be relaxed. All shortest-path distances are stable.</span>`);
+    addHist(`Round ${S.round}`, 'no updates');
+  } else {
+    setExpl(`<span class="expl-badge" style="background:var(--cyan-bg);color:var(--accent2);border:1px solid var(--cyan-bd)">Round ${S.round} — ${updated.length} update${updated.length>1?'s':''}</span><br>
+      <span style="color:var(--text)">${updNames.join(', &nbsp;')}</span>
+      <div class="rule-box">Relax edge (u→v, w): if d[u] + w &lt; d[v] then d[v] := d[u] + w</div>`);
+    addHist(`Round ${S.round}`, updNames.join(', '));
+  }
+  renderDistTable(updated.map(e=>e.to));
+  drawGraph();
+  renderCList();
+}
+
+// ── RENDER HELPERS ────────────────────────────────────────────────────────────
+function renderCList(){
+  const dl = document.getElementById('clist');
+  dl.innerHTML = S.edges.map((e,i)=>{
+    const st = edgeStates[edgeKey(e)] || 'idle';
+    const cls = st==='cycle'?'cycle':st==='relaxed'?'relaxed':st==='active'?'active':'idle';
+    return `<div class="crow ${cls}">
+      <span class="cidx">${i+1}</span>
+      <span>${e.label || `${e.from}−${e.to}≤${e.weight}`}</span>
+      <span style="font-size:10px;margin-left:auto;opacity:.7">${e.from}→${e.to}:${e.weight}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderDistTable(highlightVars){
+  const tbl = document.getElementById('distTable');
+  if(!S.dist){ tbl.innerHTML=''; return; }
+  const hl = new Set(highlightVars);
+  const isCycleNode = v => S.cycleNodes.includes(v);
+  tbl.innerHTML = `<tr><th>Variable</th>${S.vars.map(v=>`<th>${v}</th>`).join('')}</tr>
+    <tr><td style="font-size:11px;color:var(--muted);border:1px solid var(--border)">d[ ]</td>
+      ${S.vars.map(v=>{
+        const cls = isCycleNode(v)?'cycle-node':hl.has(v)?'updated':'';
+        const val = S.dist[v]===Infinity?'∞':S.dist[v];
+        return `<td class="${cls}">${val}</td>`;
+      }).join('')}
+    </tr>`;
+  document.getElementById('roundLabel').textContent = S.status==='running'?`Round ${S.round} of ${S.vars.length}`:'';
+}
+
+function setExpl(html){ document.getElementById('explBox').innerHTML = html; }
+
+function addHist(badge, detail){
+  S.history.push({badge, detail, step:S.history.length});
+  const hl = document.getElementById('histList');
+  hl.innerHTML = S.history.slice().reverse().map((h,ri)=>{
+    const cur = ri===0?'hcur':'';
+    return `<div class="hentry ${cur}"><span class="hnum">${h.step}</span>
+      <span class="hbadge" style="color:var(--accent2)">${h.badge}</span>
+      <span class="hdetail">${h.detail}</span></div>`;
+  }).join('');
+}
+
+function updateBtns(){
+  const running = S.status==='running';
+  document.getElementById('btnStep').classList.toggle('na', !running);
+  document.getElementById('btnAuto').classList.toggle('na', !running);
+  document.getElementById('stepLabel').textContent = `round ${S.round} / ${S.vars.length}`;
+}
+
+// ── SAT / UNSAT DISPLAY ───────────────────────────────────────────────────────
+function showSAT(){
+  const model = Object.entries(S.dist).map(([v,d])=>`${v} = ${d}`).join(',  ');
+  const rd = document.getElementById('resultDiv');
+  rd.style.display='';
+  rd.innerHTML=`<div class="result-banner rb-sat">
+    <span class="rb-icon">✓</span>
+    <div class="rb-body">
+      <span>SATISFIABLE</span>
+      <span class="rb-sub">No negative cycle found. Model: ${model}</span>
+    </div>
+  </div>`;
+  document.getElementById('graphStatus').innerHTML = `<span style="color:var(--green)">● SAT</span>`;
+  addHist('SAT', model);
+  updateBtns();
+}
+
+function showUNSAT(cyclePath, weight){
+  const rd = document.getElementById('resultDiv');
+  rd.style.display='';
+  rd.innerHTML=`<div class="result-banner rb-unsat">
+    <span class="rb-icon">✗</span>
+    <div class="rb-body">
+      <span>UNSATISFIABLE</span>
+      <span class="rb-sub">Negative cycle: ${cyclePath} &nbsp;(weight ${weight})</span>
+    </div>
+  </div>`;
+  document.getElementById('graphStatus').innerHTML = `<span style="color:var(--red)">● UNSAT — negative cycle</span>`;
+}
+
+function autoSolve(){
+  if(S.status!=='running') return;
+  let guard = 0;
+  while(S.status==='running' && guard++<100) doStep();
+}
+
+function resetSolver(){
+  S.status='idle';
+  edgeStates={};
+  nodeStates={};
+  document.getElementById('actionsCard').style.display='none';
+  document.getElementById('graphCard').style.display='none';
+  document.getElementById('stateCard').style.display='none';
+  document.getElementById('histCard').style.display='none';
+  document.getElementById('resultDiv').style.display='none';
+}
+
+// Initial load
+loadExample('unsat');
+</script>
+</body>
+</html>
