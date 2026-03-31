@@ -372,8 +372,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
         <button class="btn btn-ghost btn-sm" id="btnBack" onclick="prevStep()" disabled>← Back</button>
         <button class="btn btn-blue" id="btnNext" onclick="nextStep()" disabled>Next →</button>
         <button class="btn btn-ghost btn-sm" id="btnAuto" onclick="autoPlay()" style="margin-left:auto">Auto ▶</button>
-        <button class="btn btn-ghost btn-sm" id="btnOpenSat" onclick="openInSatSolver()" disabled title="Open current CNF in the SAT Solver lab">↗ SAT Solver</button>
-        <button class="btn btn-ghost btn-sm" id="btnOpenT" onclick="openInTSolver()" disabled title="Open current UF literals in the Theory Solver lab">↗ T-Solver</button>
+        <button class="btn btn-ghost btn-sm" id="btnOpenSat" onclick="openInSatSolver()" style="display:none" title="Open CNF in the SAT Solver lab">↗ SAT Solver</button>
+        <button class="btn btn-ghost btn-sm" id="btnOpenT" onclick="openInTSolver()" style="display:none" title="Open UF literals in the Theory Solver lab">↗ T-Solver</button>
       </div>
     </div>
 
@@ -1428,11 +1428,9 @@ function renderInfoPanel() {
   document.getElementById('stepBody').innerHTML=f.bodyHtml;
   document.getElementById('btnNext').disabled=G.current>=G.frames.length-1;
   document.getElementById('btnBack').disabled=G.current<=0;
-  // Open-in buttons: enable when relevant data is present
-  const hasCnf=!!(f.fstate&&f.fstate.cnf);
-  const hasUf =!!(f.fstate&&f.fstate.uf);
-  document.getElementById('btnOpenSat').disabled=!hasCnf;
-  document.getElementById('btnOpenT').disabled=!hasUf;
+  // Open-in buttons: show only on the matching step type
+  document.getElementById('btnOpenSat').style.display=f.component==='dpll'?'':'none';
+  document.getElementById('btnOpenT').style.display=f.component==='theory'?'':'none';
 }
 
 function openInSatSolver() {
