@@ -38,7 +38,8 @@ for lab in sorted(LABS):
         continue
 
     # Build the <script> block
-    js = 'window.LAB_FILES=' + json.dumps(files, ensure_ascii=False) + ';'
+    # Escape </script> inside the JSON so it cannot break the surrounding script tag
+    js = 'window.LAB_FILES=' + json.dumps(files, ensure_ascii=False).replace('</script>', '<\\/script>') + ';'
     script_tag = f'<script id="lab-files-data">\n{js}\n</script>\n'
 
     # Remove existing embedded block if present
