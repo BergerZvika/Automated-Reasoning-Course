@@ -179,7 +179,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <div class="flow-arrow">↓</div>
     <div class="flow-step" id="fs-axioms">Congruence Axioms</div>
     <div class="flow-arrow">↓</div>
-    <div class="flow-step" id="fs-ack">Ack(φ) = φ' ∧ Axioms</div>
+    <div class="flow-step" id="fs-ack">Ack(φ) = Axioms → φ'</div>
     <div class="flow-arrow">↓</div>
     <div class="flow-step" id="fs-sat">SAT Check</div>
   </div>
@@ -422,7 +422,8 @@ function ackermanize(src){
     for(let j=i+1;j<fapps.length;j++)
       if(fapps[i].name===fapps[j].name&&fapps[i].args.length===fapps[j].args.length)
         axioms.push(mkAxiom(fapps[i],fapps[j],fm));
-  const ackAst=axioms.length===0?phiPrime:{type:'and',children:[phiPrime,...axioms]};
+  const axConjunct=axioms.length===1?axioms[0]:{type:'and',children:axioms};
+  const ackAst=axioms.length===0?phiPrime:{type:'imp',children:[axConjunct,phiPrime]};
   return{ast,fapps,fm,phiPrime,axioms,ackAst};
 }
 
@@ -508,7 +509,7 @@ function runAck(){
     `<div class="info-section"><div class="info-section-title">Concept</div><div class="info-text">`+
     `<b>Ackermanization</b> reduces a QF_UF formula (uninterpreted functions + equality) to a QF_EQ formula (pure equality, no functions).<br><br>`+
     `Steps:<br>1. Collect all unique function applications<br>2. Map each to a fresh constant k<sub>i</sub><br>`+
-    `3. Replace applications in φ → φ'<br>4. Add congruence axioms enforcing function semantics<br>5. Ack(φ) = φ' ∧ Axioms<br><br>`+
+    `3. Replace applications in φ → φ'<br>4. Add congruence axioms enforcing function semantics<br>5. Ack(φ) = Axioms → φ'  (if no axioms: just φ')<br><br>`+
     `<b>Theorem:</b> φ is SAT (in QF_UF) iff Ack(φ) is SAT (in QF_EQ).</div></div>`,
     'Input: '+src,'h-blue');
 
@@ -549,7 +550,7 @@ function runAck(){
 
   // Frame 6 — Ack(φ)
   const ackStr=pFml(ackAst,false);
-  addFrame('ack','Ack(φ) = φ\' ∧ Axioms','ACK(φ)','badge-cyan',
+  addFrame('ack','Ack(φ) = Axioms → φ\'','ACK(φ)','badge-cyan',
     `<div class="info-section"><div class="info-section-title">Ackermanized formula (QF_EQ)</div><div class="info-content">${esc(ackStr)}</div></div>`+
     `<div class="info-text"><b>Key theorem (Ackermann 1954):</b><br>φ is satisfiable in QF_UF  ⟺  Ack(φ) is satisfiable in QF_EQ.<br><br>`+
     `Ack(φ) is in pure <b>quantifier-free equality logic</b>. No function symbols remain. Any equality solver (e.g. union-find with DPLL) can decide it.</div>`,
