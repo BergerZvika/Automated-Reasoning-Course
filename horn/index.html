@@ -834,18 +834,23 @@ function renderFormula(){
       currentClause=inCurrent;
       if(currentClause.length===1&&currentClause[0]>0) st='unit';
       else st='active';
-    } else if(emptiesAssigned<emptyCount){
-      // This original was simplified down to an empty clause
-      currentClause=[];
-      st='conflict';
-      emptiesAssigned++;
     } else {
-      // Removed (satisfied — contained a propagated literal)
-      currentClause=origClause;
-      st='sat';
+      // Clause not in current formula: either satisfied or simplified to empty.
+      // A satisfied clause contains at least one positive literal that was set TRUE.
+      const wasSatisfied=origClause.some(l=>l>0&&S.trueVars.includes(l));
+      if(!wasSatisfied&&emptiesAssigned<emptyCount){
+        // All literals were removed via ¬p simplification → empty clause
+        currentClause=[];
+        st='conflict';
+        emptiesAssigned++;
+      } else {
+        // Removed because it contained a true positive literal
+        currentClause=origClause;
+        st='sat';
+      }
     }
 
-    row.className='crow '+st+(app.unsat&&st!=='conflict'?' unsat-dim':'');
+    row.className='crow '+st;
     const idx=document.createElement('span');
     idx.className='cidx'; idx.textContent='C'+(i+1);
     row.appendChild(idx);
@@ -853,7 +858,16 @@ function renderFormula(){
     const lits=document.createElement('div');
     lits.className='clits';
     if(st==='conflict'){
-      lits.innerHTML='<span style="color:#ef4444;font-family:Consolas,monospace;font-weight:800;font-size:16px">⊥ empty clause!</span>';
+      origClause.forEach((lit,j)=>{
+        const chip=document.createElement('span');
+        chip.className='lit lf'; chip.textContent=fmt(lit);
+        lits.appendChild(chip);
+        if(j<origClause.length-1){const s=document.createElement('span');s.className='or-d';s.textContent='∨';lits.appendChild(s);}
+      });
+      const empty=document.createElement('span');
+      empty.style.cssText='color:#ef4444;font-family:Consolas,monospace;font-weight:800;font-size:15px;margin-left:6px';
+      empty.textContent='= ⊥';
+      lits.appendChild(empty);
     } else {
       origClause.forEach((lit,j)=>{
         const removedBySimplify = currentClause.length>0 && !currentClause.includes(lit) && st!=='sat';
