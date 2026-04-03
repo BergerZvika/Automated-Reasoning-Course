@@ -190,6 +190,45 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
   <div class="input-hint">Operators: <code>!</code> not &nbsp;|&nbsp; <code>&amp;</code> and &nbsp;|&nbsp; <code>|</code> or &nbsp;|&nbsp; <code>-&gt;</code> implies &nbsp;|&nbsp; <code>&lt;-&gt;</code> iff &nbsp;|&nbsp; Atoms: uppercase letters, true, false</div>
   <div class="ex-chips" id="exChips"></div>
 </div>
+<!-- E(C) Transformation Rules — full width -->
+<div class="card">
+  <div class="card-title">E(C) Transformation Rules</div>
+  <div id="ruleTable">
+    <div class="rule-row" data-type="var">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ C) ∧ (¬C ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C is variable</div>
+    </div>
+    <div class="rule-row" data-type="true">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ⊤) ∧ (⊥ ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C is true</div>
+    </div>
+    <div class="rule-row" data-type="false">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ⊥) ∧ (⊤ ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C is false</div>
+    </div>
+    <div class="rule-row" data-type="not">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>D</sub>) ∧ (p<sub>D</sub> ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C = ¬D</div>
+    </div>
+    <div class="rule-row" data-type="and">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ p<sub>C₁</sub>) ∧ (¬p<sub>C</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub> ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C = C₁ ∧ C₂</div>
+    </div>
+    <div class="rule-row" data-type="or">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub> ∨ p<sub>C</sub>) ∧ (¬p<sub>C₂</sub> ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C = C₁ ∨ C₂</div>
+    </div>
+    <div class="rule-row" data-type="imp">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (p<sub>C₁</sub> ∨ p<sub>C</sub>) ∧ (p<sub>C</sub> ∨ ¬p<sub>C₂</sub>)</div>
+      <div class="rule-cond">C = C₁ → C₂</div>
+    </div>
+    <div class="rule-row" data-type="iff">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub>) ∧ (p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub>) ∧ (p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ p<sub>C₂</sub>)</div>
+      <div class="rule-cond">C = C₁ ↔ C₂</div>
+    </div>
+  </div>
+</div>
+
 
 <!-- Main grid -->
 <div class="main-grid" id="mainGrid" style="display:none">
@@ -265,45 +304,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
 
     <!-- SAT status -->
     <div id="statusBanner" style="display:none"></div>
-  </div>
-</div>
-
-<!-- E(C) Transformation Rules — full width -->
-<div class="card">
-  <div class="card-title">E(C) Transformation Rules</div>
-  <div id="ruleTable">
-    <div class="rule-row" data-type="var">
-      <div class="rule-formula">(¬p<sub>C</sub> ∨ C) ∧ (¬C ∨ p<sub>C</sub>)</div>
-      <div class="rule-cond">C is variable</div>
-    </div>
-    <div class="rule-row" data-type="true">
-      <div class="rule-formula">(¬p<sub>C</sub> ∨ ⊤) ∧ (⊥ ∨ p<sub>C</sub>)</div>
-      <div class="rule-cond">C is true</div>
-    </div>
-    <div class="rule-row" data-type="false">
-      <div class="rule-formula">(¬p<sub>C</sub> ∨ ⊥) ∧ (⊤ ∨ p<sub>C</sub>)</div>
-      <div class="rule-cond">C is false</div>
-    </div>
-    <div class="rule-row" data-type="not">
-      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>D</sub>) ∧ (p<sub>D</sub> ∨ p<sub>C</sub>)</div>
-      <div class="rule-cond">C = ¬D</div>
-    </div>
-    <div class="rule-row" data-type="and">
-      <div class="rule-formula">(¬p<sub>C</sub> ∨ p<sub>C₁</sub>) ∧ (¬p<sub>C</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub> ∨ p<sub>C</sub>)</div>
-      <div class="rule-cond">C = C₁ ∧ C₂</div>
-    </div>
-    <div class="rule-row" data-type="or">
-      <div class="rule-formula">(¬p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub> ∨ p<sub>C</sub>) ∧ (¬p<sub>C₂</sub> ∨ p<sub>C</sub>)</div>
-      <div class="rule-cond">C = C₁ ∨ C₂</div>
-    </div>
-    <div class="rule-row" data-type="imp">
-      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (p<sub>C₁</sub> ∨ p<sub>C</sub>) ∧ (p<sub>C</sub> ∨ ¬p<sub>C₂</sub>)</div>
-      <div class="rule-cond">C = C₁ → C₂</div>
-    </div>
-    <div class="rule-row" data-type="iff">
-      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub>) ∧ (p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub>) ∧ (p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ p<sub>C₂</sub>)</div>
-      <div class="rule-cond">C = C₁ ↔ C₂</div>
-    </div>
   </div>
 </div>
 
