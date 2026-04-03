@@ -96,13 +96,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
 .node-ready-cursor{cursor:pointer}
 
 /* rule table */
-.rule-row{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;padding:5px 8px;border-radius:6px;border:1px solid transparent;margin-bottom:3px;transition:background .3s,border-color .3s}
+.rule-row{display:flex;align-items:center;gap:16px;padding:7px 12px;border-radius:8px;border:1px solid transparent;margin-bottom:4px;transition:background .3s,border-color .3s;white-space:nowrap}
 .rule-row:last-child{margin-bottom:0}
-.rule-formula{font-family:'Consolas','Courier New',monospace;font-size:10.5px;color:var(--muted);line-height:1.55;flex:1}
-.rule-cond{font-size:10px;color:var(--muted);white-space:nowrap;padding-top:2px;font-style:italic;text-align:right}
+.rule-formula{font-family:'Consolas','Courier New',monospace;font-size:13px;color:var(--muted);flex:1}
+.rule-cond{font-size:12px;color:var(--muted);font-style:italic;min-width:120px;text-align:right}
 .rule-row.active{background:rgba(132,204,22,.14);border-color:rgba(132,204,22,.38);animation:flash-rule .5s ease-out}
 .rule-row.active .rule-formula{color:var(--lime2)}
-.rule-row.active .rule-cond{color:var(--lime)}
+.rule-row.active .rule-cond{color:var(--lime);font-weight:600}
 @keyframes flash-rule{0%{background:rgba(132,204,22,.32)}100%{background:rgba(132,204,22,.14)}}
 
 /* clauses */
@@ -238,45 +238,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
       </div>
     </div>
 
-    <!-- E(C) rules reference -->
-    <div class="card">
-      <div class="card-title">E(C) Transformation Rules</div>
-      <div id="ruleTable">
-        <div class="rule-row" data-type="var">
-          <div class="rule-formula">(¬p<sub>C</sub>∨C) ∧ (¬C∨p<sub>C</sub>)</div>
-          <div class="rule-cond">C is variable</div>
-        </div>
-        <div class="rule-row" data-type="true">
-          <div class="rule-formula">(¬p<sub>C</sub>∨⊤) ∧ (⊥∨p<sub>C</sub>)</div>
-          <div class="rule-cond">C is true</div>
-        </div>
-        <div class="rule-row" data-type="false">
-          <div class="rule-formula">(¬p<sub>C</sub>∨⊥) ∧ (⊤∨p<sub>C</sub>)</div>
-          <div class="rule-cond">C is false</div>
-        </div>
-        <div class="rule-row" data-type="not">
-          <div class="rule-formula">(¬p<sub>C</sub>∨¬p<sub>D</sub>) ∧ (p<sub>D</sub>∨p<sub>C</sub>)</div>
-          <div class="rule-cond">C = ¬D</div>
-        </div>
-        <div class="rule-row" data-type="and">
-          <div class="rule-formula">(¬p<sub>C</sub>∨p<sub>C₁</sub>) ∧ (¬p<sub>C</sub>∨p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub>∨¬p<sub>C₂</sub>∨p<sub>C</sub>)</div>
-          <div class="rule-cond">C = C₁∧C₂</div>
-        </div>
-        <div class="rule-row" data-type="or">
-          <div class="rule-formula">(¬p<sub>C</sub>∨p<sub>C₁</sub>∨p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub>∨p<sub>C</sub>) ∧ (¬p<sub>C₂</sub>∨p<sub>C</sub>)</div>
-          <div class="rule-cond">C = C₁∨C₂</div>
-        </div>
-        <div class="rule-row" data-type="imp">
-          <div class="rule-formula">(¬p<sub>C</sub>∨¬p<sub>C₁</sub>∨p<sub>C₂</sub>) ∧ (p<sub>C₁</sub>∨p<sub>C</sub>) ∧ (p<sub>C</sub>∨¬p<sub>C₂</sub>)</div>
-          <div class="rule-cond">C = C₁→C₂</div>
-        </div>
-        <div class="rule-row" data-type="iff">
-          <div class="rule-formula">(¬p<sub>C</sub>∨¬p<sub>C₁</sub>∨p<sub>C₂</sub>) ∧ (¬p<sub>C</sub>∨p<sub>C₁</sub>∨¬p<sub>C₂</sub>) ∧<br>(p<sub>C</sub>∨¬p<sub>C₁</sub>∨¬p<sub>C₂</sub>) ∧ (p<sub>C</sub>∨p<sub>C₁</sub>∨p<sub>C₂</sub>)</div>
-          <div class="rule-cond">C = C₁↔C₂</div>
-        </div>
-      </div>
-    </div>
-
     <!-- Stats -->
     <div class="card" id="statsCard">
       <div class="card-title">Progress</div>
@@ -309,6 +270,45 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
 
     <!-- SAT status -->
     <div id="statusBanner" style="display:none"></div>
+  </div>
+</div>
+
+<!-- E(C) Transformation Rules — full width -->
+<div class="card">
+  <div class="card-title">E(C) Transformation Rules</div>
+  <div id="ruleTable">
+    <div class="rule-row" data-type="var">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ C) ∧ (¬C ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C is variable</div>
+    </div>
+    <div class="rule-row" data-type="true">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ⊤) ∧ (⊥ ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C is true</div>
+    </div>
+    <div class="rule-row" data-type="false">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ⊥) ∧ (⊤ ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C is false</div>
+    </div>
+    <div class="rule-row" data-type="not">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>D</sub>) ∧ (p<sub>D</sub> ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C = ¬D</div>
+    </div>
+    <div class="rule-row" data-type="and">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ p<sub>C₁</sub>) ∧ (¬p<sub>C</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub> ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C = C₁ ∧ C₂</div>
+    </div>
+    <div class="rule-row" data-type="or">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub> ∨ p<sub>C</sub>) ∧ (¬p<sub>C₂</sub> ∨ p<sub>C</sub>)</div>
+      <div class="rule-cond">C = C₁ ∨ C₂</div>
+    </div>
+    <div class="rule-row" data-type="imp">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (p<sub>C₁</sub> ∨ p<sub>C</sub>) ∧ (p<sub>C</sub> ∨ ¬p<sub>C₂</sub>)</div>
+      <div class="rule-cond">C = C₁ → C₂</div>
+    </div>
+    <div class="rule-row" data-type="iff">
+      <div class="rule-formula">(¬p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ p<sub>C₂</sub>) ∧ (¬p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub>) ∧ (p<sub>C</sub> ∨ ¬p<sub>C₁</sub> ∨ ¬p<sub>C₂</sub>) ∧ (p<sub>C</sub> ∨ p<sub>C₁</sub> ∨ p<sub>C₂</sub>)</div>
+      <div class="rule-cond">C = C₁ ↔ C₂</div>
+    </div>
   </div>
 </div>
 
