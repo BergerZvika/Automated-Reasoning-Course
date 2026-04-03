@@ -95,9 +95,21 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
 .node-cursor{cursor:pointer}
 .node-ready-cursor{cursor:pointer}
 
+/* rule table */
+.rule-row{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;padding:5px 8px;border-radius:6px;border:1px solid transparent;margin-bottom:3px;transition:background .3s,border-color .3s}
+.rule-row:last-child{margin-bottom:0}
+.rule-formula{font-family:'Consolas','Courier New',monospace;font-size:10.5px;color:var(--muted);line-height:1.55;flex:1}
+.rule-cond{font-size:10px;color:var(--muted);white-space:nowrap;padding-top:2px;font-style:italic;text-align:right}
+.rule-row.active{background:rgba(132,204,22,.14);border-color:rgba(132,204,22,.38);animation:flash-rule .5s ease-out}
+.rule-row.active .rule-formula{color:var(--lime2)}
+.rule-row.active .rule-cond{color:var(--lime)}
+@keyframes flash-rule{0%{background:rgba(132,204,22,.32)}100%{background:rgba(132,204,22,.14)}}
+
 /* clauses */
 .clause-line{font-family:'Consolas','Courier New',monospace;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);color:var(--text);display:flex;gap:8px;align-items:baseline}
 .clause-line:last-child{border-bottom:none}
+.clause-line.clause-new{background:rgba(132,204,22,.1);border-left:3px solid var(--lime);padding-left:6px;border-bottom:none;border-radius:0 4px 4px 0;animation:flash-cl .7s ease-out;margin-bottom:1px}
+@keyframes flash-cl{0%{background:rgba(132,204,22,.3)}100%{background:rgba(132,204,22,.1)}}
 .clause-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;white-space:nowrap}
 .tag-var{background:rgba(132,204,22,.15);color:var(--lime2)}
 .tag-not{background:rgba(239,68,68,.15);color:var(--red)}
@@ -228,14 +240,40 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
 
     <!-- E(C) rules reference -->
     <div class="card">
-      <div class="card-title">E(C) Rules</div>
-      <div style="font-size:11px;font-family:'Consolas','Courier New',monospace;line-height:1.8;color:var(--muted)">
-        <div><span style="color:var(--lime2)">var x:</span> (¬pC∨x) ∧ (¬x∨pC)</div>
-        <div><span style="color:var(--red)">¬D:</span> (¬pC∨¬pD) ∧ (pC∨pD)</div>
-        <div><span style="color:var(--green)">C₁∧C₂:</span> (¬pC∨pC₁) ∧ (¬pC∨pC₂) ∧ (pC∨¬pC₁∨¬pC₂)</div>
-        <div><span style="color:var(--amber)">C₁∨C₂:</span> (¬pC∨pC₁∨pC₂) ∧ (¬pC₁∨pC) ∧ (¬pC₂∨pC)</div>
-        <div><span style="color:#c084fc)">C₁→C₂:</span> (¬pC∨¬pC₁∨pC₂) ∧ (pC∨pC₁) ∧ (pC∨¬pC₂)</div>
-        <div><span style="color:#60a5fa">C₁↔C₂:</span> 4 clauses (see appendix)</div>
+      <div class="card-title">E(C) Transformation Rules</div>
+      <div id="ruleTable">
+        <div class="rule-row" data-type="var">
+          <div class="rule-formula">(¬p<sub>C</sub>∨C) ∧ (¬C∨p<sub>C</sub>)</div>
+          <div class="rule-cond">C is variable</div>
+        </div>
+        <div class="rule-row" data-type="true">
+          <div class="rule-formula">(¬p<sub>C</sub>∨⊤) ∧ (⊥∨p<sub>C</sub>)</div>
+          <div class="rule-cond">C is true</div>
+        </div>
+        <div class="rule-row" data-type="false">
+          <div class="rule-formula">(¬p<sub>C</sub>∨⊥) ∧ (⊤∨p<sub>C</sub>)</div>
+          <div class="rule-cond">C is false</div>
+        </div>
+        <div class="rule-row" data-type="not">
+          <div class="rule-formula">(¬p<sub>C</sub>∨¬p<sub>D</sub>) ∧ (p<sub>D</sub>∨p<sub>C</sub>)</div>
+          <div class="rule-cond">C = ¬D</div>
+        </div>
+        <div class="rule-row" data-type="and">
+          <div class="rule-formula">(¬p<sub>C</sub>∨p<sub>C₁</sub>) ∧ (¬p<sub>C</sub>∨p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub>∨¬p<sub>C₂</sub>∨p<sub>C</sub>)</div>
+          <div class="rule-cond">C = C₁∧C₂</div>
+        </div>
+        <div class="rule-row" data-type="or">
+          <div class="rule-formula">(¬p<sub>C</sub>∨p<sub>C₁</sub>∨p<sub>C₂</sub>) ∧ (¬p<sub>C₁</sub>∨p<sub>C</sub>) ∧ (¬p<sub>C₂</sub>∨p<sub>C</sub>)</div>
+          <div class="rule-cond">C = C₁∨C₂</div>
+        </div>
+        <div class="rule-row" data-type="imp">
+          <div class="rule-formula">(¬p<sub>C</sub>∨¬p<sub>C₁</sub>∨p<sub>C₂</sub>) ∧ (p<sub>C₁</sub>∨p<sub>C</sub>) ∧ (p<sub>C</sub>∨¬p<sub>C₂</sub>)</div>
+          <div class="rule-cond">C = C₁→C₂</div>
+        </div>
+        <div class="rule-row" data-type="iff">
+          <div class="rule-formula">(¬p<sub>C</sub>∨¬p<sub>C₁</sub>∨p<sub>C₂</sub>) ∧ (¬p<sub>C</sub>∨p<sub>C₁</sub>∨¬p<sub>C₂</sub>) ∧<br>(p<sub>C</sub>∨¬p<sub>C₁</sub>∨¬p<sub>C₂</sub>) ∧ (p<sub>C</sub>∨p<sub>C₁</sub>∨p<sub>C₂</sub>)</div>
+          <div class="rule-cond">C = C₁↔C₂</div>
+        </div>
       </div>
     </div>
 
@@ -404,7 +442,9 @@ function initState(tree) {
     pCounter: 1,
     clauses: [],
     history: [],
-    done: false
+    done: false,
+    lastType: null,
+    lastPi: null
   };
 }
 
@@ -506,6 +546,8 @@ function saveSnapshot(label, kind) {
     pCounter: S.pCounter,
     clauses: S.clauses.map(c=>({...c})),
     done: S.done,
+    lastType: S.lastType,
+    lastPi: S.lastPi,
     label, kind
   });
 }
@@ -517,6 +559,8 @@ function undoStep() {
   S.pCounter = snap.pCounter;
   S.clauses = snap.clauses;
   S.done = snap.done;
+  S.lastType = snap.lastType;
+  S.lastPi = snap.lastPi;
   renderAll();
 }
 
@@ -525,6 +569,8 @@ function processNode(node) {
   saveSnapshot('before', 'snapshot');
   const pi = 'p' + S.pCounter++;
   S.processed[node.id] = pi;
+  S.lastType = node.type;
+  S.lastPi = pi;
   const clauses = generateClauses(node, pi);
   const tag = node.type;
   for(const c of clauses) {
@@ -614,6 +660,18 @@ function renderAll() {
   renderHistory();
   renderStats();
   renderStatus();
+  renderRuleTable();
+}
+
+function renderRuleTable() {
+  document.querySelectorAll('#ruleTable .rule-row').forEach(row => {
+    const active = S && row.dataset.type === S.lastType;
+    if(active && !row.classList.contains('active')){
+      row.classList.add('active');
+    } else if(!active){
+      row.classList.remove('active');
+    }
+  });
 }
 
 function renderButtons() {
@@ -677,6 +735,7 @@ function renderClauses() {
       var:'VAR', not:'NOT', and:'AND', or:'OR', imp:'IMP', iff:'IFF',
       root:'ROOT', true:'TRUE', false:'FALSE'
     }[c.tag] || c.tag.toUpperCase();
+    if(S.lastPi && c.pi === S.lastPi) div.classList.add('clause-new');
     div.innerHTML = '<span class="clause-tag '+tagClass+'">'+tagLabel+'</span>'
                   + '<span class="clause-text" style="font-family:Consolas,monospace">'+escHtml(c.text)+'</span>'
                   + '<span style="font-size:11px;color:var(--lime2)">'+escHtml(c.pi)+'</span>';
