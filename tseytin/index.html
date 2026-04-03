@@ -124,14 +124,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
   white-space:pre-wrap;word-break:break-all;color:var(--lime2)
 }
 
-/* step history */
-.hist-list{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto}
-.hist-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px}
-.hist-item .h-step{font-size:11px;color:var(--muted);margin-bottom:3px}
-.hist-item .h-text{color:var(--text);font-family:'Consolas','Courier New',monospace;font-size:12px;line-height:1.5}
-.hist-item.h-done{border-color:var(--green-bd);background:var(--green-bg)}
-.hist-item.h-sat{border-color:var(--green-bd);background:var(--green-bg)}
-.hist-item.h-process{border-color:rgba(132,204,22,.3);background:rgba(132,204,22,.07)}
 
 /* status */
 .status-sat{
@@ -252,7 +244,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
   <!-- Right: tree + clauses -->
   <div style="display:flex;flex-direction:column;gap:14px">
     <div class="card">
-      <div class="card-title">Formula Tree</div>
+      <div class="card-title">
+        <span>Formula Tree</span>
+        <button class="btn btn-ghost btn-sm" onclick="undoStep()">← Undo</button>
+      </div>
       <div class="tree-wrap" id="treeWrap">
         <svg id="treeSvg"></svg>
       </div>
@@ -312,14 +307,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
   </div>
 </div>
 
-<!-- Step History — full width -->
-<div class="card" id="histCard" style="display:none">
-  <div class="card-title">
-    <span>Step History</span>
-    <button class="btn btn-ghost btn-sm" onclick="undoStep()">← Undo</button>
-  </div>
-  <div class="hist-list" id="histList"></div>
-</div>
 
 </div><!-- wrap -->
 
@@ -644,7 +631,6 @@ function loadFormula() {
   catch(e) { alert('Parse error: ' + e.message); return; }
   initState(tree);
   document.getElementById('mainGrid').style.display = '';
-  document.getElementById('histCard').style.display = '';
   renderAll();
 }
 
@@ -657,7 +643,6 @@ function renderAll() {
   renderTree();
   renderClauses();
   renderButtons();
-  renderHistory();
   renderStats();
   renderStatus();
   renderRuleTable();
@@ -706,19 +691,6 @@ function renderStatus() {
   el.innerHTML = '<div class="status-sat">✓ Transformation Complete — CNF generated with ' + S.clauses.length + ' clause(s)</div>';
 }
 
-function renderHistory() {
-  if(!S) return;
-  const list = document.getElementById('histList');
-  list.innerHTML = '';
-  [...S.history].reverse().forEach((snap, ri) => {
-    const i = S.history.length - 1 - ri;
-    if(snap.kind==='snapshot') return; // skip raw snapshots — but we repurpose them
-    const div = document.createElement('div');
-    div.className = 'hist-item h-' + snap.kind;
-    div.innerHTML = '<div class="h-step">Step '+(i+1)+'</div><div class="h-text">'+escHtml(snap.label)+'</div>';
-    list.appendChild(div);
-  });
-}
 
 function renderClauses() {
   if(!S) return;
