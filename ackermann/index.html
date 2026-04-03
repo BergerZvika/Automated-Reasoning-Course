@@ -249,6 +249,21 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 
 </div><!-- wrap -->
 
+<!-- File Viewer Modal -->
+<div class="overlay" id="fileViewerOv">
+  <div class="modal" style="max-width:800px;width:95%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Consolas',monospace" id="fvFilename"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-g btn-sm" id="fvCopyBtn" onclick="fvCopy()">📋 Copy</button>
+        <button class="btn btn-g btn-sm" onclick="fvDownload()">↓ Download</button>
+        <button class="btn btn-g btn-sm" onclick="closeFileViewer()">✕ Close</button>
+      </div>
+    </div>
+    <pre id="fvContent" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;overflow:auto;max-height:62vh;font-family:'Consolas','Courier New',monospace;font-size:12px;line-height:1.6;color:var(--text);white-space:pre;margin:0;tab-size:4"></pre>
+  </div>
+</div>
+
 <div class="files-section">
   <div class="files-section-title">Lab Files</div>
 
@@ -281,15 +296,67 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 </div>
 
 <script>
-// ── LAB FILE BUTTONS (download + load benchmark) ──────────────────────────────
-function downloadFile(url,filename){
-  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+// ── FILE VIEWER + DOWNLOAD ─────────────────────────────────────────────────────
+let _fvUrl='',_fvFilename='';
+
+function openFileViewer(url,filename){
+  _fvUrl=url;_fvFilename=filename;
+  document.getElementById('fvFilename').textContent=filename;
+  const lf=window.LAB_FILES;
+  const content=lf&&(lf[url]!==undefined?lf[url]:(lf[filename]!==undefined?lf[filename]:undefined));
+  if(content!==undefined){
+    document.getElementById('fvContent').textContent=content;
+    document.getElementById('fileViewerOv').classList.add('show');
+  } else {
+    fetch(url).then(r=>r.text()).then(t=>{
+      document.getElementById('fvContent').textContent=t;
+      document.getElementById('fileViewerOv').classList.add('show');
+    }).catch(e=>alert('Could not load file: '+e.message));
+  }
 }
+
+function closeFileViewer(){document.getElementById('fileViewerOv').classList.remove('show');}
+
+function fvCopy(){
+  const text=document.getElementById('fvContent').textContent;
+  const btn=document.getElementById('fvCopyBtn');
+  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>{
+    btn.textContent='✓ Copied!';setTimeout(()=>{btn.textContent='📋 Copy';},2000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');btn.textContent='✓ Copied!';setTimeout(()=>{btn.textContent='📋 Copy';},2000);}catch(e){}
+    document.body.removeChild(ta);
+  });
+}
+
+function fvDownload(){
+  const content=document.getElementById('fvContent').textContent;
+  const blob=new Blob([content],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=_fvFilename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
+}
+
+function downloadFile(url,filename){
+  const lf=window.LAB_FILES;
+  const content=lf&&(lf[url]!==undefined?lf[url]:(lf[filename]!==undefined?lf[filename]:undefined));
+  if(content!==undefined){
+    const blob=new Blob([content],{type:'text/plain'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
+    return;
+  }
+  fetch(url).then(r=>r.blob()).then(blob=>{
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(a.href);
+  }).catch(e=>alert('Download failed: '+e.message));
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('a.file-row').forEach(function(row){
     const href=row.getAttribute('href');if(!href)return;
     const filename=href.split('/').pop();
     const ext=filename.split('.').pop().toLowerCase();
+    row.addEventListener('click',function(e){e.preventDefault();openFileViewer(href,filename);});
     const dlBtn=document.createElement('button');
     dlBtn.className='file-dl';dlBtn.textContent='↓ Download';
     dlBtn.onclick=function(e){e.preventDefault();e.stopPropagation();downloadFile(href,filename);};
@@ -303,6 +370,8 @@ document.addEventListener('DOMContentLoaded',function(){
       row.appendChild(loadBtn);
     }
   });
+  const fvOv=document.getElementById('fileViewerOv');
+  if(fvOv)fvOv.addEventListener('click',function(e){if(e.target===this)closeFileViewer();});
 });
 function togglePanel(hdr){
   hdr.classList.toggle('open');
