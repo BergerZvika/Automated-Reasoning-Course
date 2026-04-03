@@ -48,8 +48,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
 .badge-smt2{background:#0f2233;color:#60a5fa}
 .badge-cnf{background:#1e1030;color:#c084fc}
 .file-view{font-size:.7rem;font-weight:600;color:#6366f1;padding:2px 9px;border:1px solid rgba(99,102,241,.25);border-radius:5px;white-space:nowrap;transition:background .15s}
-.file-dl{font-size:.65rem;font-weight:600;color:#22c55e;padding:2px 8px;border:1px solid rgba(34,197,94,.25);border-radius:5px;white-space:nowrap;background:transparent;cursor:pointer;transition:background .15s;font-family:inherit}
-.file-row:hover .file-dl{background:rgba(34,197,94,.12)}
 .file-load{font-size:.65rem;font-weight:600;color:#f59e0b;padding:2px 8px;border:1px solid rgba(245,158,11,.25);border-radius:5px;white-space:nowrap;background:transparent;cursor:pointer;transition:background .15s;font-family:inherit}
 .file-row:hover .file-load{background:rgba(245,158,11,.12)}
 .file-row:hover .file-view{background:rgba(99,102,241,.12)}
@@ -571,10 +569,6 @@ document.addEventListener('DOMContentLoaded',function(){
     const filename=href.split('/').pop();
     const ext=filename.split('.').pop().toLowerCase();
     row.addEventListener('click',function(e){e.preventDefault();openFileViewer(href,filename);});
-    const dlBtn=document.createElement('button');
-    dlBtn.className='file-dl';dlBtn.textContent='↓ Download';
-    dlBtn.onclick=function(e){e.preventDefault();e.stopPropagation();downloadFile(href,filename);};
-    row.appendChild(dlBtn);
     const isBenchmark=href.includes('benchmark');
     const isLoadable=ext==='cnf'||ext==='smt2';
     if(isBenchmark&&isLoadable&&typeof loadBenchmark==='function'){
