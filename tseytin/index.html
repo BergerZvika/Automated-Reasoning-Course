@@ -690,6 +690,7 @@ function renderStatus() {
   el.innerHTML =
     '<div class="status-sat">' +
       '<div>✓ Transformation Complete — CNF generated with ' + S.clauses.length + ' clause(s)</div>' +
+      '<div style="font-size:13px;font-weight:400;margin-top:8px;opacity:.85">You can send this formula to a SAT solver:</div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px">' +
         '<button class="btn btn-ghost btn-sm" style="border-color:var(--green-bd);color:var(--green)" onclick="sendToSolver(\'dpll\')">⊢ DPLL</button>' +
         '<button class="btn btn-ghost btn-sm" style="border-color:var(--green-bd);color:var(--green)" onclick="sendToSolver(\'basic-cdcl\')">⊢ Basic CDCL</button>' +
