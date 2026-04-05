@@ -238,6 +238,20 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <div class="hist-list" id="histList"></div>
 </div>
 
+<!-- Send to SAT Solver -->
+<div class="card" id="satCard" style="display:none">
+  <div class="card-title">
+    <span>Send B to SAT Solver</span>
+    <span id="satClauseBadge" class="badge badge-green" style="font-size:11px"></span>
+  </div>
+  <p class="info-text" style="margin-bottom:14px">B is a pure propositional CNF formula. Choose a SAT solver to load it into:</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn btn-ghost" onclick="sendToSolver('dpll')">⊢ DPLL</button>
+    <button class="btn btn-ghost" onclick="sendToSolver('basic-cdcl')">⊢ Basic CDCL</button>
+    <button class="btn btn-ghost" onclick="sendToSolver('cdcl')">⊢ CDCL</button>
+  </div>
+</div>
+
 </div><!-- wrap -->
 
 <script>
@@ -888,6 +902,24 @@ function renderAll(){
   if(G.current===G.frames.length-1){
     const rb=document.getElementById('resultBadge');rb.style.display='';
     rb.className='badge badge-green';rb.textContent='DONE';
+    document.getElementById('satCard').style.display='';
+    // Compute clause count for badge
+    try{
+      const src=document.getElementById('formulaInput').value.trim();
+      const w=parseInt(document.getElementById('widthSel').value)||4;
+      const ast2=parseFormula(src);
+      const{termList:tl,atomList:al}=collectAll(ast2);
+      if(!tl.some(t=>t.type==='bvmul')){
+        const vn=collectVarNames(ast2);
+        const{nameMap:nm,atomVarList:av}=assignNames(tl,al,vn,w);
+        const bvm=buildBitVarMap(tl,nm,w);
+        const cls=generateSATFormula(ast2,tl,al,av,bvm,w);
+        const badge=document.getElementById('satClauseBadge');
+        if(badge)badge.textContent=cls.length+' clauses';
+      }
+    }catch(e){}
+  } else {
+    document.getElementById('satCard').style.display='none';
   }
 
   document.getElementById('stepCounter').textContent=`Step ${G.current+1} / ${G.frames.length}`;
@@ -924,6 +956,123 @@ function downloadHistory(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));
   a.download='bit-blasting-history.txt';a.click();URL.revokeObjectURL(a.href);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CNF GENERATION FOR SAT SOLVER
+// ═══════════════════════════════════════════════════════════════════
+function generateSATFormula(ast, termList, atomList, atomVarList, bvMap, width){
+  const clauses=[];
+  let _fc=0;
+  const fresh=()=>'_t'+(++_fc);
+  const SUB='₀₁₂₃₄₅₆₇₈₉';
+  const toA=s=>s.split('').map(c=>{const i=SUB.indexOf(c);return i>=0?String(i):c;}).join('');
+  const aAV=atomVarList.map(toA);
+  const aBV=new Map();
+  bvMap.forEach((bits,k)=>aBV.set(k,bits.map(toA)));
+  const NOT=lit=>lit[0]==='!'?lit.slice(1):'!'+lit;
+  const cl=(...lits)=>clauses.push(lits);
+
+  function xorEq(p,q,r){cl(NOT(r),p,q);cl(NOT(r),NOT(p),NOT(q));cl(r,p,NOT(q));cl(r,NOT(p),q);}
+  function andEq(p,q,r){cl(NOT(p),NOT(q),r);cl(NOT(r),p);cl(NOT(r),q);}
+  function orEq(p,q,r){cl(NOT(p),r);cl(NOT(q),r);cl(p,q,NOT(r));}
+  function iffEq(p,q,r){cl(NOT(r),NOT(p),q);cl(NOT(r),p,NOT(q));cl(r,p,q);cl(r,NOT(p),NOT(q));}
+
+  function encodeFormula(node){
+    if(node.type==='atom'){const idx=atomList.findIndex(a=>atomKey(a)===atomKey(node.atom));return aAV[idx];}
+    if(node.type==='prop_not')return NOT(encodeFormula(node.child));
+    if(node.type==='prop_and'){
+      const cs=node.children.map(encodeFormula);if(cs.length===1)return cs[0];
+      const v=fresh();cs.forEach(ci=>cl(NOT(v),ci));cl(v,...cs.map(NOT));return v;
+    }
+    if(node.type==='prop_or'){
+      const cs=node.children.map(encodeFormula);if(cs.length===1)return cs[0];
+      const v=fresh();cs.forEach(ci=>cl(NOT(ci),v));cl(NOT(v),...cs);return v;
+    }
+    return fresh();
+  }
+  function assertNode(node){
+    if(node.type==='prop_and'){node.children.forEach(assertNode);return;}
+    cl(encodeFormula(node));
+  }
+  assertNode(ast);
+
+  atomList.forEach((atom,idx)=>{
+    const v=aAV[idx];
+    const lb=aBV.get(termKey(atom.left));
+    const rb=aBV.get(termKey(atom.right));
+    const eqs=lb.map((_,i)=>{const eq=fresh();iffEq(lb[i],rb[i],eq);return eq;});
+    if(atom.type==='eq'){eqs.forEach(eq=>cl(NOT(v),eq));cl(v,...eqs.map(NOT));}
+    else{eqs.forEach(eq=>cl(v,eq));cl(NOT(v),...eqs.map(NOT));}
+  });
+
+  termList.forEach(t=>{
+    const bits=aBV.get(termKey(t));
+    if(t.type==='var'){
+      // free
+    }else if(t.type==='bvconst'||t.type==='bvnum'){
+      const ba=constBits(t,width);
+      if(ba)ba.forEach((b,i)=>cl(b==='1'?bits[i]:NOT(bits[i])));
+    }else if(t.type==='bvnot'){
+      const ab=aBV.get(termKey(t.arg));
+      bits.forEach((r,i)=>{cl(r,ab[i]);cl(NOT(r),NOT(ab[i]));});
+    }else if(t.type==='bvand'){
+      const lb=aBV.get(termKey(t.left)),rb=aBV.get(termKey(t.right));
+      bits.forEach((r,i)=>andEq(lb[i],rb[i],r));
+    }else if(t.type==='bvor'){
+      const lb=aBV.get(termKey(t.left)),rb=aBV.get(termKey(t.right));
+      bits.forEach((r,i)=>orEq(lb[i],rb[i],r));
+    }else if(t.type==='bvxor'){
+      const lb=aBV.get(termKey(t.left)),rb=aBV.get(termKey(t.right));
+      bits.forEach((r,i)=>xorEq(lb[i],rb[i],r));
+    }else if(t.type==='bvadd'||t.type==='bvsub'){
+      const lb=aBV.get(termKey(t.left));
+      const rbRaw=aBV.get(termKey(t.right));
+      const isSub=t.type==='bvsub';
+      let prevCarry=null;
+      for(let i=0;i<width;i++){
+        const b=isSub?NOT(rbRaw[i]):rbRaw[i];
+        const r=bits[i];
+        if(prevCarry===null){
+          xorEq(lb[i],b,r);
+          if(i<width-1){const co=fresh();andEq(lb[i],b,co);prevCarry=co;}
+        }else{
+          const xb=fresh();xorEq(lb[i],b,xb);xorEq(xb,prevCarry,r);
+          if(i<width-1){
+            const w1=fresh(),w2=fresh(),co=fresh();
+            andEq(lb[i],b,w1);andEq(xb,prevCarry,w2);orEq(w1,w2,co);prevCarry=co;
+          }
+        }
+      }
+    }
+    // bvmul: skipped (too complex)
+  });
+  return clauses;
+}
+
+function sendToSolver(solver){
+  if(!G.frames.length)return;
+  const src=document.getElementById('formulaInput').value.trim();
+  const width=parseInt(document.getElementById('widthSel').value)||4;
+  let ast;
+  try{ast=parseFormula(src);}catch(e){alert('Parse error: '+e.message);return;}
+  const{termList,atomList}=collectAll(ast);
+  if(termList.some(t=>t.type==='bvmul')){
+    alert('Formulas with multiplication are too complex for the interactive SAT solver.\nTry a simpler formula (addition, bitwise ops, or equality).');
+    return;
+  }
+  const varNames=collectVarNames(ast);
+  const{nameMap,atomVarList}=assignNames(termList,atomList,varNames,width);
+  const bvMap=buildBitVarMap(termList,nameMap,width);
+  const clauses=generateSATFormula(ast,termList,atomList,atomVarList,bvMap,width);
+  const formulaStr=clauses.map(c=>c.length===1?c[0]:'('+c.join(' || ')+')').join('\n');
+  const badge=document.getElementById('satClauseBadge');
+  if(badge)badge.textContent=clauses.length+' clauses';
+  const urls={dpll:'../dpll/index.html','basic-cdcl':'../basic-cdcl/index.html',cdcl:'../cdcl/index.html'};
+  const inputIds={dpll:'formulaInput','basic-cdcl':'fi',cdcl:'fi'};
+  sessionStorage.setItem('bb_cnf',formulaStr);
+  sessionStorage.setItem('bb_input_id',inputIds[solver]);
+  window.location.href=urls[solver];
 }
 
 buildExamples();

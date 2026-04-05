@@ -1845,14 +1845,21 @@ document.getElementById('heurOv').addEventListener('click',e=>{if(e.target===e.c
 document.getElementById('resultOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeResult();});
 document.getElementById('fi').addEventListener('keydown',e=>{if(e.key==='Enter')loadFormula();});
 
-// Boot — accept formula forwarded from DPLL(T) via localStorage
-const _bcIncoming = localStorage.getItem('basic_cdcl_formula');
-if (_bcIncoming) {
-  document.getElementById('fi').value = _bcIncoming;
-  localStorage.removeItem('basic_cdcl_formula');
+// Boot — accept formula forwarded from bit-blasting (sessionStorage) or DPLL(T) (localStorage)
+const _bbCnfBC = sessionStorage.getItem('bb_cnf');
+if (_bbCnfBC) {
+  sessionStorage.removeItem('bb_cnf'); sessionStorage.removeItem('bb_input_id');
+  document.getElementById('fi').value = _bbCnfBC;
   loadFormula();
 } else {
-  loadEx('unsat_classic');
+  const _bcIncoming = localStorage.getItem('basic_cdcl_formula');
+  if (_bcIncoming) {
+    document.getElementById('fi').value = _bcIncoming;
+    localStorage.removeItem('basic_cdcl_formula');
+    loadFormula();
+  } else {
+    loadEx('unsat_classic');
+  }
 }
 </script>
 <script id="lab-files-data">
