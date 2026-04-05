@@ -233,6 +233,17 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   </div>
 </div>
 
+<!-- Step History -->
+<div class="card" id="histCard" style="display:none">
+  <div class="card-title">
+    <span>Step History</span>
+    <span style="display:flex;align-items:center;gap:10px">
+      <span id="resultBadge" style="display:none"></span>
+      <button class="btn btn-ghost btn-sm" onclick="downloadHistory()">↓ history.txt</button>
+    </span>
+  </div>
+  <div class="hist-list" id="histList"></div>
+</div>
 
 </div><!-- wrap -->
 
@@ -665,6 +676,9 @@ function runAck(){
 
   // UI
   document.getElementById('ctrlCard').style.display='';
+  document.getElementById('histCard').style.display='';
+  document.getElementById('histList').innerHTML='';
+  document.getElementById('resultBadge').style.display='none';
   document.getElementById('nextBtn').disabled=false;
   document.getElementById('prevBtn').disabled=true;
 
@@ -698,6 +712,22 @@ function renderAll(){
   const act=TRACE_ACTIVE[f.type]||[];
   TRACE_IDS.forEach(id=>document.getElementById('at-'+id).classList.toggle('active',act.includes(id)));
 
+  // History list
+  const list=document.getElementById('histList');list.innerHTML='';
+  G.frames.slice(0,G.current+1).forEach((fr,i)=>{
+    const div=document.createElement('div');
+    div.className='hist-item '+fr.histClass;
+    div.innerHTML=`<div class="h-step">Step ${i+1} — ${fr.title}</div><div class="h-text">${esc(fr.histText)}</div>`;
+    list.appendChild(div);
+  });
+  list.scrollTop=list.scrollHeight;
+
+  // Result badge on last step
+  if(G.current===G.frames.length-1){
+    const rb=document.getElementById('resultBadge');
+    rb.style.display='';rb.className='badge '+f.badgeClass;rb.textContent=f.badge;
+  }
+
   document.getElementById('stepCounter').textContent=`Step ${G.current+1} / ${G.frames.length}`;
   document.getElementById('prevBtn').disabled=G.current<=0;
   document.getElementById('nextBtn').disabled=G.current>=G.frames.length-1;
@@ -719,6 +749,16 @@ function toggleAuto(){
       nextStep();
     },1500);
   }
+}
+
+function downloadHistory(){
+  if(!G.frames.length){alert('No steps yet. Run a formula first.');return;}
+  const src=G.frames[0]?G.frames[0].histText.replace(/^Input:\s*/,''):'';
+  let out=`Ackermanization Step History\nFormula: ${src}\n${'='.repeat(60)}\n\n`;
+  G.frames.forEach((f,i)=>{out+=`Step ${i+1}: ${f.title}\n${'-'.repeat(40)}\n${f.histText}\n\n`;});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));
+  a.download='ackermanization-history.txt';a.click();URL.revokeObjectURL(a.href);
 }
 
 buildExamples();
