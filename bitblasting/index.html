@@ -888,6 +888,7 @@ function renderAll(){
   if(G.current===G.frames.length-1){
     const rb=document.getElementById('resultBadge');rb.style.display='';
     rb.className='badge badge-green';rb.textContent='DONE';
+  }
 
   document.getElementById('stepCounter').textContent=`Step ${G.current+1} / ${G.frames.length}`;
   document.getElementById('prevBtn').disabled=G.current<=0;
