@@ -307,20 +307,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-ap
   </div>
 </div>
 
-<!-- Send to SAT Solver -->
-<div class="card" id="satSolverCard" style="display:none">
-  <div class="card-title">
-    <span>Send CNF to SAT Solver</span>
-    <span id="satClauseCount" style="font-size:11px;color:var(--lime2);font-weight:600"></span>
-  </div>
-  <p style="font-size:13px;color:var(--muted);margin-bottom:14px">The CNF is ready. Choose a SAT solver to load it into:</p>
-  <div style="display:flex;gap:10px;flex-wrap:wrap">
-    <button class="btn btn-ghost" onclick="sendToSolver('dpll')">⊢ DPLL</button>
-    <button class="btn btn-ghost" onclick="sendToSolver('basic-cdcl')">⊢ Basic CDCL</button>
-    <button class="btn btn-ghost" onclick="sendToSolver('cdcl')">⊢ CDCL</button>
-  </div>
-</div>
-
 </div><!-- wrap -->
 
 <!-- Picker overlay -->
@@ -699,19 +685,17 @@ function renderStats() {
 
 function renderStatus() {
   const el = document.getElementById('statusBanner');
-  const sc = document.getElementById('satSolverCard');
-  if(!S||!S.done) {
-    el.style.display='none';
-    if(sc) sc.style.display='none';
-    return;
-  }
+  if(!S||!S.done) { el.style.display='none'; return; }
   el.style.display='';
-  el.innerHTML = '<div class="status-sat">✓ Transformation Complete — CNF generated with ' + S.clauses.length + ' clause(s)</div>';
-  if(sc) {
-    sc.style.display='';
-    const cc = document.getElementById('satClauseCount');
-    if(cc) cc.textContent = S.clauses.length + ' clauses';
-  }
+  el.innerHTML =
+    '<div class="status-sat">' +
+      '<div>✓ Transformation Complete — CNF generated with ' + S.clauses.length + ' clause(s)</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px">' +
+        '<button class="btn btn-ghost btn-sm" style="border-color:var(--green-bd);color:var(--green)" onclick="sendToSolver(\'dpll\')">⊢ DPLL</button>' +
+        '<button class="btn btn-ghost btn-sm" style="border-color:var(--green-bd);color:var(--green)" onclick="sendToSolver(\'basic-cdcl\')">⊢ Basic CDCL</button>' +
+        '<button class="btn btn-ghost btn-sm" style="border-color:var(--green-bd);color:var(--green)" onclick="sendToSolver(\'cdcl\')">⊢ CDCL</button>' +
+      '</div>' +
+    '</div>';
 }
 
 function sendToSolver(solver) {
