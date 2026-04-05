@@ -254,6 +254,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Consolas',monospace" id="fvFilename"></div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-g btn-sm" id="fvCopyBtn" onclick="fvCopy()">📋 Copy</button>
+        <button class="btn btn-g btn-sm" id="fvLoadBtn" onclick="fvLoad()" style="display:none">⤴ Load</button>
         <button class="btn btn-g btn-sm" onclick="fvDownload()">↓ Download</button>
         <button class="btn btn-g btn-sm" onclick="closeFileViewer()">✕ Close</button>
       </div>
@@ -300,6 +301,9 @@ let _fvUrl='',_fvFilename='';
 function openFileViewer(url,filename){
   _fvUrl=url;_fvFilename=filename;
   document.getElementById('fvFilename').textContent=filename;
+  const ext=filename.split('.').pop().toLowerCase();
+  const isLoadable=url.includes('benchmark')&&(ext==='cnf'||ext==='smt2')&&typeof loadBenchmark==='function';
+  document.getElementById('fvLoadBtn').style.display=isLoadable?'':'none';
   const lf=window.LAB_FILES;
   const content=lf&&(lf[url]!==undefined?lf[url]:(lf[filename]!==undefined?lf[filename]:undefined));
   if(content!==undefined){
@@ -314,6 +318,7 @@ function openFileViewer(url,filename){
 }
 
 function closeFileViewer(){document.getElementById('fileViewerOv').classList.remove('show');}
+function fvLoad(){if(typeof loadBenchmark==='function'){loadBenchmark(_fvUrl);closeFileViewer();}}
 
 function fvCopy(){
   const text=document.getElementById('fvContent').textContent;
