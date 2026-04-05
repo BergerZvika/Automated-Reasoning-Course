@@ -716,7 +716,7 @@ function renderStatus() {
 
 function sendToSolver(solver) {
   if(!S||!S.done) return;
-  const formulaStr = S.clauses.map(c => c.text).join('\n');
+  const formulaStr = S.clauses.map(c => c.text).join(',\n');
   const urls = {dpll:'../dpll/index.html','basic-cdcl':'../basic-cdcl/index.html',cdcl:'../cdcl/index.html'};
   const inputIds = {dpll:'formulaInput','basic-cdcl':'fi',cdcl:'fi'};
   sessionStorage.setItem('bb_cnf', formulaStr);
