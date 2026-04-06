@@ -1,5 +1,3 @@
-import warnings
-warnings.filterwarnings("ignore")
 from pysmt.shortcuts import Symbol, And, Equals, Int, is_sat, Portfolio
 from pysmt.typing import BOOL, INT
 from pysmt.logics import QF_BOOL
@@ -14,6 +12,8 @@ def main():
 
     # Use a Portfolio solver strategy
     with Portfolio(["z3"], logic=QF_BOOL) as solver:
+        solver.declare_variable(A)
+        solver.declare_variable(B)
         solver.add_assertion(formula)
 
         # Check satisfiability
