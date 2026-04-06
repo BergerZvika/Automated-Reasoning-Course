@@ -2,3 +2,7 @@ pysmt
 z3-solver
 flask
 flask-cors
+
+# MathSAT (msat) is not on PyPI — installed via build command:
+#   echo y | pysmt-install --msat
+# See render.yaml buildCommand.
