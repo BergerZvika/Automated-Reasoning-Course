@@ -4,5 +4,3 @@ cvc5
 flask
 flask-cors
 
-# MathSAT (msat) requires a binary download + license acceptance:
-#   pysmt-install --msat   (local only, not available in cloud sandboxes)
