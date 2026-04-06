@@ -168,34 +168,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 .tline.success{color:#4ade80}
 .tline.info{color:#60a5fa}
 
-/* ── LOADING OVERLAY ── */
-#loadingOv{
-  position:fixed;inset:0;background:rgba(13,17,23,.94);
-  backdrop-filter:blur(4px);z-index:9999;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-}
-#loadingOv.hidden{display:none}
-.spinner{
-  width:42px;height:42px;border-radius:50%;
-  border:3px solid var(--border);border-top-color:var(--blue);
-  animation:spin .7s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.ov-title{font-size:16px;font-weight:700;color:var(--text)}
-.ov-sub{font-size:13px;color:var(--muted);max-width:360px;text-align:center}
-.ov-progress{width:300px;height:4px;background:var(--border);border-radius:4px;overflow:hidden}
-.ov-bar{height:100%;background:var(--blue);border-radius:4px;transition:width .4s ease;width:0%}
 </style>
 </head>
 <body>
-
-<!-- Loading overlay -->
-<div id="loadingOv">
-  <div class="spinner"></div>
-  <div class="ov-title">Setting up Python Environment</div>
-  <div class="ov-progress"><div class="ov-bar" id="ovBar"></div></div>
-  <div class="ov-sub" id="ovMsg">Loading Pyodide runtime…</div>
-</div>
 
 <!-- Header -->
 <div class="hdr">
@@ -229,11 +204,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
     <!-- Toolbar -->
     <div id="toolbar">
       <span id="filename">hello_world.py</span>
-      <button class="btn-run" id="runBtn" disabled>▶ Run</button>
+      <button class="btn-run" id="runBtn">▶ Run</button>
       <span class="kbd-hint">Ctrl+Enter</span>
       <button class="btn-clear" id="clearBtn">⌫ Clear</button>
-      <button class="btn-reset" id="resetBtn" title="Reset Python kernel (clears all variables)">↺ Reset</button>
-      <span id="pyStatus">⏳ Loading…</span>
+      <span id="pyStatus">● Piston ready</span>
     </div>
 
     <!-- Monaco editor -->
@@ -251,8 +225,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
   </div>
 </div>
 
-<!-- Scripts: Pyodide first, then Monaco, then logic -->
-<script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
 <script>
 // ── EXAMPLES ──────────────────────────────────────────────────────────────────
@@ -610,106 +582,61 @@ function initMonaco() {
   });
 }
 
-// ── PYODIDE ───────────────────────────────────────────────────────────────────
-let pyReady = false;
-let pyodideInstance = null;
+// ── PISTON EXECUTION ─────────────────────────────────────────────────────────
+const PISTON_URL = 'https://emkc.org/api/v2/piston/execute';
 
-function setProgress(pct, msg) {
-  document.getElementById('ovBar').style.width = pct + '%';
-  document.getElementById('ovMsg').textContent = msg;
-}
-
-async function initPyodide() {
-  const statusEl = document.getElementById('pyStatus');
-  try {
-    setProgress(10, 'Loading Pyodide runtime (may take ~30s on first visit)…');
-    pyodideInstance = await loadPyodide();
-
-    setProgress(35, 'Loading z3-solver (large package — please wait)…');
-    await pyodideInstance.loadPackage('z3-solver');
-
-    setProgress(70, 'Loading micropip…');
-    await pyodideInstance.loadPackage('micropip');
-
-    setProgress(80, 'Installing pysmt…');
-    await pyodideInstance.runPythonAsync(
-      `import micropip; await micropip.install('pysmt')`
-    );
-
-    setProgress(95, 'Warming up PySMT…');
-    // Redirect stdout / stderr
-    pyodideInstance.setStdout({ batched: t => appendLine(t, 'stdout') });
-    pyodideInstance.setStderr({ batched: t => appendLine(t, 'stderr') });
-
-    await pyodideInstance.runPythonAsync(
-      `from pysmt.shortcuts import Symbol\nfrom pysmt.typing import BOOL\n_ = Symbol("_w", BOOL)\nprint("✓ PySMT ready — z3 backend loaded")`
-    );
-
-    setProgress(100, 'Ready!');
-    pyReady = true;
-    statusEl.textContent = '● Python ready';
-    statusEl.className = 'ready';
-    document.getElementById('runBtn').disabled = false;
-    document.getElementById('loadingOv').classList.add('hidden');
-
-  } catch (err) {
-    statusEl.textContent = '✕ Load failed';
-    statusEl.className = 'error';
-    document.getElementById('ovMsg').textContent =
-      'Error: ' + (err.message || String(err));
-    console.error(err);
-    // Still hide overlay so users can at least view code
-    setTimeout(() => document.getElementById('loadingOv').classList.add('hidden'), 3000);
-    appendLine('Failed to load Python environment: ' + (err.message || err), 'stderr');
-  }
-}
-
-// ── RUN ───────────────────────────────────────────────────────────────────────
 async function runCode() {
-  if (!pyReady || !window._editor) return;
+  if (!window._editor) return;
   const code = window._editor.getValue();
   const runBtn = document.getElementById('runBtn');
+  const statusEl = document.getElementById('pyStatus');
 
   runBtn.disabled = true;
   runBtn.textContent = '⏳ Running…';
   runBtn.classList.add('running');
+  statusEl.textContent = '⏳ Running…';
+  statusEl.className = 'loading';
   appendLine('─'.repeat(48), 'system');
 
   try {
-    await pyodideInstance.runPythonAsync(code);
+    const resp = await fetch(PISTON_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        language: 'python',
+        version: '*',
+        files: [{ name: 'main.py', content: code }],
+        run_timeout: 30000,
+      })
+    });
+
+    if (!resp.ok) throw new Error('Piston API returned ' + resp.status);
+    const result = await resp.json();
+    const run = result.run || {};
+
+    if (run.stdout) appendLine(run.stdout.replace(/\n$/, ''), 'stdout');
+    if (run.stderr) appendLine(run.stderr.replace(/\n$/, ''), 'stderr');
+    if (!run.stdout && !run.stderr) appendLine('(no output)', 'system');
+
+    const ok = run.code === 0;
+    statusEl.textContent = ok ? '✓ Done' : '✕ Exited ' + run.code;
+    statusEl.className = ok ? 'ready' : 'error';
+
   } catch (err) {
-    appendLine(err.message || String(err), 'stderr');
+    appendLine('Network error: ' + (err.message || err), 'stderr');
+    appendLine('Tip: pysmt needs z3-solver — run locally with: pip install pysmt z3-solver', 'info');
+    statusEl.textContent = '✕ Error';
+    statusEl.className = 'error';
   }
 
+  setTimeout(() => {
+    statusEl.textContent = '● Piston ready';
+    statusEl.className = 'ready';
+  }, 4000);
   runBtn.disabled = false;
   runBtn.textContent = '▶ Run';
   runBtn.classList.remove('running');
 }
-
-document.getElementById('runBtn').onclick = runCode;
-
-// ── RESET KERNEL ──────────────────────────────────────────────────────────────
-document.getElementById('resetBtn').onclick = async () => {
-  if (!pyReady) return;
-  try {
-    // Clear all user-defined globals by running in a fresh dict isn't easy,
-    // so we delete keys added since init
-    await pyodideInstance.runPythonAsync(`
-import sys
-# Remove user modules (keep builtins and installed packages)
-_keep = set(sys.stdlib_module_names) | {"micropip","pysmt","z3","six"}
-for k in list(globals().keys()):
-    if not k.startswith("_") and k not in _keep:
-        try:
-            del globals()[k]
-        except:
-            pass
-print("✓ Kernel reset — all variables cleared")
-`);
-  } catch (e) {
-    appendLine('Reset error: ' + e, 'stderr');
-  }
-};
 
 // ── RESIZE TERMINAL ───────────────────────────────────────────────────────────
 (function () {
@@ -735,9 +662,16 @@ print("✓ Kernel reset — all variables cleared")
 })();
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('runBtn').onclick = runCode;
+document.getElementById('pyStatus').className = 'ready';
+
 buildSidebar();
 initMonaco();
-initPyodide();
+
+// Show startup hint
+appendLine('PySMT Tutorial — code runs via Piston API (remote Python sandbox)', 'info');
+appendLine('Note: pysmt + z3-solver require local install — see below if you get ImportError', 'system');
+appendLine('  pip install pysmt z3-solver', 'system');
 </script>
 </body>
 </html>
