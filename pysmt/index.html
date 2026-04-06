@@ -625,17 +625,15 @@ async function initPyodide() {
     setProgress(10, 'Loading Pyodide runtime (may take ~30s on first visit)…');
     pyodideInstance = await loadPyodide();
 
-    setProgress(35, 'Loading micropip…');
-    await pyodideInstance.loadPackage('micropip');
+    setProgress(35, 'Loading z3-solver (large package — please wait)…');
+    await pyodideInstance.loadPackage('z3-solver');
 
-    setProgress(50, 'Installing z3-solver (large package — please wait)…');
-    await pyodideInstance.runPythonAsync(
-      `import micropip; await micropip.install('z3-solver')`
-    );
+    setProgress(70, 'Loading micropip…');
+    await pyodideInstance.loadPackage('micropip');
 
     setProgress(80, 'Installing pysmt…');
     await pyodideInstance.runPythonAsync(
-      `await micropip.install('pysmt')`
+      `import micropip; await micropip.install('pysmt')`
     );
 
     setProgress(95, 'Warming up PySMT…');
