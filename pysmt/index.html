@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PySMT — Interactive Tutorial</title>
+<style>
+:root{
+  --bg:#0d1117;--surface:#161b27;--surface2:#1e2535;--border:#2a3148;
+  --text:#e2e8f0;--muted:#8892a4;
+  --blue:#3b82f6;--blue2:#60a5fa;
+  --violet:#8b5cf6;--violet2:#a78bfa;
+  --green:#22c55e;--green-bg:rgba(34,197,94,.12);--green-bd:rgba(34,197,94,.35);
+  --red:#ef4444;--yellow:#f59e0b;
+  --hdr-h:80px;--toolbar-h:44px;--sidebar-w:250px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+
+/* ── HEADER ── */
+.hdr{
+  height:var(--hdr-h);
+  background:linear-gradient(135deg,#0d2052 0%,#1a3a8f 35%,#1e4ec8 60%,#0d2052 100%);
+  padding:0 28px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.hdr-left h1{
+  font-size:22px;font-weight:800;letter-spacing:-.4px;
+  background:linear-gradient(90deg,#bfdbfe,#93c5fd,#60a5fa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hdr-left p{color:var(--muted);font-size:13px;margin-top:3px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.hdr-badge{
+  background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);
+  color:var(--blue2);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;
+  white-space:nowrap;
+}
+.hdr-home{
+  color:var(--muted);text-decoration:none;font-size:13px;
+  padding:5px 12px;border:1px solid var(--border);border-radius:8px;
+  transition:color .15s,border-color .15s;
+}
+.hdr-home:hover{color:var(--text);border-color:var(--muted)}
+
+/* ── LAYOUT ── */
+#app{
+  display:flex;
+  height:calc(100vh - var(--hdr-h));
+}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sb-hdr{
+  padding:13px 14px 10px;font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.sb-list{flex:1;overflow-y:auto;padding:6px 0}
+.ex-btn{
+  display:block;width:100%;text-align:left;
+  padding:9px 14px;background:none;border:none;cursor:pointer;
+  color:var(--text);font-size:13px;line-height:1.4;
+  border-left:3px solid transparent;transition:background .1s;
+}
+.ex-btn:hover{background:var(--surface2)}
+.ex-btn.active{background:rgba(59,130,246,.1);border-left-color:var(--blue);color:var(--blue2)}
+.ex-btn .ex-name{font-weight:600}
+.ex-btn .ex-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.ex-btn.active .ex-desc{color:#93c5fd}
+
+.sb-sep{height:1px;background:var(--border);margin:6px 0}
+
+.sb-info{
+  padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0;
+}
+.sb-info-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px}
+.sb-info p{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:4px}
+.sb-info a{color:var(--blue2);text-decoration:none}
+.sb-info a:hover{text-decoration:underline}
+
+/* ── WORKSPACE ── */
+#workspace{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:#1e1e1e;
+}
+
+/* ── TOOLBAR ── */
+#toolbar{
+  height:var(--toolbar-h);flex-shrink:0;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 14px;gap:10px;
+}
+#filename{
+  font-family:'Consolas','Courier New',monospace;font-size:12.5px;
+  color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.btn-run{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 16px;background:var(--green);color:#000;
+  border:none;border-radius:7px;font-size:13px;font-weight:700;
+  cursor:pointer;transition:opacity .15s;white-space:nowrap;flex-shrink:0;
+}
+.btn-run:hover:not(:disabled){opacity:.85}
+.btn-run:disabled{opacity:.35;cursor:not-allowed}
+.btn-run.running{background:var(--yellow)}
+.btn-clear{
+  padding:5px 11px;background:transparent;border:1px solid var(--border);
+  border-radius:6px;color:var(--muted);font-size:12px;cursor:pointer;
+  transition:border-color .15s,color .15s;white-space:nowrap;flex-shrink:0;
+}
+.btn-clear:hover{border-color:var(--muted);color:var(--text)}
+.btn-reset{
+  padding:5px 11px;background:transparent;border:1px solid var(--border);
+  border-radius:6px;color:var(--muted);font-size:12px;cursor:pointer;
+  transition:border-color .15s,color .15s;white-space:nowrap;flex-shrink:0;
+}
+.btn-reset:hover{border-color:var(--red);color:var(--red)}
+#pyStatus{font-size:12px;color:var(--yellow);white-space:nowrap;flex-shrink:0}
+#pyStatus.ready{color:var(--green)}
+#pyStatus.error{color:var(--red)}
+.kbd-hint{
+  font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;
+  font-family:'Consolas',monospace;
+}
+
+/* ── EDITOR ── */
+#editorWrap{flex:1;min-height:100px;overflow:hidden}
+
+/* ── RESIZE ── */
+#resizeHandle{
+  height:5px;flex-shrink:0;background:var(--border);cursor:ns-resize;
+  transition:background .15s;
+}
+#resizeHandle:hover,#resizeHandle.dragging{background:var(--blue)}
+
+/* ── TERMINAL ── */
+#terminal{
+  height:220px;min-height:60px;flex-shrink:0;
+  background:#0d1117;border-top:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.term-hdr{
+  height:28px;flex-shrink:0;background:var(--surface2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 14px;
+  font-size:11px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);gap:8px;
+}
+.term-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+#termOutput{
+  flex:1;overflow-y:auto;
+  padding:8px 14px;
+  font-family:'Consolas','Courier New',monospace;
+  font-size:12.5px;line-height:1.65;
+}
+.tline{white-space:pre-wrap;word-break:break-all}
+.tline.stdout{color:#e2e8f0}
+.tline.stderr{color:#f87171}
+.tline.system{color:#6b7280;font-style:italic}
+.tline.success{color:#4ade80}
+.tline.info{color:#60a5fa}
+
+/* ── LOADING OVERLAY ── */
+#loadingOv{
+  position:fixed;inset:0;background:rgba(13,17,23,.94);
+  backdrop-filter:blur(4px);z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+#loadingOv.hidden{display:none}
+.spinner{
+  width:42px;height:42px;border-radius:50%;
+  border:3px solid var(--border);border-top-color:var(--blue);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ov-title{font-size:16px;font-weight:700;color:var(--text)}
+.ov-sub{font-size:13px;color:var(--muted);max-width:360px;text-align:center}
+.ov-progress{width:300px;height:4px;background:var(--border);border-radius:4px;overflow:hidden}
+.ov-bar{height:100%;background:var(--blue);border-radius:4px;transition:width .4s ease;width:0%}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loadingOv">
+  <div class="spinner"></div>
+  <div class="ov-title">Setting up Python Environment</div>
+  <div class="ov-progress"><div class="ov-bar" id="ovBar"></div></div>
+  <div class="ov-sub" id="ovMsg">Loading Pyodide runtime…</div>
+</div>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>PySMT — Interactive Tutorial</h1>
+    <p>Edit and run PySMT scripts directly in your browser</p>
+  </div>
+  <div class="hdr-right">
+    <span class="hdr-badge">Python · z3 backend</span>
+    <a class="hdr-home" href="../index.html">← Course Home</a>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="sb-hdr">Examples</div>
+    <div class="sb-list" id="sbList"></div>
+    <div class="sb-info">
+      <div class="sb-info-title">Resources</div>
+      <p><a href="https://pysmt.readthedocs.io" target="_blank">PySMT Docs ↗</a></p>
+      <p><a href="https://z3prover.github.io/api/html/namespacez3py.html" target="_blank">Z3 Python API ↗</a></p>
+    </div>
+  </div>
+
+  <!-- Workspace -->
+  <div id="workspace">
+
+    <!-- Toolbar -->
+    <div id="toolbar">
+      <span id="filename">hello_world.py</span>
+      <button class="btn-run" id="runBtn" disabled>▶ Run</button>
+      <span class="kbd-hint">Ctrl+Enter</span>
+      <button class="btn-clear" id="clearBtn">⌫ Clear</button>
+      <button class="btn-reset" id="resetBtn" title="Reset Python kernel (clears all variables)">↺ Reset</button>
+      <span id="pyStatus">⏳ Loading…</span>
+    </div>
+
+    <!-- Monaco editor -->
+    <div id="editorWrap"></div>
+
+    <!-- Resize handle -->
+    <div id="resizeHandle"></div>
+
+    <!-- Terminal -->
+    <div id="terminal">
+      <div class="term-hdr"><span class="term-dot"></span> Output</div>
+      <div id="termOutput"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scripts: Pyodide first, then Monaco, then logic -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+<script>
+// ── EXAMPLES ──────────────────────────────────────────────────────────────────
+const EXAMPLES = [
+  {
+    name: 'Hello World',
+    file: 'pysmt-hello_world.py',
+    desc: 'HELLO = WORLD letter puzzle',
+    code:
+`from pysmt.shortcuts import Symbol, LE, GE, Int, And, Equals, Plus, Solver
+from pysmt.typing import INT
+
+hello = [Symbol(s, INT) for s in "hello"]
+world = [Symbol(s, INT) for s in "world"]
+
+letters = set(hello + world)
+
+domains = And(And(LE(Int(1), l), GE(Int(10), l)) for l in letters)
+
+sum_hello = Plus(hello)
+sum_world = Plus(world)
+
+problem = And(Equals(sum_hello, sum_world),
+              Equals(sum_hello, Int(25)))
+
+formula = And(domains, problem)
+
+print("Serialization of the formula:")
+print(formula)
+print()
+
+with Solver(logic="QF_LIA") as solver:
+    solver.add_assertion(domains)
+    if not solver.solve():
+        print("Domain is not SAT!")
+    else:
+        solver.add_assertion(problem)
+        if solver.solve():
+            for l in sorted(letters, key=str):
+                print("%s = %s" % (l, solver.get_value(l)))
+        else:
+            print("No solution found")
+`
+  },
+  {
+    name: 'Boolean Logic',
+    file: 'pysmt-basic.py',
+    desc: 'SAT check with Boolean symbols',
+    code:
+`from pysmt.shortcuts import Solver, And, Or, Not, Symbol, TRUE
+from pysmt.typing import BOOL
+
+solver = Solver(name="z3")
+
+a = Symbol("a", BOOL)
+b = Symbol("b", BOOL)
+
+v = [Symbol("x" + str(i), BOOL) for i in range(5)]
+
+solver.add_assertion(And(a, b))
+# Try changing to: Not(And(a, b))
+solver.add_assertion(Or(v))
+
+r = solver.check_sat()
+print("Result:", r)
+
+print("\\nModel values:")
+for var in v:
+    val = solver.get_value(var)
+    print("  %s = %s" % (var, val))
+
+a_val = solver.get_value(a)
+print("\\na_val:", a_val)
+print("type of a_val:", type(a_val))
+print("a_val == TRUE():", a_val == TRUE())
+print("a_val.is_true():", a_val.is_true())
+`
+  },
+  {
+    name: 'Linear Arithmetic',
+    file: 'pysmt-lia.py',
+    desc: 'Integer and Real constraints',
+    code:
+`from pysmt.shortcuts import Solver, Symbol, Plus, Equals, Int, Real
+from pysmt.typing import INT, REAL
+
+x = Symbol("x", INT)
+y = Symbol("y", REAL)
+
+# x + 5 = 10
+formula1 = Equals(Plus(x, Int(5)), Int(10))
+# 4.0 < y < 5.0
+formula2 = y < Real(5.0)
+formula3 = y > Real(4.0)
+
+with Solver(name="z3") as solver:
+    solver.add_assertion(formula1)
+    solver.add_assertion(formula2)
+    solver.add_assertion(formula3)
+
+    if solver.solve():
+        model = solver.get_model()
+        print("SAT — model:")
+        print(model)
+    else:
+        print("UNSAT — no solution exists")
+`
+  },
+  {
+    name: 'Quantifiers',
+    file: 'quantifiers.py',
+    desc: 'ForAll and Exists quantifiers',
+    code:
+`from pysmt.shortcuts import (Solver, Symbol, Plus, Int,
+                              ForAll, Exists, LT, GT, And)
+from pysmt.typing import INT
+
+x = Symbol("x", INT)
+
+# ForAll x: x + 1 < x  →  UNSAT
+formula_unsat = ForAll([x], LT(Plus(x, Int(1)), x))
+print("ForAll x: x+1 < x")
+print("Formula:", formula_unsat)
+
+solver = Solver(name="z3")
+solver.add_assertion(formula_unsat)
+print("Result:", solver.check_sat())
+
+solver.reset_assertions()
+
+# Exists x: x > 0 AND x < 5  →  SAT
+formula_sat = Exists([x], And(GT(x, Int(0)), LT(x, Int(5))))
+print("\\nExists x: x > 0 AND x < 5")
+print("Formula:", formula_sat)
+solver.add_assertion(formula_sat)
+print("Result:", solver.check_sat())
+`
+  },
+  {
+    name: 'Uninterpreted Functions',
+    file: 'uf-example.py',
+    desc: 'EUF — congruence closure',
+    code:
+`from pysmt.shortcuts import (Symbol, Equals, And, Not,
+                              Function, get_model, FunctionType)
+from pysmt.typing import INT
+
+# Declare uninterpreted function f: INT -> INT
+ftype = FunctionType(INT, [INT])
+f = Symbol("f", ftype)
+
+x = Symbol("x", INT)
+y = Symbol("y", INT)
+
+fx = Function(f, [x])
+fy = Function(f, [y])
+
+# f(x) = f(y)  AND  x != y  →  SAT (non-injective)
+phi1 = And(Equals(fx, fy), Not(Equals(x, y)))
+print("f(x)=f(y) AND x!=y  →  ", end="")
+m = get_model(phi1, solver_name="z3")
+print("SAT, model:", m if m else "no model")
+
+# f(x) != f(y)  AND  x = y  →  UNSAT (congruence axiom)
+phi2 = And(Not(Equals(fx, fy)), Equals(x, y))
+print("f(x)!=f(y) AND x=y  →  ", end="")
+m2 = get_model(phi2, solver_name="z3")
+print("SAT" if m2 else "UNSAT")
+`
+  },
+  {
+    name: 'Bit-Vectors',
+    file: 'bv-example.py',
+    desc: '8-bit arithmetic with overflow',
+    code:
+`from pysmt.shortcuts import (Symbol, Equals, And, Not,
+                              BVAdd, BVMul, BV, Solver)
+from pysmt.typing import BVType
+
+# 8-bit vectors
+x = Symbol("x", BVType(8))
+y = Symbol("y", BVType(8))
+
+# x + y = 10 (mod 256)
+formula = Equals(BVAdd(x, y), BV(10, 8))
+print("x + y = 10 (8-bit):")
+with Solver(name="z3") as solver:
+    solver.add_assertion(formula)
+    if solver.solve():
+        print("  SAT: x=%s, y=%s" % (
+            solver.get_value(x), solver.get_value(y)))
+    else:
+        print("  UNSAT")
+
+# Overflow: x * y = 0 where x != 0, y != 0
+zero = BV(0, 8)
+overflow = And(
+    Equals(BVMul(x, y), zero),
+    Not(Equals(x, zero)),
+    Not(Equals(y, zero))
+)
+print("\\nx*y=0 (mod 256), x!=0, y!=0 (overflow):")
+with Solver(name="z3") as solver:
+    solver.add_assertion(overflow)
+    if solver.solve():
+        print("  SAT: x=%s, y=%s" % (
+            solver.get_value(x), solver.get_value(y)))
+    else:
+        print("  UNSAT")
+`
+  },
+  {
+    name: 'Incremental Solving',
+    file: 'incremental.py',
+    desc: 'Push/pop and incremental assertions',
+    code:
+`from pysmt.shortcuts import Symbol, And, Or, Not, Int, GT, LT, Equals, Plus
+from pysmt.typing import INT
+
+x = Symbol("x", INT)
+y = Symbol("y", INT)
+
+with __import__('pysmt.shortcuts', fromlist=['Solver']).Solver(name="z3") as s:
+    # Base constraints
+    s.add_assertion(GT(x, Int(0)))   # x > 0
+    s.add_assertion(LT(x, Int(10)))  # x < 10
+    print("Base (0 < x < 10):", s.solve())
+
+    # Push a context and add more
+    s.push()
+    s.add_assertion(Equals(x, Int(5)))  # x = 5
+    print("After push + x=5:", s.solve(),
+          "→ x =", s.get_value(x))
+
+    s.pop()  # undo x=5
+    print("After pop:", s.solve(),
+          "→ x =", s.get_value(x), "(free again)")
+
+    # Try UNSAT
+    s.push()
+    s.add_assertion(GT(x, Int(20)))  # x > 20  conflicts with x < 10
+    print("After push + x>20:", s.solve())
+    s.pop()
+
+    print("After final pop:", s.solve())
+`
+  },
+  {
+    name: 'Scratch Pad',
+    file: 'scratch.py',
+    desc: 'Write your own PySMT code',
+    code:
+`# PySMT Scratch Pad — write your own formulas!
+# Tip: variables persist between runs until you click Reset.
+
+from pysmt.shortcuts import *
+from pysmt.typing import BOOL, INT, REAL, BVType
+
+# Example: create symbols and check satisfiability
+x = Symbol("x", INT)
+y = Symbol("y", INT)
+
+formula = And(x > Int(0), y > Int(0), x + y < Int(5))
+
+print("Formula:", formula)
+
+model = get_model(formula, solver_name="z3")
+if model:
+    print("SAT:", model)
+else:
+    print("UNSAT")
+`
+  },
+];
+
+// ── TERMINAL ──────────────────────────────────────────────────────────────────
+const termEl = document.getElementById('termOutput');
+function appendLine(text, cls = 'stdout') {
+  const lines = String(text).split('\n');
+  lines.forEach((line, i) => {
+    if (i === lines.length - 1 && line === '') return;
+    const d = document.createElement('div');
+    d.className = 'tline ' + cls;
+    d.textContent = line;
+    termEl.appendChild(d);
+  });
+  termEl.scrollTop = termEl.scrollHeight;
+}
+function clearOutput() { termEl.innerHTML = ''; }
+document.getElementById('clearBtn').onclick = clearOutput;
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+let currentIdx = 0;
+function buildSidebar() {
+  const list = document.getElementById('sbList');
+  EXAMPLES.forEach((ex, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'ex-btn' + (i === 0 ? ' active' : '');
+    btn.innerHTML =
+      `<div class="ex-name">${ex.name}</div>` +
+      `<div class="ex-desc">${ex.desc}</div>`;
+    btn.onclick = () => loadExample(i);
+    list.appendChild(btn);
+    if (i === 2) {   // separator before Quantifiers
+      const sep = document.createElement('div');
+      sep.className = 'sb-sep';
+      list.appendChild(sep);
+    }
+  });
+}
+
+function loadExample(i) {
+  currentIdx = i;
+  document.querySelectorAll('.ex-btn').forEach((b, j) =>
+    b.classList.toggle('active', j === i));
+  document.getElementById('filename').textContent = EXAMPLES[i].file;
+  if (window._editor) window._editor.setValue(EXAMPLES[i].code);
+}
+
+// ── MONACO EDITOR ─────────────────────────────────────────────────────────────
+function initMonaco() {
+  require.config({
+    paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' }
+  });
+  require(['vs/editor/editor.main'], function () {
+    window._editor = monaco.editor.create(
+      document.getElementById('editorWrap'),
+      {
+        value: EXAMPLES[0].code,
+        language: 'python',
+        theme: 'vs-dark',
+        fontSize: 13.5,
+        fontFamily: "'JetBrains Mono','Fira Code','Consolas',monospace",
+        fontLigatures: true,
+        lineHeight: 22,
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 4,
+        insertSpaces: true,
+        wordWrap: 'on',
+        renderWhitespace: 'selection',
+        smoothScrolling: true,
+        cursorBlinking: 'smooth',
+        renderLineHighlight: 'all',
+        padding: { top: 10, bottom: 10 },
+        bracketPairColorization: { enabled: true },
+      }
+    );
+    // Ctrl/Cmd + Enter → run
+    window._editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+      () => runCode()
+    );
+  });
+}
+
+// ── PYODIDE ───────────────────────────────────────────────────────────────────
+let pyReady = false;
+let pyodideInstance = null;
+
+function setProgress(pct, msg) {
+  document.getElementById('ovBar').style.width = pct + '%';
+  document.getElementById('ovMsg').textContent = msg;
+}
+
+async function initPyodide() {
+  const statusEl = document.getElementById('pyStatus');
+  try {
+    setProgress(10, 'Loading Pyodide runtime (may take ~30s on first visit)…');
+    pyodideInstance = await loadPyodide();
+
+    setProgress(35, 'Loading micropip…');
+    await pyodideInstance.loadPackage('micropip');
+
+    setProgress(50, 'Installing z3-solver (large package — please wait)…');
+    await pyodideInstance.runPythonAsync(
+      `import micropip; await micropip.install('z3-solver')`
+    );
+
+    setProgress(80, 'Installing pysmt…');
+    await pyodideInstance.runPythonAsync(
+      `await micropip.install('pysmt')`
+    );
+
+    setProgress(95, 'Warming up PySMT…');
+    // Redirect stdout / stderr
+    pyodideInstance.setStdout({ batched: t => appendLine(t, 'stdout') });
+    pyodideInstance.setStderr({ batched: t => appendLine(t, 'stderr') });
+
+    await pyodideInstance.runPythonAsync(
+      `from pysmt.shortcuts import Symbol\nfrom pysmt.typing import BOOL\n_ = Symbol("_w", BOOL)\nprint("✓ PySMT ready — z3 backend loaded")`
+    );
+
+    setProgress(100, 'Ready!');
+    pyReady = true;
+    statusEl.textContent = '● Python ready';
+    statusEl.className = 'ready';
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('loadingOv').classList.add('hidden');
+
+  } catch (err) {
+    statusEl.textContent = '✕ Load failed';
+    statusEl.className = 'error';
+    document.getElementById('ovMsg').textContent =
+      'Error: ' + (err.message || String(err));
+    console.error(err);
+    // Still hide overlay so users can at least view code
+    setTimeout(() => document.getElementById('loadingOv').classList.add('hidden'), 3000);
+    appendLine('Failed to load Python environment: ' + (err.message || err), 'stderr');
+  }
+}
+
+// ── RUN ───────────────────────────────────────────────────────────────────────
+async function runCode() {
+  if (!pyReady || !window._editor) return;
+  const code = window._editor.getValue();
+  const runBtn = document.getElementById('runBtn');
+
+  runBtn.disabled = true;
+  runBtn.textContent = '⏳ Running…';
+  runBtn.classList.add('running');
+  appendLine('─'.repeat(48), 'system');
+
+  try {
+    await pyodideInstance.runPythonAsync(code);
+  } catch (err) {
+    appendLine(err.message || String(err), 'stderr');
+  }
+
+  runBtn.disabled = false;
+  runBtn.textContent = '▶ Run';
+  runBtn.classList.remove('running');
+}
+
+document.getElementById('runBtn').onclick = runCode;
+
+// ── RESET KERNEL ──────────────────────────────────────────────────────────────
+document.getElementById('resetBtn').onclick = async () => {
+  if (!pyReady) return;
+  try {
+    // Clear all user-defined globals by running in a fresh dict isn't easy,
+    // so we delete keys added since init
+    await pyodideInstance.runPythonAsync(`
+import sys
+# Remove user modules (keep builtins and installed packages)
+_keep = set(sys.stdlib_module_names) | {"micropip","pysmt","z3","six"}
+for k in list(globals().keys()):
+    if not k.startswith("_") and k not in _keep:
+        try:
+            del globals()[k]
+        except:
+            pass
+print("✓ Kernel reset — all variables cleared")
+`);
+  } catch (e) {
+    appendLine('Reset error: ' + e, 'stderr');
+  }
+};
+
+// ── RESIZE TERMINAL ───────────────────────────────────────────────────────────
+(function () {
+  const handle = document.getElementById('resizeHandle');
+  const terminal = document.getElementById('terminal');
+  let drag = false, y0 = 0, h0 = 0;
+  handle.addEventListener('mousedown', e => {
+    drag = true; y0 = e.clientY; h0 = terminal.offsetHeight;
+    handle.classList.add('dragging');
+    document.body.style.cssText += ';cursor:ns-resize;user-select:none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const h = Math.max(60, Math.min(h0 + (y0 - e.clientY), window.innerHeight * .75));
+    terminal.style.height = h + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    drag = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+buildSidebar();
+initMonaco();
+initPyodide();
+</script>
+</body>
+</html>
