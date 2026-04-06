@@ -339,37 +339,44 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 // ── EXAMPLES ──────────────────────────────────────────────────────────────────
 const EXAMPLES = [
   {
-    name: 'Boolean Logic',
+    name: 'Basic',
     file: 'pysmt-basic.py',
     desc: 'SAT check with Boolean symbols',
     code:
-`from pysmt.shortcuts import Solver, And, Or, Not, Symbol, TRUE
-from pysmt.typing import BOOL
+`from pysmt.shortcuts import Solver, And, Or, Not, BOOL, Symbol, TRUE
 
 solver = Solver(name="z3")
 
 a = Symbol("a", BOOL)
 b = Symbol("b", BOOL)
 
-v = [Symbol("x" + str(i), BOOL) for i in range(5)]
+v = []
+for i in range(0, 5):
+    v += [ Symbol("x" + str(i), BOOL) ]
 
 solver.add_assertion(And(a, b))
-# Try changing to: Not(And(a, b))
+# solver.add_assertion(Not(And(a, b)))
 solver.add_assertion(Or(v))
-
 r = solver.check_sat()
-print("Result:", r)
-
-print("\\nModel values:")
+print("result: ", r)
+print("********************************")
+print("model values:")
 for var in v:
     val = solver.get_value(var)
-    print("  %s = %s" % (var, val))
+    print(var, ":", val)
+print("********************************")
 
 a_val = solver.get_value(a)
-print("\\na_val:", a_val)
+print("a_val:", a_val)
 print("type of a_val:", type(a_val))
-print("a_val == TRUE():", a_val == TRUE())
-print("a_val.is_true():", a_val.is_true())
+print("********************************")
+
+# a_val is not a Boolean
+print(a_val == True)
+
+# a_val is a pysmt object
+print(a_val == TRUE())
+print(a_val.is_true())
 `
   },
   {
@@ -378,14 +385,12 @@ print("a_val.is_true():", a_val.is_true())
     desc: 'Integer and Real constraints',
     code:
 `from pysmt.shortcuts import Solver, Symbol, Plus, Equals, Int, Real
-from pysmt.typing import INT, REAL
+from pysmt.typing import INT, REAL, BOOL
 
 x = Symbol("x", INT)
 y = Symbol("y", REAL)
 
-# x + 5 = 10
 formula1 = Equals(Plus(x, Int(5)), Int(10))
-# 4.0 < y < 5.0
 formula2 = y < Real(5.0)
 formula3 = y > Real(4.0)
 
@@ -396,172 +401,60 @@ with Solver(name="z3") as solver:
 
     if solver.solve():
         model = solver.get_model()
-        print("SAT — model:")
         print(model)
     else:
-        print("UNSAT — no solution exists")
+        print("No solution exists")
 `
   },
   {
     name: 'Quantifiers',
     file: 'quantifiers.py',
-    desc: 'ForAll and Exists quantifiers',
+    desc: 'ForAll quantifier example',
     code:
-`from pysmt.shortcuts import (Solver, Symbol, Plus, Int,
-                              ForAll, Exists, LT, GT, And)
+`from pysmt.shortcuts import Solver, Symbol, Plus, Int, ForAll, Plus, LT
 from pysmt.typing import INT
 
 x = Symbol("x", INT)
 
-# ForAll x: x + 1 < x  →  UNSAT
-formula_unsat = ForAll([x], LT(Plus(x, Int(1)), x))
-print("ForAll x: x+1 < x")
-print("Formula:", formula_unsat)
+formula = ForAll([x], LT(Plus(x, Int(1)), x))
+print(formula)
 
 solver = Solver(name="z3")
-solver.add_assertion(formula_unsat)
-print("Result:", solver.check_sat())
-
-solver.reset_assertions()
-
-# Exists x: x > 0 AND x < 5  →  SAT
-formula_sat = Exists([x], And(GT(x, Int(0)), LT(x, Int(5))))
-print("\\nExists x: x > 0 AND x < 5")
-print("Formula:", formula_sat)
-solver.add_assertion(formula_sat)
-print("Result:", solver.check_sat())
+solver.add_assertion(formula)
+r = solver.check_sat()
+print("result: ", r)
 `
   },
   {
-    name: 'Uninterpreted Functions',
-    file: 'uf-example.py',
-    desc: 'EUF — congruence closure',
+    name: 'Portfolio',
+    file: 'pysmt_portfolio.py',
+    desc: 'Portfolio solver strategy',
     code:
-`from pysmt.shortcuts import (Symbol, Equals, And, Not,
-                              Function, get_model, FunctionType)
-from pysmt.typing import INT
+`from pysmt.shortcuts import Symbol, And, Equals, Int, is_sat, Portfolio
+from pysmt.typing import BOOL, INT
+from pysmt.logics import QF_BOOL
 
-# Declare uninterpreted function f: INT -> INT
-ftype = FunctionType(INT, [INT])
-f = Symbol("f", ftype)
+def main():
+    # Create Boolean and Integer Symbols
+    A = Symbol("A", BOOL)
+    B = Symbol("B", BOOL)
 
-x = Symbol("x", INT)
-y = Symbol("y", INT)
+    # Build a formula
+    formula = And(A, B)
 
-fx = Function(f, [x])
-fy = Function(f, [y])
+    # Use a Portfolio solver strategy
+    with Portfolio(["z3", "msat"], logic=QF_BOOL) as solver:
+        solver.add_assertion(formula)
 
-# f(x) = f(y)  AND  x != y  →  SAT (non-injective)
-phi1 = And(Equals(fx, fy), Not(Equals(x, y)))
-print("f(x)=f(y) AND x!=y  →  ", end="")
-m = get_model(phi1, solver_name="z3")
-print("SAT, model:", m if m else "no model")
+        # Check satisfiability
+        if solver.solve():
+            model = solver.get_model()
+            print("Satisfiable! The model is:\\n", model)
+        else:
+            print("Unsatisfiable!")
 
-# f(x) != f(y)  AND  x = y  →  UNSAT (congruence axiom)
-phi2 = And(Not(Equals(fx, fy)), Equals(x, y))
-print("f(x)!=f(y) AND x=y  →  ", end="")
-m2 = get_model(phi2, solver_name="z3")
-print("SAT" if m2 else "UNSAT")
-`
-  },
-  {
-    name: 'Bit-Vectors',
-    file: 'bv-example.py',
-    desc: '8-bit arithmetic with overflow',
-    code:
-`from pysmt.shortcuts import (Symbol, Equals, And, Not,
-                              BVAdd, BVMul, BV, Solver)
-from pysmt.typing import BVType
-
-# 8-bit vectors
-x = Symbol("x", BVType(8))
-y = Symbol("y", BVType(8))
-
-# x + y = 10 (mod 256)
-formula = Equals(BVAdd(x, y), BV(10, 8))
-print("x + y = 10 (8-bit):")
-with Solver(name="z3") as solver:
-    solver.add_assertion(formula)
-    if solver.solve():
-        print("  SAT: x=%s, y=%s" % (
-            solver.get_value(x), solver.get_value(y)))
-    else:
-        print("  UNSAT")
-
-# Overflow: x * y = 0 where x != 0, y != 0
-zero = BV(0, 8)
-overflow = And(
-    Equals(BVMul(x, y), zero),
-    Not(Equals(x, zero)),
-    Not(Equals(y, zero))
-)
-print("\\nx*y=0 (mod 256), x!=0, y!=0 (overflow):")
-with Solver(name="z3") as solver:
-    solver.add_assertion(overflow)
-    if solver.solve():
-        print("  SAT: x=%s, y=%s" % (
-            solver.get_value(x), solver.get_value(y)))
-    else:
-        print("  UNSAT")
-`
-  },
-  {
-    name: 'Incremental Solving',
-    file: 'incremental.py',
-    desc: 'Push/pop and incremental assertions',
-    code:
-`from pysmt.shortcuts import Symbol, And, Or, Not, Int, GT, LT, Equals, Plus
-from pysmt.typing import INT
-
-x = Symbol("x", INT)
-y = Symbol("y", INT)
-
-with __import__('pysmt.shortcuts', fromlist=['Solver']).Solver(name="z3") as s:
-    # Base constraints
-    s.add_assertion(GT(x, Int(0)))   # x > 0
-    s.add_assertion(LT(x, Int(10)))  # x < 10
-    print("Base (0 < x < 10):", s.solve())
-
-    # Push a context and add more
-    s.push()
-    s.add_assertion(Equals(x, Int(5)))  # x = 5
-    print("After push + x=5:", s.solve(),
-          "→ x =", s.get_value(x))
-
-    s.pop()  # undo x=5
-    print("After pop:", s.solve(),
-          "→ x =", s.get_value(x), "(free again)")
-
-    # Try UNSAT
-    s.push()
-    s.add_assertion(GT(x, Int(20)))  # x > 20  conflicts with x < 10
-    print("After push + x>20:", s.solve())
-    s.pop()
-
-    print("After final pop:", s.solve())
-`
-  },
-  {
-    name: 'Scratch Pad',
-    file: 'scratch.py',
-    desc: 'Write your own PySMT code',
-    code:
-`# PySMT Scratch Pad — write your own formulas!
-from pysmt.shortcuts import *
-from pysmt.typing import BOOL, INT, REAL, BVType
-
-x = Symbol("x", INT)
-y = Symbol("y", INT)
-
-formula = And(x > Int(0), y > Int(0), x + y < Int(5))
-
-print("Formula:", formula)
-
-model = get_model(formula, solver_name="z3")
-if model:
-    print("SAT:", model)
-else:
-    print("UNSAT")
+if __name__ == '__main__':
+    main()
 `
   },
   {
@@ -634,11 +527,6 @@ function buildSidebar() {
       `<div class="ex-desc">${ex.desc}</div>`;
     btn.onclick = () => loadExample(i);
     list.appendChild(btn);
-    if (i === 2) {
-      const sep = document.createElement('div');
-      sep.className = 'sb-sep';
-      list.appendChild(sep);
-    }
   });
 }
 
