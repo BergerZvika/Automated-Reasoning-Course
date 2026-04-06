@@ -595,9 +595,14 @@ async function runCode() {
   runBtn.disabled = true;
   runBtn.textContent = '⏳ Running…';
   runBtn.classList.add('running');
-  statusEl.textContent = '⏳ Running…';
+  statusEl.textContent = '⏳ Installing pysmt…';
   statusEl.className = 'loading';
   appendLine('─'.repeat(48), 'system');
+  appendLine('Installing pysmt + z3-solver (first run may take ~30 s)…', 'info');
+
+  // Prepend a silent pip install so pysmt is available in the Wandbox sandbox
+  const INSTALL = 'import subprocess, sys\nsubprocess.run([sys.executable,"-m","pip","install","pysmt","z3-solver","-q"],capture_output=True)\n';
+  const fullCode = INSTALL + code;
 
   try {
     const resp = await fetch(WANDBOX_URL, {
@@ -605,7 +610,7 @@ async function runCode() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         compiler: 'cpython-3.12.7',
-        code: code,
+        code: fullCode,
         stdin: '',
         options: '',
       })
@@ -627,10 +632,7 @@ async function runCode() {
     statusEl.textContent = ok ? '✓ Done' : '✕ Exited ' + result.status;
     statusEl.className = ok ? 'ready' : 'error';
 
-    // If pysmt not installed, show a hint
-    if ((err + cErr).includes('No module named')) {
-      appendLine('─── To run with pysmt: pip install pysmt z3-solver', 'info');
-    }
+
 
   } catch (err) {
     appendLine('Error: ' + (err.message || err), 'stderr');
