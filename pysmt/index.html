@@ -243,19 +243,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 }
 .btn-clear-url:hover{border-color:var(--red);color:var(--red)}
 
-.deploy-steps{background:var(--bg);border:1px solid var(--border);border-radius:8px;
-  padding:14px 16px;margin-bottom:16px}
-.deploy-steps h4{font-size:11px;font-weight:700;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--blue2);margin-bottom:10px}
-.step{display:flex;gap:10px;margin-bottom:8px;font-size:12.5px;color:var(--muted);line-height:1.5}
-.step:last-child{margin-bottom:0}
-.step-n{
-  min-width:20px;height:20px;border-radius:50%;background:rgba(59,130,246,.2);
-  color:var(--blue2);font-size:11px;font-weight:700;display:flex;align-items:center;
-  justify-content:center;flex-shrink:0;margin-top:1px;
-}
-.step a{color:var(--blue2);text-decoration:none}
-.step a:hover{text-decoration:underline}
 .step code{
   background:rgba(255,255,255,.07);border-radius:4px;
   padding:1px 5px;font-family:'Consolas',monospace;font-size:11.5px;color:#c9d1d9;
@@ -286,28 +273,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
     <button class="modal-close" onclick="closeServerModal()">✕</button>
     <h3>PySMT Execution Server</h3>
     <p class="modal-sub">
-      pysmt + z3 require a real Python environment. Deploy the bundled
-      <code>server.py</code> once — every student gets full pysmt support instantly.
+      If the server is not responding, try reconnecting by clicking <b>Save &amp; Test</b>.
     </p>
-
-    <div class="deploy-steps">
-      <h4>Deploy to Render (free, ~3 min)</h4>
-      <div class="step"><span class="step-n">1</span>
-        <span>Go to <a href="https://render.com" target="_blank">render.com</a> → <b>New → Web Service</b></span>
-      </div>
-      <div class="step"><span class="step-n">2</span>
-        <span>Connect repo <code>BergerZvika/Automated-Reasoning-Course</code></span>
-      </div>
-      <div class="step"><span class="step-n">3</span>
-        <span>Root Dir: <code>pysmt</code> · Build: <code>pip install -r requirements.txt</code> · Start: <code>python server.py</code></span>
-      </div>
-      <div class="step"><span class="step-n">4</span>
-        <span>Click <b>Deploy</b>, wait ~2 min, copy the <code>*.onrender.com</code> URL</span>
-      </div>
-      <div class="step"><span class="step-n">5</span>
-        <span>Paste the URL below and click <b>Save</b></span>
-      </div>
-    </div>
 
     <div class="field-label">Server URL</div>
     <div class="url-row">
@@ -1068,11 +1035,8 @@ initMonaco();
 updateServerIndicator(!!getServerUrl());
 
 appendLine('PySMT Tutorial', 'info');
-if (getServerUrl()) {
-  appendLine('● pysmt server configured: ' + getServerUrl(), 'success');
-} else {
+if (!getServerUrl()) {
   appendLine('⚙ No pysmt server configured — click  ⚙ Server  in the toolbar', 'system');
-  appendLine('  or deploy pysmt/server.py to Render for free pysmt+z3 support', 'system');
 }
 </script>
 </body>
