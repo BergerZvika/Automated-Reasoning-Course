@@ -582,72 +582,81 @@ function initMonaco() {
   });
 }
 
-// ── WANDBOX EXECUTION ────────────────────────────────────────────────────────
-// Wandbox is a free, no-auth online compiler — https://wandbox.org
+// ── EXECUTION BACKEND ────────────────────────────────────────────────────────
+// Primary:  local pysmt server  http://localhost:5001/run  (run pysmt/server.py)
+// Fallback: Wandbox             https://wandbox.org        (pure Python, no pysmt)
+const LOCAL_URL   = 'http://localhost:5001/run';
 const WANDBOX_URL = 'https://wandbox.org/api/compile.json';
+
+async function tryLocal(code) {
+  const resp = await fetch(LOCAL_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!resp.ok) throw new Error('local server HTTP ' + resp.status);
+  return resp.json(); // { stdout, stderr, returncode }
+}
+
+async function tryWandbox(code) {
+  const resp = await fetch(WANDBOX_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ compiler: 'cpython-3.12.7', code, stdin: '', options: '' }),
+  });
+  if (!resp.ok) throw new Error('Wandbox HTTP ' + resp.status);
+  const r = await resp.json();
+  return {
+    stdout: r.program_output || '',
+    stderr: (r.program_error || '') + (r.compiler_error || ''),
+    returncode: Number(r.status),
+  };
+}
 
 async function runCode() {
   if (!window._editor) return;
   const code = window._editor.getValue();
-  const runBtn = document.getElementById('runBtn');
+  const runBtn  = document.getElementById('runBtn');
   const statusEl = document.getElementById('pyStatus');
 
   runBtn.disabled = true;
   runBtn.textContent = '⏳ Running…';
   runBtn.classList.add('running');
-  statusEl.textContent = '⏳ Installing pysmt…';
+  statusEl.textContent = '⏳ Running…';
   statusEl.className = 'loading';
   appendLine('─'.repeat(48), 'system');
-  appendLine('Installing pysmt + z3-solver (first run may take ~30 s)…', 'info');
 
-  // Prepend pip install — target /tmp so it lands on a writable path, then inject into sys.path
-  const INSTALL = [
-    'import subprocess, sys, os',
-    '_d = "/tmp/pypkgs"',
-    'os.makedirs(_d, exist_ok=True)',
-    '_r = subprocess.run([sys.executable,"-m","pip","install","pysmt","z3-solver","--target",_d,"-q"],',
-    '    capture_output=True, text=True)',
-    'if _r.returncode != 0: print("[pip]", _r.stderr[:600])',
-    'if _d not in sys.path: sys.path.insert(0, _d)',
-  ].join('\n') + '\n';
-  const fullCode = INSTALL + code;
-
+  let result;
   try {
-    const resp = await fetch(WANDBOX_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        compiler: 'cpython-3.12.7',
-        code: fullCode,
-        stdin: '',
-        options: '',
-      })
-    });
-
-    if (!resp.ok) throw new Error('Wandbox returned HTTP ' + resp.status);
-    const result = await resp.json();
-
-    const out = (result.program_output || '').replace(/\n$/, '');
-    const err = (result.program_error  || '').replace(/\n$/, '');
-    const cErr = (result.compiler_error || '').replace(/\n$/, '');
-
-    if (out)  appendLine(out,  'stdout');
-    if (err)  appendLine(err,  'stderr');
-    if (cErr) appendLine(cErr, 'stderr');
-    if (!out && !err && !cErr) appendLine('(no output)', 'system');
-
-    const ok = String(result.status) === '0';
-    statusEl.textContent = ok ? '✓ Done' : '✕ Exited ' + result.status;
-    statusEl.className = ok ? 'ready' : 'error';
-
-
-
-  } catch (err) {
-    appendLine('Error: ' + (err.message || err), 'stderr');
-    appendLine('If this persists, run locally: pip install pysmt z3-solver', 'info');
-    statusEl.textContent = '✕ Error';
-    statusEl.className = 'error';
+    result = await tryLocal(code);
+    appendLine('● local pysmt server', 'info');
+  } catch (_) {
+    // local server not running — fall back to Wandbox (no pysmt)
+    appendLine('⚠ Local server not found — running on Wandbox (pysmt unavailable)', 'system');
+    appendLine('  To run with pysmt: python pysmt/server.py', 'system');
+    try {
+      result = await tryWandbox(code);
+    } catch (err2) {
+      appendLine('Error: ' + (err2.message || err2), 'stderr');
+      statusEl.textContent = '✕ Error';
+      statusEl.className = 'error';
+      runBtn.disabled = false;
+      runBtn.textContent = '▶ Run';
+      runBtn.classList.remove('running');
+      return;
+    }
   }
+
+  const out = result.stdout.replace(/\n$/, '');
+  const err = result.stderr.replace(/\n$/, '');
+  if (out) appendLine(out, 'stdout');
+  if (err) appendLine(err, 'stderr');
+  if (!out && !err) appendLine('(no output)', 'system');
+
+  const ok = result.returncode === 0;
+  statusEl.textContent = ok ? '✓ Done' : '✕ Exited ' + result.returncode;
+  statusEl.className = ok ? 'ready' : 'error';
 
   setTimeout(() => {
     statusEl.textContent = '● Ready';
@@ -689,9 +698,9 @@ buildSidebar();
 initMonaco();
 
 // Show startup hint
-appendLine('PySMT Tutorial — code runs via Wandbox (remote Python 3.12 sandbox)', 'info');
-appendLine('Note: pysmt + z3-solver are not in the sandbox — install locally if needed:', 'system');
-appendLine('  pip install pysmt z3-solver', 'system');
+appendLine('PySMT Tutorial', 'info');
+appendLine('● For full pysmt support  →  python pysmt/server.py   (then refresh)', 'system');
+appendLine('● Without local server   →  Wandbox fallback (pure Python only)', 'system');
 </script>
 </body>
 </html>
