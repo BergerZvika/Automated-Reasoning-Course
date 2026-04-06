@@ -447,7 +447,7 @@ def main():
     # (suppress pysmt's "Defining new symbol" warnings — harmless in Portfolio)
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning, module="pysmt")
-        with Portfolio(["z3"], logic=QF_BOOL) as solver:
+        with Portfolio(["z3", "msat"], logic=QF_BOOL) as solver:
             solver.add_assertion(formula)
 
             # Check satisfiability
