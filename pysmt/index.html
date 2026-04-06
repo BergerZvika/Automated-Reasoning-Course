@@ -552,10 +552,10 @@ def generate_random_pairs(num_pairs, n):
             pairs.add((x1, x2))
     return pairs
 
-n = 30
+n = 7
 vertex = list(range(n))
-edge = generate_random_pairs(150, n)
-k = 10
+edge = generate_random_pairs(10, n)
+k = 3
 
 solution = graph_coloring_sat(vertex, edge, k)
 if solution:

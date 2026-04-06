@@ -63,11 +63,10 @@ def generate_random_pairs(num_pairs,n):
     pairs = [(x1,x2) for (x1,x2) in pairs if x1 != x2]
     return pairs
 
-n = 30
-num_pairs = 150
-vertex = [x for x in range(n)]
-edge = set(generate_random_pairs(num_pairs,n))
-k = 10 # Use three colors
+n = 7
+vertex = list(range(n))
+edge = generate_random_pairs(10, n)
+k = 3
 
 
 solution = graph_coloring_sat(vertex, edge, k)
