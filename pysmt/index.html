@@ -1117,17 +1117,26 @@ function makeBtn(ex, globalIdx, isModeling) {
   const btn = document.createElement('div');
   btn.className = 'ex-btn' + (globalIdx === 0 ? ' active' : '');
   btn.dataset.idx = globalIdx;
-  const blob = new Blob([ex.code], {type: 'text/plain'});
-  const dlUrl = URL.createObjectURL(blob);
   const modeBtnHtml = (isModeling && ex.codeRandom)
     ? `<button class="ex-mode-btn" data-random="false" data-midx="${globalIdx}">Default</button>`
     : '';
   btn.innerHTML =
     `<div class="ex-text"><div class="ex-name">${ex.name}${modeBtnHtml}</div><div class="ex-desc">${ex.desc}</div></div>` +
-    `<a class="ex-dl" href="${dlUrl}" download="${ex.file}" title="Download ${ex.file}">⬇</a>`;
+    `<a class="ex-dl" title="Download ${ex.file}">⬇</a>`;
   btn.onclick = (e) => {
     if (e.target.closest('.ex-mode-btn') || e.target.closest('.ex-dl')) return;
     loadExample(globalIdx);
+  };
+  // Download the code that is currently shown (respects default/random mode)
+  btn.querySelector('.ex-dl').onclick = (e) => {
+    e.stopPropagation();
+    const modeBtn = btn.querySelector('.ex-mode-btn');
+    const isRandom = modeBtn && modeBtn.dataset.random === 'true';
+    const code = (isRandom && ex.codeRandom) ? ex.codeRandom : ex.code;
+    const url = URL.createObjectURL(new Blob([code], {type: 'text/plain'}));
+    const a = document.createElement('a');
+    a.href = url; a.download = ex.file; a.click();
+    URL.revokeObjectURL(url);
   };
   if (isModeling && ex.codeRandom) {
     btn.querySelector('.ex-mode-btn').onclick = (e) => {
