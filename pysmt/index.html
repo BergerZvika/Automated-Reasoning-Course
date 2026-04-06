@@ -651,7 +651,18 @@ async function runCode() {
   const out = result.stdout.replace(/\n$/, '');
   const err = result.stderr.replace(/\n$/, '');
   if (out) appendLine(out, 'stdout');
-  if (err) appendLine(err, 'stderr');
+  if (err) {
+    // When running on Wandbox (no pysmt), replace the raw traceback with a clear message
+    if (err.includes("No module named 'pysmt'") || err.includes("No module named 'z3'")) {
+      appendLine('pysmt is not available in the online sandbox.', 'stderr');
+      appendLine('To run this example, start the local server:', 'system');
+      appendLine('  pip install pysmt z3-solver flask flask-cors', 'system');
+      appendLine('  pysmt-install --z3', 'system');
+      appendLine('  python pysmt/server.py', 'system');
+    } else {
+      appendLine(err, 'stderr');
+    }
+  }
   if (!out && !err) appendLine('(no output)', 'system');
 
   const ok = result.returncode === 0;
