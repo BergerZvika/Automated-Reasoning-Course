@@ -125,6 +125,13 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 .btn-run:hover:not(:disabled){opacity:.85}
 .btn-run:disabled{opacity:.35;cursor:not-allowed}
 .btn-run.running{background:var(--yellow)}
+.btn-random{
+  padding:5px 11px;background:transparent;border:1px solid rgba(251,191,36,.4);
+  border-radius:6px;color:#fbbf24;font-size:12px;cursor:pointer;
+  transition:background .15s,border-color .15s;white-space:nowrap;flex-shrink:0;
+}
+.btn-random:hover{background:rgba(251,191,36,.1);border-color:#fbbf24}
+.btn-random.active{background:rgba(251,191,36,.15);border-color:#fbbf24;color:#fde68a}
 .btn-clear{
   padding:5px 11px;background:transparent;border:1px solid var(--border);
   border-radius:6px;color:var(--muted);font-size:12px;cursor:pointer;
@@ -332,6 +339,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
       <span id="filename">hello_world.py</span>
       <button class="btn-run" id="runBtn">▶ Run</button>
       <span class="kbd-hint">Ctrl+Enter</span>
+      <button class="btn-random" id="randomBtn" style="display:none">🎲 Random</button>
       <button class="btn-server" id="serverBtn" onclick="openServerModal()">
         <span class="server-dot" id="serverDot"></span>
         <span id="serverLabel">⚙ Server</span>
@@ -524,6 +532,58 @@ const MODELING = [
     code:
 `from pysmt.shortcuts import Symbol, And, Or, Not, Solver, ExactlyOne
 from pysmt.typing import BOOL
+
+
+def graph_coloring_sat(vertex, edge, k):
+    colors = range(k)
+    vars = {(v, color): Symbol(f"{v}_{color}", BOOL) for v in vertex for color in colors}
+
+    constraints = []
+
+    for v in vertex:
+        constraints.append(ExactlyOne(vars[v, color] for color in colors))
+
+    for (v1, v2) in edge:
+        for color in colors:
+            constraints.append(Or(Not(vars[(v1, color)]), Not(vars[(v2, color)])))
+
+    formula = And(constraints)
+
+    with Solver(name="z3") as solver:
+        solver.add_assertion(formula)
+        if solver.solve():
+            model = {v: None for v in vertex}
+            for v in vertex:
+                for color in colors:
+                    if solver.get_value(vars[(v, color)]).is_true():
+                        model[v] = color
+            return model
+        else:
+            return None
+
+
+vertex = [1, 2, 3, 4, 5, 6, 7]
+edge = [(1, 4), (1, 5), (1, 6), (4, 6), (5, 6), (6, 7), (4, 2), (5, 3), (2, 7), (2, 3), (3, 7)]
+k = 3
+
+solution = graph_coloring_sat(vertex, edge, k)
+if solution:
+    print("GRAPH_COLORING_RESULT")
+    print(f"N={len(vertex)} K={k}")
+    for v, color in solution.items():
+        print(f"V {v} {color}")
+    for v1, v2 in edge:
+        print(f"E {v1} {v2}")
+    print("---")
+    print(f"Colored {len(vertex)} vertices with {k} colors.")
+    for v, color in solution.items():
+        print(f"  vertex {v} -> color {color}")
+else:
+    print("No solution exists with the given number of colors.")
+`,
+    codeRandom:
+`from pysmt.shortcuts import Symbol, And, Or, Not, Solver, ExactlyOne
+from pysmt.typing import BOOL
 import random
 
 
@@ -591,25 +651,6 @@ else:
     code:
 `from pysmt.shortcuts import Symbol, And, Or, Not, ExactlyOne, Solver
 from pysmt.typing import BOOL
-import random
-
-
-def generate_random_hc_graph(n, extra=8):
-    nodes = list(range(1, n + 1))
-    perm = nodes[:]
-    random.shuffle(perm)
-    # Guarantee a Hamiltonian cycle exists
-    edges = set()
-    for i in range(n):
-        a, b = perm[i], perm[(i + 1) % n]
-        edges.add((min(a, b), max(a, b)))
-    # Add random extra edges
-    attempts = 0
-    while len(edges) < n + extra and attempts < 300:
-        a, b = random.sample(nodes, 2)
-        edges.add((min(a, b), max(a, b)))
-        attempts += 1
-    return nodes, list(edges)
 
 
 def hamiltonian_cycle_sat(nodes, edges):
@@ -628,6 +669,99 @@ def hamiltonian_cycle_sat(nodes, edges):
         constraints.append(ExactlyOne([pos[(v, i)] for v in nodes]))
 
     # Consecutive positions must be connected by an edge
+    for i in range(n):
+        j = (i + 1) % n
+        for v in nodes:
+            for u in nodes:
+                if v != u and (v, u) not in edge_set:
+                    constraints.append(Or(Not(pos[(v, i)]), Not(pos[(u, j)])))
+
+    with Solver(name="z3") as solver:
+        solver.add_assertion(And(constraints))
+        if solver.solve():
+            cycle = [None] * n
+            for v in nodes:
+                for i in range(n):
+                    if solver.get_value(pos[(v, i)]).is_true():
+                        cycle[i] = v
+            return cycle
+        return None
+
+
+nodes = list(range(1, 21))
+edges = [
+    (1, 20), (1, 2), (1, 5),
+    (2, 18), (2, 3),
+    (3, 4), (3, 16),
+    (4, 5), (4, 14),
+    (5, 6),
+    (6, 7), (6, 13),
+    (7, 8), (7, 20),
+    (8, 9), (8, 12),
+    (9, 19), (9, 10),
+    (10, 17), (10, 11),
+    (11, 12), (11, 15),
+    (12, 13),
+    (13, 14),
+    (14, 15),
+    (15, 16),
+    (17, 18),
+    (18, 19),
+    (19, 20),
+]
+
+cycle = hamiltonian_cycle_sat(nodes, edges)
+if cycle:
+    cycle_edges = [(cycle[i], cycle[(i + 1) % len(cycle)]) for i in range(len(cycle))]
+    print("HAMILTON_CYCLE_RESULT")
+    print(f"N={len(nodes)}")
+    for v in nodes:
+        print(f"V {v}")
+    for a, b in edges:
+        print(f"E {a} {b}")
+    for a, b in cycle_edges:
+        print(f"C {a} {b}")
+    print("---")
+    path = " -> ".join(str(v) for v in cycle) + f" -> {cycle[0]}"
+    print(f"Hamiltonian cycle found: {path}")
+else:
+    print("No Hamiltonian cycle exists.")
+`,
+    codeRandom:
+`from pysmt.shortcuts import Symbol, And, Or, Not, ExactlyOne, Solver
+from pysmt.typing import BOOL
+import random
+
+
+def generate_random_hc_graph(n, extra=8):
+    nodes = list(range(1, n + 1))
+    perm = nodes[:]
+    random.shuffle(perm)
+    edges = set()
+    for i in range(n):
+        a, b = perm[i], perm[(i + 1) % n]
+        edges.add((min(a, b), max(a, b)))
+    attempts = 0
+    while len(edges) < n + extra and attempts < 300:
+        a, b = random.sample(nodes, 2)
+        edges.add((min(a, b), max(a, b)))
+        attempts += 1
+    return nodes, list(edges)
+
+
+def hamiltonian_cycle_sat(nodes, edges):
+    n = len(nodes)
+    edge_set = set(edges) | {(b, a) for a, b in edges}
+    pos = {(v, i): Symbol(f"pos_{v}_{i}", BOOL) for v in nodes for i in range(n)}
+
+    constraints = []
+
+    for v in nodes:
+        constraints.append(ExactlyOne([pos[(v, i)] for i in range(n)]))
+
+    for i in range(n):
+        constraints.append(ExactlyOne([pos[(v, i)] for v in nodes]))
+
     for i in range(n):
         j = (i + 1) % n
         for v in nodes:
@@ -675,50 +809,6 @@ else:
     code:
 `from pysmt.shortcuts import Symbol, And, ExactlyOne, Solver
 from pysmt.typing import BOOL
-import random
-
-
-def generate_random_puzzle(clues=35):
-    # Base valid solution (standard Sudoku template)
-    base = [
-        [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [4, 5, 6, 7, 8, 9, 1, 2, 3],
-        [7, 8, 9, 1, 2, 3, 4, 5, 6],
-        [2, 3, 4, 5, 6, 7, 8, 9, 1],
-        [5, 6, 7, 8, 9, 1, 2, 3, 4],
-        [8, 9, 1, 2, 3, 4, 5, 6, 7],
-        [3, 4, 5, 6, 7, 8, 9, 1, 2],
-        [6, 7, 8, 9, 1, 2, 3, 4, 5],
-        [9, 1, 2, 3, 4, 5, 6, 7, 8],
-    ]
-    # Permute digits
-    digits = list(range(1, 10))
-    random.shuffle(digits)
-    digit_map = {i + 1: digits[i] for i in range(9)}
-    grid = [[digit_map[v] for v in row] for row in base]
-    # Shuffle rows within each band of 3
-    for band in range(3):
-        rows = list(range(band * 3, band * 3 + 3))
-        random.shuffle(rows)
-        band_rows = [grid[r][:] for r in rows]
-        for i, r in enumerate(range(band * 3, band * 3 + 3)):
-            grid[r] = band_rows[i]
-    # Shuffle cols within each band of 3
-    for band in range(3):
-        cols = list(range(band * 3, band * 3 + 3))
-        perm = cols[:]
-        random.shuffle(perm)
-        for row in grid:
-            orig = row[:]
-            for i, c in enumerate(range(band * 3, band * 3 + 3)):
-                row[c] = orig[perm[i]]
-    # Remove cells to create puzzle
-    puzzle = [row[:] for row in grid]
-    cells = [(i, j) for i in range(9) for j in range(9)]
-    random.shuffle(cells)
-    for i, j in cells[:81 - clues]:
-        puzzle[i][j] = 0
-    return puzzle
 
 
 def sudoku_solver(puzzle):
@@ -751,6 +841,116 @@ def sudoku_solver(puzzle):
                 constraints.append(ExactlyOne(subgrid))
 
     # Clues
+    for i in range(9):
+        for j in range(9):
+            if puzzle[i][j] != 0:
+                constraints.append(cells[(i, j, puzzle[i][j])])
+
+    with Solver(name="z3") as solver:
+        solver.add_assertion(And(constraints))
+        if solver.solve():
+            solution = [[0]*9 for _ in range(9)]
+            for i in range(9):
+                for j in range(9):
+                    for d in range(1, 10):
+                        if solver.get_value(cells[(i, j, d)]).is_true():
+                            solution[i][j] = d
+            return solution
+        return None
+
+
+puzzle = [
+    [0, 0, 0, 2, 6, 0, 7, 0, 1],
+    [6, 8, 0, 0, 7, 0, 0, 9, 0],
+    [1, 9, 0, 0, 0, 4, 5, 0, 0],
+    [8, 2, 0, 1, 0, 0, 0, 4, 0],
+    [0, 0, 4, 6, 0, 2, 9, 0, 0],
+    [0, 5, 0, 0, 0, 3, 0, 2, 8],
+    [0, 0, 9, 3, 0, 0, 0, 7, 4],
+    [0, 4, 0, 0, 5, 0, 0, 3, 6],
+    [7, 0, 3, 0, 1, 8, 0, 0, 0]
+]
+
+solution = sudoku_solver(puzzle)
+if solution:
+    print("SUDOKU_RESULT")
+    for row in solution:
+        print(" ".join(map(str, row)))
+    print("---")
+    for row in solution:
+        print(row)
+else:
+    print("No solution exists.")
+`,
+    codeRandom:
+`from pysmt.shortcuts import Symbol, And, ExactlyOne, Solver
+from pysmt.typing import BOOL
+import random
+
+
+def generate_random_puzzle(clues=35):
+    base = [
+        [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [4, 5, 6, 7, 8, 9, 1, 2, 3],
+        [7, 8, 9, 1, 2, 3, 4, 5, 6],
+        [2, 3, 4, 5, 6, 7, 8, 9, 1],
+        [5, 6, 7, 8, 9, 1, 2, 3, 4],
+        [8, 9, 1, 2, 3, 4, 5, 6, 7],
+        [3, 4, 5, 6, 7, 8, 9, 1, 2],
+        [6, 7, 8, 9, 1, 2, 3, 4, 5],
+        [9, 1, 2, 3, 4, 5, 6, 7, 8],
+    ]
+    digits = list(range(1, 10))
+    random.shuffle(digits)
+    digit_map = {i + 1: digits[i] for i in range(9)}
+    grid = [[digit_map[v] for v in row] for row in base]
+    for band in range(3):
+        rows = list(range(band * 3, band * 3 + 3))
+        random.shuffle(rows)
+        band_rows = [grid[r][:] for r in rows]
+        for i, r in enumerate(range(band * 3, band * 3 + 3)):
+            grid[r] = band_rows[i]
+    for band in range(3):
+        cols = list(range(band * 3, band * 3 + 3))
+        perm = cols[:]
+        random.shuffle(perm)
+        for row in grid:
+            orig = row[:]
+            for i, c in enumerate(range(band * 3, band * 3 + 3)):
+                row[c] = orig[perm[i]]
+    puzzle = [row[:] for row in grid]
+    cells = [(i, j) for i in range(9) for j in range(9)]
+    random.shuffle(cells)
+    for i, j in cells[:81 - clues]:
+        puzzle[i][j] = 0
+    return puzzle
+
+
+def sudoku_solver(puzzle):
+    cells = {(i, j, d): Symbol(f"x_{i}_{j}_{d}", BOOL)
+             for i in range(9) for j in range(9) for d in range(1, 10)}
+    constraints = []
+
+    for i in range(9):
+        for j in range(9):
+            constraints.append(ExactlyOne([cells[(i, j, d)] for d in range(1, 10)]))
+
+    for i in range(9):
+        for d in range(1, 10):
+            constraints.append(ExactlyOne([cells[(i, j, d)] for j in range(9)]))
+
+    for j in range(9):
+        for d in range(1, 10):
+            constraints.append(ExactlyOne([cells[(i, j, d)] for i in range(9)]))
+
+    for bi in range(3):
+        for bj in range(3):
+            for d in range(1, 10):
+                subgrid = [cells[(i, j, d)]
+                           for i in range(bi*3, (bi+1)*3)
+                           for j in range(bj*3, (bj+1)*3)]
+                constraints.append(ExactlyOne(subgrid))
+
     for i in range(9):
         for j in range(9):
             if puzzle[i][j] != 0:
@@ -832,7 +1032,28 @@ function loadExample(i) {
     b.classList.toggle('active', Number(b.dataset.idx) === i));
   document.getElementById('filename').textContent = ALL_ITEMS[i].file;
   if (window._editor) window._editor.setValue(ALL_ITEMS[i].code);
+  window._isRandom = false;
+  const randomBtn = document.getElementById('randomBtn');
+  const isModeling = i >= EXAMPLES.length;
+  randomBtn.style.display = isModeling ? 'inline-block' : 'none';
+  randomBtn.textContent = '🎲 Random';
+  randomBtn.classList.remove('active');
 }
+
+document.getElementById('randomBtn').onclick = function() {
+  const item = ALL_ITEMS[currentIdx];
+  if (!item || !item.codeRandom) return;
+  window._isRandom = !window._isRandom;
+  if (window._isRandom) {
+    window._editor.setValue(item.codeRandom);
+    this.textContent = '📌 Default';
+    this.classList.add('active');
+  } else {
+    window._editor.setValue(item.code);
+    this.textContent = '🎲 Random';
+    this.classList.remove('active');
+  }
+};
 
 // ── MONACO EDITOR ─────────────────────────────────────────────────────────────
 function initMonaco() {
