@@ -582,8 +582,9 @@ function initMonaco() {
   });
 }
 
-// ── PISTON EXECUTION ─────────────────────────────────────────────────────────
-const PISTON_URL = 'https://emkc.org/api/v2/piston/execute';
+// ── WANDBOX EXECUTION ────────────────────────────────────────────────────────
+// Wandbox is a free, no-auth online compiler — https://wandbox.org
+const WANDBOX_URL = 'https://wandbox.org/api/compile';
 
 async function runCode() {
   if (!window._editor) return;
@@ -599,38 +600,47 @@ async function runCode() {
   appendLine('─'.repeat(48), 'system');
 
   try {
-    const resp = await fetch(PISTON_URL, {
+    const resp = await fetch(WANDBOX_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        language: 'python',
-        version: '*',
-        files: [{ name: 'main.py', content: code }],
-        run_timeout: 30000,
+        compiler: 'cpython-3.12.0',
+        code: code,
+        stdin: '',
+        options: '',
       })
     });
 
-    if (!resp.ok) throw new Error('Piston API returned ' + resp.status);
+    if (!resp.ok) throw new Error('Wandbox returned HTTP ' + resp.status);
     const result = await resp.json();
-    const run = result.run || {};
 
-    if (run.stdout) appendLine(run.stdout.replace(/\n$/, ''), 'stdout');
-    if (run.stderr) appendLine(run.stderr.replace(/\n$/, ''), 'stderr');
-    if (!run.stdout && !run.stderr) appendLine('(no output)', 'system');
+    const out = (result.program_output || '').replace(/\n$/, '');
+    const err = (result.program_error  || '').replace(/\n$/, '');
+    const cErr = (result.compiler_error || '').replace(/\n$/, '');
 
-    const ok = run.code === 0;
-    statusEl.textContent = ok ? '✓ Done' : '✕ Exited ' + run.code;
+    if (out)  appendLine(out,  'stdout');
+    if (err)  appendLine(err,  'stderr');
+    if (cErr) appendLine(cErr, 'stderr');
+    if (!out && !err && !cErr) appendLine('(no output)', 'system');
+
+    const ok = String(result.status) === '0';
+    statusEl.textContent = ok ? '✓ Done' : '✕ Exited ' + result.status;
     statusEl.className = ok ? 'ready' : 'error';
 
+    // If pysmt not installed, show a hint
+    if ((err + cErr).includes('No module named')) {
+      appendLine('─── To run with pysmt: pip install pysmt z3-solver', 'info');
+    }
+
   } catch (err) {
-    appendLine('Network error: ' + (err.message || err), 'stderr');
-    appendLine('Tip: pysmt needs z3-solver — run locally with: pip install pysmt z3-solver', 'info');
+    appendLine('Error: ' + (err.message || err), 'stderr');
+    appendLine('If this persists, run locally: pip install pysmt z3-solver', 'info');
     statusEl.textContent = '✕ Error';
     statusEl.className = 'error';
   }
 
   setTimeout(() => {
-    statusEl.textContent = '● Piston ready';
+    statusEl.textContent = '● Ready';
     statusEl.className = 'ready';
   }, 4000);
   runBtn.disabled = false;
@@ -669,8 +679,8 @@ buildSidebar();
 initMonaco();
 
 // Show startup hint
-appendLine('PySMT Tutorial — code runs via Piston API (remote Python sandbox)', 'info');
-appendLine('Note: pysmt + z3-solver require local install — see below if you get ImportError', 'system');
+appendLine('PySMT Tutorial — code runs via Wandbox (remote Python 3.12 sandbox)', 'info');
+appendLine('Note: pysmt + z3-solver are not in the sandbox — install locally if needed:', 'system');
 appendLine('  pip install pysmt z3-solver', 'system');
 </script>
 </body>
