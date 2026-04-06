@@ -355,7 +355,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 
     <!-- Terminal -->
     <div id="terminal">
-      <div class="term-hdr"><span class="term-dot"></span> Output <div style="margin-left:auto;display:flex;gap:6px"><button class="btn-viz" id="vizBtn" onclick="showViz()">▦ Visualize</button><button class="btn-clear" id="clearBtn">⌫ Clear</button></div></div>
+      <div class="term-hdr"><span class="term-dot"></span> Output <div style="margin-left:auto;display:flex;gap:6px"><button class="btn-viz" id="vizBtn" onclick="showViz()">▦ Visualize</button><button class="btn-clear" id="dlOutBtn">⬇ Output</button><button class="btn-clear" id="clearBtn">⌫ Clear</button></div></div>
       <div id="termOutput"></div>
     </div>
 
@@ -1096,6 +1096,14 @@ function appendLine(text, cls = 'stdout') {
 }
 function clearOutput() { termEl.innerHTML = ''; document.getElementById('vizBtn').style.display = 'none'; window._vizOutput = null; }
 document.getElementById('clearBtn').onclick = clearOutput;
+document.getElementById('dlOutBtn').onclick = function() {
+  const text = [...termEl.querySelectorAll('.tline')].map(d => d.textContent).join('\n');
+  if (!text.trim()) return;
+  const url = URL.createObjectURL(new Blob([text], {type: 'text/plain'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'output.txt'; a.click();
+  URL.revokeObjectURL(url);
+};
 
 // ── SIDEBAR ───────────────────────────────────────────────────────────────────
 // All items in a flat list: examples first, then modeling
