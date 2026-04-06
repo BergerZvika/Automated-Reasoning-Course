@@ -590,6 +590,7 @@ if solution:
     for v, color in solution.items():
         print(f"  vertex {v} -> color {color}")
 else:
+    print("UNSAT_RESULT GRAPH_COLORING")
     print("No solution exists with the given number of colors.")
 `,
     codeRandom:
@@ -664,6 +665,7 @@ if solution:
     for v, color in solution.items():
         print(f"  vertex {v} -> color {color}")
 else:
+    print("UNSAT_RESULT GRAPH_COLORING")
     print("No solution exists with the given number of colors.")
 `
   },
@@ -758,6 +760,7 @@ if cycle:
     path = " -> ".join(str(v) for v in cycle) + f" -> {cycle[0]}"
     print(f"Hamiltonian cycle found: {path}")
 else:
+    print("UNSAT_RESULT HAMILTON_CYCLE")
     print("No Hamiltonian cycle exists.")
 `,
     codeRandom:
@@ -849,6 +852,7 @@ if cycle:
     path = " -> ".join(str(v) for v in cycle) + f" -> {cycle[0]}"
     print(f"Hamiltonian cycle found: {path}")
 else:
+    print("UNSAT_RESULT HAMILTON_CYCLE")
     print("No Hamiltonian cycle exists.")
 `
   },
@@ -947,6 +951,9 @@ if solution:
     for row in solution:
         print(row)
 else:
+    print("UNSAT_RESULT SUDOKU")
+    for row in puzzle:
+        print("PUZZLE_ROW " + " ".join(map(str, row)))
     print("No solution exists.")
 `,
     codeRandom:
@@ -1076,6 +1083,9 @@ if solution:
     for row in solution:
         print(row)
 else:
+    print("UNSAT_RESULT SUDOKU")
+    for row in puzzle:
+        print("PUZZLE_ROW " + " ".join(map(str, row)))
     print("No solution exists.")
 `
   },
@@ -1402,6 +1412,7 @@ function filterVizMarkers(out) {
   for (const l of lines) {
     if (l === 'GRAPH_COLORING_RESULT' || l === 'SUDOKU_RESULT' || l === 'HAMILTON_CYCLE_RESULT') { skip = true; continue; }
     if (skip && l === '---') { skip = false; continue; }
+    if (l.startsWith('UNSAT_RESULT ') || l.startsWith('PUZZLE_ROW ')) continue;
     if (!skip) filtered.push(l);
   }
   return filtered.join('\n').replace(/^\n+|\n+$/g, '');
@@ -1409,7 +1420,7 @@ function filterVizMarkers(out) {
 const GC_PALETTE = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#84cc16'];
 
 function checkVizAvailable(out) {
-  const show = out.includes('GRAPH_COLORING_RESULT') || out.includes('SUDOKU_RESULT') || out.includes('HAMILTON_CYCLE_RESULT');
+  const show = out.includes('GRAPH_COLORING_RESULT') || out.includes('SUDOKU_RESULT') || out.includes('HAMILTON_CYCLE_RESULT') || out.includes('UNSAT_RESULT ');
   document.getElementById('vizBtn').style.display = show ? 'inline-block' : 'none';
   if (show) window._vizOutput = out;
 }
@@ -1417,15 +1428,115 @@ function checkVizAvailable(out) {
 function showViz() {
   const out = window._vizOutput || '';
   document.getElementById('vizTitle').textContent =
-    out.includes('GRAPH_COLORING_RESULT') ? 'Graph Coloring' :
-    out.includes('HAMILTON_CYCLE_RESULT') ? 'Hamiltonian Cycle' : 'Sudoku Solution';
+    out.includes('GRAPH_COLORING_RESULT') || out.includes('UNSAT_RESULT GRAPH_COLORING') ? 'Graph Coloring' :
+    out.includes('HAMILTON_CYCLE_RESULT') || out.includes('UNSAT_RESULT HAMILTON_CYCLE') ? 'Hamiltonian Cycle' : 'Sudoku';
   document.getElementById('vizContent').innerHTML =
     out.includes('GRAPH_COLORING_RESULT') ? renderGraphColoring(out) :
-    out.includes('HAMILTON_CYCLE_RESULT') ? renderHamiltonCycle(out) : renderSudoku(out);
+    out.includes('HAMILTON_CYCLE_RESULT') ? renderHamiltonCycle(out) :
+    out.includes('SUDOKU_RESULT') ? renderSudoku(out) :
+    out.includes('UNSAT_RESULT GRAPH_COLORING') ? renderUnsatGraphColoring(out) :
+    out.includes('UNSAT_RESULT HAMILTON_CYCLE') ? renderUnsatHamiltonCycle(out) :
+    out.includes('UNSAT_RESULT SUDOKU') ? renderUnsatSudoku(out) : '';
   document.getElementById('vizOverlay').classList.add('open');
 }
 
 function closeViz() { document.getElementById('vizOverlay').classList.remove('open'); }
+
+function renderUnsatGraphColoring(out) {
+  const lines = out.split('\n');
+  let verts = [], edges = [], k = 0;
+  for (const l of lines) {
+    const pm = l.match(/Problem:\s*(\d+)\s*vertices.*k=(\d+)/);
+    if (pm) { const n = +pm[1]; k = +pm[2]; verts = Array.from({length:n}, (_,i) => i+1); }
+    const em = l.match(/^Edges:\s*(.*)/);
+    if (em) edges = [...em[1].matchAll(/\((\d+),(\d+)\)/g)].map(m => [+m[1], +m[2]]);
+  }
+  if (!verts.length) return '<p style="color:#f87171">Could not parse problem.</p>';
+  const W=480, H=420, cx=W/2, cy=H/2, r=160;
+  const pos = {};
+  verts.forEach((v,i) => {
+    pos[v] = {x: cx + r*Math.cos(2*Math.PI*i/verts.length - Math.PI/2),
+               y: cy + r*Math.sin(2*Math.PI*i/verts.length - Math.PI/2)};
+  });
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:#0d1117;border-radius:10px">`;
+  for (const [a,b] of edges)
+    if (pos[a] && pos[b])
+      svg += `<line x1="${pos[a].x.toFixed(1)}" y1="${pos[a].y.toFixed(1)}" x2="${pos[b].x.toFixed(1)}" y2="${pos[b].y.toFixed(1)}" stroke="#1e2535" stroke-width="1.5"/>`;
+  for (const v of verts) {
+    const {x,y}=pos[v];
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="18" fill="#1a2030" stroke="#2a3148" stroke-width="2"/>`;
+    svg += `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#4a5568">${v}</text>`;
+  }
+  svg += '</svg>';
+  svg += `<div style="margin-top:14px;background:#450a0a;border:2.5px solid #ef4444;border-radius:10px;padding:12px 24px;text-align:center">`;
+  svg += `<div style="font-size:22px;font-weight:800;color:#fca5a5;letter-spacing:2px">UNSATISFIABLE</div>`;
+  svg += `<div style="font-size:13px;color:#f87171;margin-top:4px">No valid ${k}-coloring exists</div>`;
+  svg += '</div>';
+  return svg;
+}
+
+function renderUnsatHamiltonCycle(out) {
+  const lines = out.split('\n');
+  let verts = [], edges = [];
+  for (const l of lines) {
+    const pm = l.match(/Problem:\s*(\d+)\s*nodes/);
+    if (pm) verts = Array.from({length:+pm[1]}, (_,i) => i+1);
+    const em = l.match(/^Edges:\s*(.*)/);
+    if (em) edges = [...em[1].matchAll(/\((\d+),(\d+)\)/g)].map(m => [+m[1], +m[2]]);
+  }
+  if (!verts.length) return '<p style="color:#f87171">Could not parse problem.</p>';
+  const W=480, H=480, cx=W/2, cy=H/2, R=190, nodeR=14;
+  const angle = v => ((verts.indexOf(v) / verts.length) * 2 * Math.PI) - Math.PI/2;
+  const px = v => (cx + R * Math.cos(angle(v))).toFixed(1);
+  const py = v => (cy + R * Math.sin(angle(v))).toFixed(1);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;margin:auto;background:#0d1117;border-radius:10px">`;
+  for (const [a, b] of edges)
+    svg += `<line x1="${px(a)}" y1="${py(a)}" x2="${px(b)}" y2="${py(b)}" stroke="#1e2535" stroke-width="1.5"/>`;
+  for (const v of verts) {
+    svg += `<circle cx="${px(v)}" cy="${py(v)}" r="${nodeR}" fill="#1a2030" stroke="#2a3148" stroke-width="2"/>`;
+    svg += `<text x="${px(v)}" y="${py(v)}" text-anchor="middle" dominant-baseline="central" fill="#4a5568" font-size="11" font-weight="600">${v}</text>`;
+  }
+  svg += '</svg>';
+  svg += `<div style="margin-top:14px;background:#450a0a;border:2.5px solid #ef4444;border-radius:10px;padding:12px 24px;text-align:center">`;
+  svg += `<div style="font-size:22px;font-weight:800;color:#fca5a5;letter-spacing:2px">UNSATISFIABLE</div>`;
+  svg += `<div style="font-size:13px;color:#f87171;margin-top:4px">No Hamiltonian cycle exists</div>`;
+  svg += '</div>';
+  return svg;
+}
+
+function renderUnsatSudoku(out) {
+  const lines = out.split('\n');
+  const puzzle = [];
+  for (const l of lines) {
+    if (l.startsWith('PUZZLE_ROW ')) {
+      const row = l.slice(11).trim().split(' ').map(Number);
+      if (row.length === 9) puzzle.push(row);
+    }
+  }
+  if (puzzle.length !== 9) return '<p style="color:#f87171">Could not parse puzzle.</p>';
+  let t = `<div style="display:flex;flex-direction:column;align-items:center;gap:14px">`;
+  t += `<table style="border-collapse:collapse;font-family:'Consolas',monospace">`;
+  for (let i=0;i<9;i++) {
+    t += '<tr>';
+    for (let j=0;j<9;j++) {
+      const clue = puzzle[i][j] !== 0;
+      const bt = i%3===0?'3px solid #94a3b8':'1px solid #334155';
+      const bb = i===8?'3px solid #94a3b8':'1px solid #334155';
+      const bl = j%3===0?'3px solid #94a3b8':'1px solid #334155';
+      const br = j===8?'3px solid #94a3b8':'1px solid #334155';
+      const bg = clue ? '#1e3a5f' : '#161b27';
+      const fc = clue ? '#60a5fa' : '#e2e8f0';
+      t += `<td style="width:42px;height:42px;text-align:center;vertical-align:middle;font-size:18px;font-weight:${clue?'700':'400'};color:${fc};background:${bg};border-top:${bt};border-bottom:${bb};border-left:${bl};border-right:${br}">${clue ? puzzle[i][j] : ''}</td>`;
+    }
+    t += '</tr>';
+  }
+  t += '</table>';
+  t += `<div style="background:#450a0a;border:2.5px solid #ef4444;border-radius:10px;padding:12px 32px;text-align:center;width:100%">`;
+  t += `<div style="font-size:22px;font-weight:800;color:#fca5a5;letter-spacing:2px">UNSATISFIABLE</div>`;
+  t += `<div style="font-size:13px;color:#f87171;margin-top:4px">No valid Sudoku solution exists</div>`;
+  t += '</div></div>';
+  return t;
+}
 
 function renderGraphColoring(out) {
   const lines = out.split('\n');
