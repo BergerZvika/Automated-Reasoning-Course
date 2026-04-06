@@ -691,10 +691,11 @@ function initMonaco() {
 
 // ── SERVER CONFIG (localStorage) ─────────────────────────────────────────────
 const LS_KEY = 'pysmt_server_url';
+const DEFAULT_SERVER = 'https://automated-reasoning-course-1.onrender.com/run';
 const WANDBOX_URL = 'https://wandbox.org/api/compile.json';
 
 function getServerUrl() {
-  return localStorage.getItem(LS_KEY) || null;
+  return localStorage.getItem(LS_KEY) || DEFAULT_SERVER;
 }
 
 function updateServerIndicator(connected) {
