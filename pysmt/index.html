@@ -583,19 +583,21 @@ function initMonaco() {
 }
 
 // ── EXECUTION BACKEND ────────────────────────────────────────────────────────
-// Primary:  local pysmt server  http://localhost:5001/run  (run pysmt/server.py)
-// Fallback: Wandbox             https://wandbox.org        (pure Python, no pysmt)
+// Set EXEC_URL to your deployed server URL (see pysmt/server.py for Render instructions).
+// Use null to always fall back to Wandbox (no pysmt support).
+const EXEC_URL    = null;   // e.g. 'https://your-app.onrender.com/run'
 const LOCAL_URL   = 'http://localhost:5001/run';
 const WANDBOX_URL = 'https://wandbox.org/api/compile.json';
 
-async function tryLocal(code) {
-  const resp = await fetch(LOCAL_URL, {
+async function tryPysmtServer(code) {
+  const url = EXEC_URL || LOCAL_URL;
+  const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code }),
     signal: AbortSignal.timeout(30000),
   });
-  if (!resp.ok) throw new Error('local server HTTP ' + resp.status);
+  if (!resp.ok) throw new Error('server HTTP ' + resp.status);
   return resp.json(); // { stdout, stderr, returncode }
 }
 
@@ -629,12 +631,12 @@ async function runCode() {
 
   let result;
   try {
-    result = await tryLocal(code);
-    appendLine('● local pysmt server', 'info');
+    result = await tryPysmtServer(code);
+    appendLine('● pysmt server', 'info');
   } catch (_) {
-    // local server not running — fall back to Wandbox (no pysmt)
-    appendLine('⚠ Local server not found — running on Wandbox (pysmt unavailable)', 'system');
-    appendLine('  To run with pysmt: python pysmt/server.py', 'system');
+    // server not reachable — fall back to Wandbox (no pysmt)
+    appendLine('⚠ pysmt server not reachable — running on Wandbox (pysmt unavailable)', 'system');
+    appendLine('  Deploy pysmt/server.py to Render and set EXEC_URL in index.html', 'system');
     try {
       result = await tryWandbox(code);
     } catch (err2) {

@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """
-PySMT Tutorial — local execution server
+PySMT Tutorial — execution server
 Runs Python code sent from the browser and returns stdout/stderr.
 
-Usage:
-    pip install pysmt z3-solver flask flask-cors
-    pysmt-install --z3
-    python server.py
+Deploy to Render (free):
+  1. Go to https://render.com  →  New Web Service
+  2. Connect this GitHub repo
+  3. Root Directory : pysmt
+  4. Build Command  : pip install -r requirements.txt
+  5. Start Command  : python server.py
+  Then paste the Render URL into pysmt/index.html  (EXEC_URL constant).
 
-The browser at pysmt/index.html will automatically connect to http://localhost:5001.
+Local usage:
+  pip install -r pysmt/requirements.txt
+  python pysmt/server.py
 """
 
 import subprocess
@@ -19,7 +24,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # allow requests from the browser (file:// or any local origin)
+CORS(app)
+
+PORT = int(os.environ.get('PORT', 5001))
 
 
 @app.route('/run', methods=['POST'])
@@ -51,6 +58,5 @@ def run_code():
 
 
 if __name__ == '__main__':
-    print('PySMT local server running on http://localhost:5001')
-    print('Press Ctrl+C to stop.')
-    app.run(host='127.0.0.1', port=5001, debug=False)
+    print(f'PySMT server running on port {PORT}')
+    app.run(host='0.0.0.0', port=PORT, debug=False)
