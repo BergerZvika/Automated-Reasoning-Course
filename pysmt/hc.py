@@ -1,5 +1,24 @@
 from pysmt.shortcuts import Symbol, And, Or, Not, ExactlyOne, Solver
 from pysmt.typing import BOOL
+import random
+
+
+def generate_random_hc_graph(n, extra=8):
+    nodes = list(range(1, n + 1))
+    perm = nodes[:]
+    random.shuffle(perm)
+    # Guarantee a Hamiltonian cycle exists
+    edges = set()
+    for i in range(n):
+        a, b = perm[i], perm[(i + 1) % n]
+        edges.add((min(a, b), max(a, b)))
+    # Add random extra edges
+    attempts = 0
+    while len(edges) < n + extra and attempts < 300:
+        a, b = random.sample(nodes, 2)
+        edges.add((min(a, b), max(a, b)))
+        attempts += 1
+    return nodes, list(edges)
 
 
 def hamiltonian_cycle_sat(nodes, edges):
@@ -37,27 +56,8 @@ def hamiltonian_cycle_sat(nodes, edges):
         return None
 
 
-nodes = list(range(1, 21))
-edges = [
-    (1, 20), (1, 2), (1, 5),
-    (2, 18), (2, 3),
-    (3, 4), (3, 16),
-    (4, 5), (4, 14),
-    (5, 6),
-    (6, 7), (6, 13),
-    (7, 8), (7, 20),
-    (8, 9), (8, 12),
-    (9, 19), (9, 10),
-    (10, 17), (10, 11),
-    (11, 12), (11, 15),
-    (12, 13),
-    (13, 14),
-    (14, 15),
-    (15, 16),
-    (17, 18),
-    (18, 19),
-    (19, 20),
-]
+n = 10
+nodes, edges = generate_random_hc_graph(n, extra=8)
 
 cycle = hamiltonian_cycle_sat(nodes, edges)
 if cycle:

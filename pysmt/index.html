@@ -591,6 +591,25 @@ else:
     code:
 `from pysmt.shortcuts import Symbol, And, Or, Not, ExactlyOne, Solver
 from pysmt.typing import BOOL
+import random
+
+
+def generate_random_hc_graph(n, extra=8):
+    nodes = list(range(1, n + 1))
+    perm = nodes[:]
+    random.shuffle(perm)
+    # Guarantee a Hamiltonian cycle exists
+    edges = set()
+    for i in range(n):
+        a, b = perm[i], perm[(i + 1) % n]
+        edges.add((min(a, b), max(a, b)))
+    # Add random extra edges
+    attempts = 0
+    while len(edges) < n + extra and attempts < 300:
+        a, b = random.sample(nodes, 2)
+        edges.add((min(a, b), max(a, b)))
+        attempts += 1
+    return nodes, list(edges)
 
 
 def hamiltonian_cycle_sat(nodes, edges):
@@ -628,27 +647,8 @@ def hamiltonian_cycle_sat(nodes, edges):
         return None
 
 
-nodes = list(range(1, 21))
-edges = [
-    (1, 20), (1, 2), (1, 5),
-    (2, 18), (2, 3),
-    (3, 4), (3, 16),
-    (4, 5), (4, 14),
-    (5, 6),
-    (6, 7), (6, 13),
-    (7, 8), (7, 20),
-    (8, 9), (8, 12),
-    (9, 19), (9, 10),
-    (10, 17), (10, 11),
-    (11, 12), (11, 15),
-    (12, 13),
-    (13, 14),
-    (14, 15),
-    (15, 16),
-    (17, 18),
-    (18, 19),
-    (19, 20),
-]
+n = 10
+nodes, edges = generate_random_hc_graph(n, extra=8)
 
 cycle = hamiltonian_cycle_sat(nodes, edges)
 if cycle:
@@ -675,6 +675,50 @@ else:
     code:
 `from pysmt.shortcuts import Symbol, And, ExactlyOne, Solver
 from pysmt.typing import BOOL
+import random
+
+
+def generate_random_puzzle(clues=35):
+    # Base valid solution (standard Sudoku template)
+    base = [
+        [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [4, 5, 6, 7, 8, 9, 1, 2, 3],
+        [7, 8, 9, 1, 2, 3, 4, 5, 6],
+        [2, 3, 4, 5, 6, 7, 8, 9, 1],
+        [5, 6, 7, 8, 9, 1, 2, 3, 4],
+        [8, 9, 1, 2, 3, 4, 5, 6, 7],
+        [3, 4, 5, 6, 7, 8, 9, 1, 2],
+        [6, 7, 8, 9, 1, 2, 3, 4, 5],
+        [9, 1, 2, 3, 4, 5, 6, 7, 8],
+    ]
+    # Permute digits
+    digits = list(range(1, 10))
+    random.shuffle(digits)
+    digit_map = {i + 1: digits[i] for i in range(9)}
+    grid = [[digit_map[v] for v in row] for row in base]
+    # Shuffle rows within each band of 3
+    for band in range(3):
+        rows = list(range(band * 3, band * 3 + 3))
+        random.shuffle(rows)
+        band_rows = [grid[r][:] for r in rows]
+        for i, r in enumerate(range(band * 3, band * 3 + 3)):
+            grid[r] = band_rows[i]
+    # Shuffle cols within each band of 3
+    for band in range(3):
+        cols = list(range(band * 3, band * 3 + 3))
+        perm = cols[:]
+        random.shuffle(perm)
+        for row in grid:
+            orig = row[:]
+            for i, c in enumerate(range(band * 3, band * 3 + 3)):
+                row[c] = orig[perm[i]]
+    # Remove cells to create puzzle
+    puzzle = [row[:] for row in grid]
+    cells = [(i, j) for i in range(9) for j in range(9)]
+    random.shuffle(cells)
+    for i, j in cells[:81 - clues]:
+        puzzle[i][j] = 0
+    return puzzle
 
 
 def sudoku_solver(puzzle):
@@ -725,17 +769,7 @@ def sudoku_solver(puzzle):
         return None
 
 
-puzzle = [
-    [0, 0, 0, 2, 6, 0, 7, 0, 1],
-    [6, 8, 0, 0, 7, 0, 0, 9, 0],
-    [1, 9, 0, 0, 0, 4, 5, 0, 0],
-    [8, 2, 0, 1, 0, 0, 0, 4, 0],
-    [0, 0, 4, 6, 0, 2, 9, 0, 0],
-    [0, 5, 0, 0, 0, 3, 0, 2, 8],
-    [0, 0, 9, 3, 0, 0, 0, 7, 4],
-    [0, 4, 0, 0, 5, 0, 0, 3, 6],
-    [7, 0, 3, 0, 1, 8, 0, 0, 0]
-]
+puzzle = generate_random_puzzle(clues=35)
 
 solution = sudoku_solver(puzzle)
 if solution:
