@@ -1071,7 +1071,7 @@ const GC_PALETTE = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#8b5cf6','#06b6d4',
 
 function checkVizAvailable(out) {
   const show = out.includes('GRAPH_COLORING_RESULT') || out.includes('SUDOKU_RESULT') || out.includes('HAMILTON_CYCLE_RESULT');
-  document.getElementById('vizBtn').style.display = show ? '' : 'none';
+  document.getElementById('vizBtn').style.display = show ? 'inline-block' : 'none';
   if (show) window._vizOutput = out;
 }
 
