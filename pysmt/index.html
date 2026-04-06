@@ -584,7 +584,7 @@ function initMonaco() {
 
 // ── WANDBOX EXECUTION ────────────────────────────────────────────────────────
 // Wandbox is a free, no-auth online compiler — https://wandbox.org
-const WANDBOX_URL = 'https://wandbox.org/api/compile';
+const WANDBOX_URL = 'https://wandbox.org/api/compile.json';
 
 async function runCode() {
   if (!window._editor) return;
@@ -604,7 +604,7 @@ async function runCode() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        compiler: 'cpython-3.12.0',
+        compiler: 'cpython-3.12.7',
         code: code,
         stdin: '',
         options: '',
