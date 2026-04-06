@@ -600,8 +600,16 @@ async function runCode() {
   appendLine('─'.repeat(48), 'system');
   appendLine('Installing pysmt + z3-solver (first run may take ~30 s)…', 'info');
 
-  // Prepend a silent pip install so pysmt is available in the Wandbox sandbox
-  const INSTALL = 'import subprocess, sys\nsubprocess.run([sys.executable,"-m","pip","install","pysmt","z3-solver","-q"],capture_output=True)\n';
+  // Prepend pip install — target /tmp so it lands on a writable path, then inject into sys.path
+  const INSTALL = [
+    'import subprocess, sys, os',
+    '_d = "/tmp/pypkgs"',
+    'os.makedirs(_d, exist_ok=True)',
+    '_r = subprocess.run([sys.executable,"-m","pip","install","pysmt","z3-solver","--target",_d,"-q"],',
+    '    capture_output=True, text=True)',
+    'if _r.returncode != 0: print("[pip]", _r.stderr[:600])',
+    'if _d not in sys.path: sys.path.insert(0, _d)',
+  ].join('\n') + '\n';
   const fullCode = INSTALL + code;
 
   try {
