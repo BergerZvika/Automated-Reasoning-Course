@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings("ignore")
 from pysmt.shortcuts import Symbol, And, Equals, Int, is_sat, Portfolio
 from pysmt.typing import BOOL, INT
 from pysmt.logics import QF_BOOL

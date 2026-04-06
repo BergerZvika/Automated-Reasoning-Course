@@ -430,7 +430,9 @@ print("result: ", r)
     file: 'pysmt_portfolio.py',
     desc: 'Portfolio solver strategy',
     code:
-`from pysmt.shortcuts import Symbol, And, Equals, Int, is_sat, Portfolio
+`import warnings
+warnings.filterwarnings("ignore")
+from pysmt.shortcuts import Symbol, And, Equals, Int, is_sat, Portfolio
 from pysmt.typing import BOOL, INT
 from pysmt.logics import QF_BOOL
 
