@@ -312,7 +312,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
       <span id="filename">hello_world.py</span>
       <button class="btn-run" id="runBtn">▶ Run</button>
       <span class="kbd-hint">Ctrl+Enter</span>
-      <button class="btn-clear" id="clearBtn">⌫ Clear</button>
       <button class="btn-server" id="serverBtn" onclick="openServerModal()">
         <span class="server-dot" id="serverDot"></span>
         <span id="serverLabel">⚙ Server</span>
@@ -328,7 +327,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 
     <!-- Terminal -->
     <div id="terminal">
-      <div class="term-hdr"><span class="term-dot"></span> Output</div>
+      <div class="term-hdr"><span class="term-dot"></span> Output <button class="btn-clear" id="clearBtn" style="margin-left:auto">⌫ Clear</button></div>
       <div id="termOutput"></div>
     </div>
 
