@@ -371,7 +371,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 
     <!-- Terminal -->
     <div id="terminal">
-      <div class="term-hdr"><span class="term-dot"></span> Output <button class="btn-viz" id="vizBtn" onclick="showViz()">▦ Visualize</button><button class="btn-clear" id="clearBtn" style="margin-left:auto">⌫ Clear</button></div>
+      <div class="term-hdr"><span class="term-dot"></span> Output <div style="margin-left:auto;display:flex;gap:6px"><button class="btn-viz" id="vizBtn" onclick="showViz()">▦ Visualize</button><button class="btn-clear" id="clearBtn">⌫ Clear</button></div></div>
       <div id="termOutput"></div>
     </div>
 
@@ -704,7 +704,7 @@ function appendLine(text, cls = 'stdout') {
   });
   termEl.scrollTop = termEl.scrollHeight;
 }
-function clearOutput() { termEl.innerHTML = ''; }
+function clearOutput() { termEl.innerHTML = ''; document.getElementById('vizBtn').style.display = 'none'; window._vizOutput = null; }
 document.getElementById('clearBtn').onclick = clearOutput;
 
 // ── SIDEBAR ───────────────────────────────────────────────────────────────────
@@ -909,8 +909,9 @@ async function runCode() {
 
   const out = (result.stdout || '').replace(/\n$/, '');
   const err = (result.stderr || '').replace(/\n$/, '');
-  if (out) appendLine(out, 'stdout');
   if (out) checkVizAvailable(out);
+  const displayOut = filterVizMarkers(out);
+  if (displayOut) appendLine(displayOut, 'stdout');
   if (err) {
     if (!usedServer && (err.includes("No module named 'pysmt'") || err.includes("No module named 'z3'"))) {
       appendLine('pysmt requires a server with pysmt+z3 installed.', 'stderr');
@@ -958,6 +959,18 @@ async function runCode() {
 })();
 
 // ── VISUALIZATION ─────────────────────────────────────────────────────────────
+function filterVizMarkers(out) {
+  if (!out) return out;
+  const lines = out.split('\n');
+  const filtered = [];
+  let skip = false;
+  for (const l of lines) {
+    if (l === 'GRAPH_COLORING_RESULT' || l === 'SUDOKU_RESULT') { skip = true; continue; }
+    if (skip && l === '---') { skip = false; continue; }
+    if (!skip) filtered.push(l);
+  }
+  return filtered.join('\n').replace(/^\n+|\n+$/g, '');
+}
 const GC_PALETTE = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#84cc16'];
 
 function checkVizAvailable(out) {
