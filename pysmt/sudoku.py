@@ -98,8 +98,22 @@ def sudoku_solver(puzzle):
         else:
             return None  # No solution found
 
+def print_grid(grid, label):
+    print(label)
+    for i, row in enumerate(grid):
+        if i in (3, 6):
+            print("------+-------+------")
+        line = ""
+        for j, val in enumerate(row):
+            if j in (3, 6):
+                line += "| "
+            line += (str(val) if val != 0 else ".") + " "
+        print(line.rstrip())
+    print()
+
 puzzle = generate_random_puzzle(clues=35)
 
+print_grid(puzzle, "Puzzle:")
 solution = sudoku_solver(puzzle)
 if solution:
     print("SUDOKU_RESULT")

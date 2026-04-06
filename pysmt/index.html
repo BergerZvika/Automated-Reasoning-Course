@@ -573,6 +573,10 @@ vertex = [1, 2, 3, 4, 5, 6, 7]
 edge = [(1, 4), (1, 5), (1, 6), (4, 6), (5, 6), (6, 7), (4, 2), (5, 3), (2, 7), (2, 3), (3, 7)]
 k = 3  # number of colors
 
+print(f"Problem: {len(vertex)} vertices, {len(edge)} edges, k={k} colors")
+print(f"Edges: {' '.join(f'({v1},{v2})' for v1, v2 in edge)}")
+print()
+
 solution = graph_coloring_sat(vertex, edge, k)
 if solution:
     print("GRAPH_COLORING_RESULT")
@@ -642,6 +646,10 @@ n = 7
 vertex = list(range(n))
 edge = generate_random_pairs(10, n)
 k = 3
+
+print(f"Problem: {len(vertex)} vertices, {len(edge)} edges, k={k} colors")
+print(f"Edges: {' '.join(f'({v1},{v2})' for v1, v2 in sorted(edge))}")
+print()
 
 solution = graph_coloring_sat(vertex, edge, k)
 if solution:
@@ -731,6 +739,10 @@ edges = [
     (19, 20),
 ]
 
+print(f"Problem: {len(nodes)} nodes, {len(edges)} edges")
+print(f"Edges: {' '.join(f'({a},{b})' for a, b in edges)}")
+print()
+
 cycle = hamiltonian_cycle_sat(nodes, edges)
 if cycle:
     cycle_edges = [(cycle[i], cycle[(i + 1) % len(cycle)]) for i in range(len(cycle))]
@@ -818,6 +830,10 @@ def hamiltonian_cycle_sat(nodes, edges):
 n = 10
 nodes, edges = generate_random_hc_graph(n, extra=8)
 
+print(f"Problem: {len(nodes)} nodes, {len(edges)} edges")
+print(f"Edges: {' '.join(f'({a},{b})' for a, b in sorted(edges))}")
+print()
+
 cycle = hamiltonian_cycle_sat(nodes, edges)
 if cycle:
     cycle_edges = [(cycle[i], cycle[(i + 1) % len(cycle)]) for i in range(len(cycle))]
@@ -895,6 +911,19 @@ def sudoku_solver(puzzle):
         return None
 
 
+def print_grid(grid, label):
+    print(label)
+    for i, row in enumerate(grid):
+        if i in (3, 6):
+            print("------+-------+------")
+        line = ""
+        for j, val in enumerate(row):
+            if j in (3, 6):
+                line += "| "
+            line += (str(val) if val != 0 else ".") + " "
+        print(line.rstrip())
+    print()
+
 # Fixed puzzle (0 = empty cell to be filled by the solver)
 puzzle = [
     [0, 0, 0, 2, 6, 0, 7, 0, 1],
@@ -908,6 +937,7 @@ puzzle = [
     [7, 0, 3, 0, 1, 8, 0, 0, 0]
 ]
 
+print_grid(puzzle, "Puzzle:")
 solution = sudoku_solver(puzzle)
 if solution:
     print("SUDOKU_RESULT")
@@ -1020,9 +1050,23 @@ def sudoku_solver(puzzle):
         return None
 
 
+def print_grid(grid, label):
+    print(label)
+    for i, row in enumerate(grid):
+        if i in (3, 6):
+            print("------+-------+------")
+        line = ""
+        for j, val in enumerate(row):
+            if j in (3, 6):
+                line += "| "
+            line += (str(val) if val != 0 else ".") + " "
+        print(line.rstrip())
+    print()
+
 # Generate a random puzzle with 35 clues
 puzzle = generate_random_puzzle(clues=35)
 
+print_grid(puzzle, "Puzzle:")
 solution = sudoku_solver(puzzle)
 if solution:
     print("SUDOKU_RESULT")

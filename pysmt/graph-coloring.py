@@ -53,6 +53,10 @@ vertex = list(range(n))
 edge = generate_random_pairs(10, n)
 k = 3
 
+print(f"Problem: {len(vertex)} vertices, {len(edge)} edges, k={k} colors")
+print(f"Edges: {' '.join(f'({v1},{v2})' for v1, v2 in sorted(edge))}")
+print()
+
 solution = graph_coloring_sat(vertex, edge, k)
 if solution:
     print("GRAPH_COLORING_RESULT")

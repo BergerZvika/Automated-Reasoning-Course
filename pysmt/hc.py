@@ -67,6 +67,10 @@ def hamiltonian_cycle_sat(nodes, edges):
 n = 10
 nodes, edges = generate_random_hc_graph(n, extra=8)
 
+print(f"Problem: {len(nodes)} nodes, {len(edges)} edges")
+print(f"Edges: {' '.join(f'({a},{b})' for a, b in sorted(edges))}")
+print()
+
 cycle = hamiltonian_cycle_sat(nodes, edges)
 if cycle:
     cycle_edges = [(cycle[i], cycle[(i + 1) % len(cycle)]) for i in range(len(cycle))]
