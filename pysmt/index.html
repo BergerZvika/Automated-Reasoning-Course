@@ -117,12 +117,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
   transition:border-color .15s,color .15s;white-space:nowrap;flex-shrink:0;
 }
 .btn-clear:hover{border-color:var(--muted);color:var(--text)}
-.btn-reset{
+.btn-server{
   padding:5px 11px;background:transparent;border:1px solid var(--border);
   border-radius:6px;color:var(--muted);font-size:12px;cursor:pointer;
   transition:border-color .15s,color .15s;white-space:nowrap;flex-shrink:0;
+  display:flex;align-items:center;gap:5px;
 }
-.btn-reset:hover{border-color:var(--red);color:var(--red)}
+.btn-server:hover{border-color:var(--blue);color:var(--blue2)}
+.server-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0}
+.server-dot.connected{background:var(--green)}
 #pyStatus{font-size:12px;color:var(--yellow);white-space:nowrap;flex-shrink:0}
 #pyStatus.ready{color:var(--green)}
 #pyStatus.error{color:var(--red)}
@@ -168,6 +171,69 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 .tline.success{color:#4ade80}
 .tline.info{color:#60a5fa}
 
+/* ── SERVER MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
+  backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:28px 30px;width:min(520px,92vw);position:relative;
+}
+.modal h3{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.modal-close{
+  position:absolute;top:14px;right:16px;background:none;border:none;
+  color:var(--muted);font-size:1.1rem;cursor:pointer;
+}
+.modal-close:hover{color:var(--text)}
+
+.field-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px}
+.url-row{display:flex;gap:8px;margin-bottom:16px}
+.url-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;
+  color:var(--text);font-size:13px;font-family:'Consolas',monospace;
+  padding:7px 10px;outline:none;transition:border-color .15s;
+}
+.url-input:focus{border-color:var(--blue)}
+.url-input::placeholder{color:#3d4a60}
+.btn-save{
+  padding:7px 16px;background:var(--blue);color:#fff;border:none;
+  border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;
+  white-space:nowrap;transition:opacity .15s;
+}
+.btn-save:hover{opacity:.85}
+.btn-clear-url{
+  padding:7px 12px;background:transparent;border:1px solid var(--border);
+  border-radius:7px;color:var(--muted);font-size:13px;cursor:pointer;
+  transition:border-color .15s,color .15s;
+}
+.btn-clear-url:hover{border-color:var(--red);color:var(--red)}
+
+.deploy-steps{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;margin-bottom:16px}
+.deploy-steps h4{font-size:11px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--blue2);margin-bottom:10px}
+.step{display:flex;gap:10px;margin-bottom:8px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.step:last-child{margin-bottom:0}
+.step-n{
+  min-width:20px;height:20px;border-radius:50%;background:rgba(59,130,246,.2);
+  color:var(--blue2);font-size:11px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.step a{color:var(--blue2);text-decoration:none}
+.step a:hover{text-decoration:underline}
+.step code{
+  background:rgba(255,255,255,.07);border-radius:4px;
+  padding:1px 5px;font-family:'Consolas',monospace;font-size:11.5px;color:#c9d1d9;
+}
+
+#modalStatus{font-size:12px;margin-top:4px;min-height:18px}
+#modalStatus.ok{color:var(--green)}
+#modalStatus.err{color:var(--red)}
+#modalStatus.checking{color:var(--yellow)}
 </style>
 </head>
 <body>
@@ -181,6 +247,47 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
   <div class="hdr-right">
     <span class="hdr-badge">Python · z3 backend</span>
     <a class="hdr-home" href="../index.html">← Course Home</a>
+  </div>
+</div>
+
+<!-- Server config modal -->
+<div class="modal-overlay" id="serverModal"
+     onclick="if(event.target===this)closeServerModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeServerModal()">✕</button>
+    <h3>PySMT Execution Server</h3>
+    <p class="modal-sub">
+      pysmt + z3 require a real Python environment. Deploy the bundled
+      <code>server.py</code> once — every student gets full pysmt support instantly.
+    </p>
+
+    <div class="deploy-steps">
+      <h4>Deploy to Render (free, ~3 min)</h4>
+      <div class="step"><span class="step-n">1</span>
+        <span>Go to <a href="https://render.com" target="_blank">render.com</a> → <b>New → Web Service</b></span>
+      </div>
+      <div class="step"><span class="step-n">2</span>
+        <span>Connect repo <code>BergerZvika/Automated-Reasoning-Course</code></span>
+      </div>
+      <div class="step"><span class="step-n">3</span>
+        <span>Root Dir: <code>pysmt</code> · Build: <code>pip install -r requirements.txt</code> · Start: <code>python server.py</code></span>
+      </div>
+      <div class="step"><span class="step-n">4</span>
+        <span>Click <b>Deploy</b>, wait ~2 min, copy the <code>*.onrender.com</code> URL</span>
+      </div>
+      <div class="step"><span class="step-n">5</span>
+        <span>Paste the URL below and click <b>Save</b></span>
+      </div>
+    </div>
+
+    <div class="field-label">Server URL</div>
+    <div class="url-row">
+      <input class="url-input" id="serverUrlInput"
+             placeholder="https://your-app.onrender.com/run" type="url">
+      <button class="btn-save" onclick="saveServerUrl()">Save &amp; Test</button>
+      <button class="btn-clear-url" onclick="clearServerUrl()">Clear</button>
+    </div>
+    <div id="modalStatus"></div>
   </div>
 </div>
 
@@ -207,7 +314,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
       <button class="btn-run" id="runBtn">▶ Run</button>
       <span class="kbd-hint">Ctrl+Enter</span>
       <button class="btn-clear" id="clearBtn">⌫ Clear</button>
-      <span id="pyStatus">● Piston ready</span>
+      <button class="btn-server" id="serverBtn" onclick="openServerModal()">
+        <span class="server-dot" id="serverDot"></span>
+        <span id="serverLabel">⚙ Server</span>
+      </button>
+      <span id="pyStatus">● Ready</span>
     </div>
 
     <!-- Monaco editor -->
@@ -478,12 +589,9 @@ with __import__('pysmt.shortcuts', fromlist=['Solver']).Solver(name="z3") as s:
     desc: 'Write your own PySMT code',
     code:
 `# PySMT Scratch Pad — write your own formulas!
-# Tip: variables persist between runs until you click Reset.
-
 from pysmt.shortcuts import *
 from pysmt.typing import BOOL, INT, REAL, BVType
 
-# Example: create symbols and check satisfiability
 x = Symbol("x", INT)
 y = Symbol("y", INT)
 
@@ -528,7 +636,7 @@ function buildSidebar() {
       `<div class="ex-desc">${ex.desc}</div>`;
     btn.onclick = () => loadExample(i);
     list.appendChild(btn);
-    if (i === 2) {   // separator before Quantifiers
+    if (i === 2) {
       const sep = document.createElement('div');
       sep.className = 'sb-sep';
       list.appendChild(sep);
@@ -574,7 +682,6 @@ function initMonaco() {
         bracketPairColorization: { enabled: true },
       }
     );
-    // Ctrl/Cmd + Enter → run
     window._editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
       () => runCode()
@@ -582,15 +689,77 @@ function initMonaco() {
   });
 }
 
-// ── EXECUTION BACKEND ────────────────────────────────────────────────────────
-// Set EXEC_URL to your deployed server URL (see pysmt/server.py for Render instructions).
-// Use null to always fall back to Wandbox (no pysmt support).
-const EXEC_URL    = null;   // e.g. 'https://your-app.onrender.com/run'
-const LOCAL_URL   = 'http://localhost:5001/run';
+// ── SERVER CONFIG (localStorage) ─────────────────────────────────────────────
+const LS_KEY = 'pysmt_server_url';
 const WANDBOX_URL = 'https://wandbox.org/api/compile.json';
 
+function getServerUrl() {
+  return localStorage.getItem(LS_KEY) || null;
+}
+
+function updateServerIndicator(connected) {
+  document.getElementById('serverDot').className = 'server-dot' + (connected ? ' connected' : '');
+  document.getElementById('serverLabel').textContent = connected ? '⚙ pysmt ✓' : '⚙ Server';
+}
+
+function openServerModal() {
+  const url = getServerUrl();
+  document.getElementById('serverUrlInput').value = url || '';
+  document.getElementById('modalStatus').textContent = url
+    ? 'Current: ' + url : '';
+  document.getElementById('modalStatus').className = url ? 'ok' : '';
+  document.getElementById('serverModal').classList.add('open');
+}
+
+function closeServerModal() {
+  document.getElementById('serverModal').classList.remove('open');
+}
+
+async function saveServerUrl() {
+  const raw = document.getElementById('serverUrlInput').value.trim();
+  const statusEl = document.getElementById('modalStatus');
+  if (!raw) { clearServerUrl(); return; }
+
+  // normalise — append /run if needed
+  const url = raw.replace(/\/run$/, '') + '/run';
+  statusEl.textContent = 'Testing connection…';
+  statusEl.className = 'checking';
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: 'print("ok")' }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const r = await resp.json();
+    if ((r.stdout || '').includes('ok')) {
+      localStorage.setItem(LS_KEY, url);
+      statusEl.textContent = '✓ Connected! pysmt examples will run on this server.';
+      statusEl.className = 'ok';
+      updateServerIndicator(true);
+    } else {
+      throw new Error('unexpected response');
+    }
+  } catch (e) {
+    statusEl.textContent = '✕ Could not reach server: ' + e.message;
+    statusEl.className = 'err';
+    updateServerIndicator(false);
+  }
+}
+
+function clearServerUrl() {
+  localStorage.removeItem(LS_KEY);
+  document.getElementById('serverUrlInput').value = '';
+  document.getElementById('modalStatus').textContent = 'Server URL cleared.';
+  document.getElementById('modalStatus').className = '';
+  updateServerIndicator(false);
+}
+
+// ── EXECUTION ─────────────────────────────────────────────────────────────────
 async function tryPysmtServer(code) {
-  const url = EXEC_URL || LOCAL_URL;
+  const url = getServerUrl() || 'http://localhost:5001/run';
   const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -598,7 +767,7 @@ async function tryPysmtServer(code) {
     signal: AbortSignal.timeout(30000),
   });
   if (!resp.ok) throw new Error('server HTTP ' + resp.status);
-  return resp.json(); // { stdout, stderr, returncode }
+  return resp.json();
 }
 
 async function tryWandbox(code) {
@@ -619,7 +788,7 @@ async function tryWandbox(code) {
 async function runCode() {
   if (!window._editor) return;
   const code = window._editor.getValue();
-  const runBtn  = document.getElementById('runBtn');
+  const runBtn   = document.getElementById('runBtn');
   const statusEl = document.getElementById('pyStatus');
 
   runBtn.disabled = true;
@@ -629,14 +798,15 @@ async function runCode() {
   statusEl.className = 'loading';
   appendLine('─'.repeat(48), 'system');
 
-  let result;
+  let result, usedServer = false;
   try {
     result = await tryPysmtServer(code);
-    appendLine('● pysmt server', 'info');
+    usedServer = true;
+    updateServerIndicator(true);
   } catch (_) {
-    // server not reachable — fall back to Wandbox (no pysmt)
-    appendLine('⚠ pysmt server not reachable — running on Wandbox (pysmt unavailable)', 'system');
-    appendLine('  Deploy pysmt/server.py to Render and set EXEC_URL in index.html', 'system');
+    if (getServerUrl()) updateServerIndicator(false);
+    appendLine('⚠ pysmt server not reachable — falling back to Wandbox (no pysmt)', 'system');
+    appendLine('  Click ⚙ Server to configure a pysmt server', 'system');
     try {
       result = await tryWandbox(code);
     } catch (err2) {
@@ -650,17 +820,13 @@ async function runCode() {
     }
   }
 
-  const out = result.stdout.replace(/\n$/, '');
-  const err = result.stderr.replace(/\n$/, '');
+  const out = (result.stdout || '').replace(/\n$/, '');
+  const err = (result.stderr || '').replace(/\n$/, '');
   if (out) appendLine(out, 'stdout');
   if (err) {
-    // When running on Wandbox (no pysmt), replace the raw traceback with a clear message
-    if (err.includes("No module named 'pysmt'") || err.includes("No module named 'z3'")) {
-      appendLine('pysmt is not available in the online sandbox.', 'stderr');
-      appendLine('To run this example, start the local server:', 'system');
-      appendLine('  pip install pysmt z3-solver flask flask-cors', 'system');
-      appendLine('  pysmt-install --z3', 'system');
-      appendLine('  python pysmt/server.py', 'system');
+    if (!usedServer && (err.includes("No module named 'pysmt'") || err.includes("No module named 'z3'"))) {
+      appendLine('pysmt requires a server with pysmt+z3 installed.', 'stderr');
+      appendLine('Click  ⚙ Server  in the toolbar to configure one.', 'system');
     } else {
       appendLine(err, 'stderr');
     }
@@ -710,10 +876,16 @@ document.getElementById('pyStatus').className = 'ready';
 buildSidebar();
 initMonaco();
 
-// Show startup hint
+// Restore server indicator on load
+updateServerIndicator(!!getServerUrl());
+
 appendLine('PySMT Tutorial', 'info');
-appendLine('● For full pysmt support  →  python pysmt/server.py   (then refresh)', 'system');
-appendLine('● Without local server   →  Wandbox fallback (pure Python only)', 'system');
+if (getServerUrl()) {
+  appendLine('● pysmt server configured: ' + getServerUrl(), 'success');
+} else {
+  appendLine('⚙ No pysmt server configured — click  ⚙ Server  in the toolbar', 'system');
+  appendLine('  or deploy pysmt/server.py to Render for free pysmt+z3 support', 'system');
+}
 </script>
 </body>
 </html>
