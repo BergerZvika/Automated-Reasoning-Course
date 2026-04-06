@@ -125,13 +125,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
 .btn-run:hover:not(:disabled){opacity:.85}
 .btn-run:disabled{opacity:.35;cursor:not-allowed}
 .btn-run.running{background:var(--yellow)}
-.btn-random{
-  padding:5px 11px;background:transparent;border:1px solid rgba(251,191,36,.4);
-  border-radius:6px;color:#fbbf24;font-size:12px;cursor:pointer;
-  transition:background .15s,border-color .15s;white-space:nowrap;flex-shrink:0;
+.ex-mode-btn{
+  font-size:10px;padding:1px 7px;border-radius:4px;margin-left:7px;
+  border:1px solid rgba(251,191,36,.45);background:transparent;
+  color:#fbbf24;cursor:pointer;white-space:nowrap;vertical-align:middle;
+  transition:background .15s,border-color .15s;
 }
-.btn-random:hover{background:rgba(251,191,36,.1);border-color:#fbbf24}
-.btn-random.active{background:rgba(251,191,36,.15);border-color:#fbbf24;color:#fde68a}
+.ex-mode-btn:hover{background:rgba(251,191,36,.12);border-color:#fbbf24}
+.ex-mode-btn.is-random{background:rgba(251,191,36,.18);border-color:#fbbf24}
 .btn-clear{
   padding:5px 11px;background:transparent;border:1px solid var(--border);
   border-radius:6px;color:var(--muted);font-size:12px;cursor:pointer;
@@ -339,7 +340,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
       <span id="filename">hello_world.py</span>
       <button class="btn-run" id="runBtn">▶ Run</button>
       <span class="kbd-hint">Ctrl+Enter</span>
-      <button class="btn-random" id="randomBtn" style="display:none">🎲 Random</button>
       <button class="btn-server" id="serverBtn" onclick="openServerModal()">
         <span class="server-dot" id="serverDot"></span>
         <span id="serverLabel">⚙ Server</span>
@@ -1058,24 +1058,47 @@ document.getElementById('clearBtn').onclick = clearOutput;
 const ALL_ITEMS = [...EXAMPLES, ...MODELING];
 let currentIdx = 0;
 
-function makeBtn(ex, globalIdx) {
-  const btn = document.createElement('button');
+function handleModeToggle(modeBtn, globalIdx) {
+  const item = ALL_ITEMS[globalIdx];
+  if (!item || !item.codeRandom) return;
+  const nowRandom = modeBtn.dataset.random !== 'true';
+  modeBtn.dataset.random = nowRandom;
+  modeBtn.textContent = nowRandom ? 'Random' : 'Default';
+  modeBtn.classList.toggle('is-random', nowRandom);
+  if (globalIdx === currentIdx && window._editor)
+    window._editor.setValue(nowRandom ? item.codeRandom : item.code);
+}
+
+function makeBtn(ex, globalIdx, isModeling) {
+  const btn = document.createElement('div');
   btn.className = 'ex-btn' + (globalIdx === 0 ? ' active' : '');
   btn.dataset.idx = globalIdx;
   const blob = new Blob([ex.code], {type: 'text/plain'});
   const dlUrl = URL.createObjectURL(blob);
+  const modeBtnHtml = (isModeling && ex.codeRandom)
+    ? `<button class="ex-mode-btn" data-random="false" data-midx="${globalIdx}">Default</button>`
+    : '';
   btn.innerHTML =
-    `<div class="ex-text"><div class="ex-name">${ex.name}</div><div class="ex-desc">${ex.desc}</div></div>` +
+    `<div class="ex-text"><div class="ex-name">${ex.name}${modeBtnHtml}</div><div class="ex-desc">${ex.desc}</div></div>` +
     `<a class="ex-dl" href="${dlUrl}" download="${ex.file}" title="Download ${ex.file}">⬇</a>`;
-  btn.onclick = (e) => { if (!e.target.closest('.ex-dl')) loadExample(globalIdx); };
+  btn.onclick = (e) => {
+    if (e.target.closest('.ex-mode-btn') || e.target.closest('.ex-dl')) return;
+    loadExample(globalIdx);
+  };
+  if (isModeling && ex.codeRandom) {
+    btn.querySelector('.ex-mode-btn').onclick = (e) => {
+      e.stopPropagation();
+      handleModeToggle(e.currentTarget, globalIdx);
+    };
+  }
   return btn;
 }
 
 function buildSidebar() {
   const exEl = document.getElementById('sbExamples');
   const modEl = document.getElementById('sbModeling');
-  EXAMPLES.forEach((ex, i) => exEl.appendChild(makeBtn(ex, i)));
-  MODELING.forEach((ex, i) => modEl.appendChild(makeBtn(ex, EXAMPLES.length + i)));
+  EXAMPLES.forEach((ex, i) => exEl.appendChild(makeBtn(ex, i, false)));
+  MODELING.forEach((ex, i) => modEl.appendChild(makeBtn(ex, EXAMPLES.length + i, true)));
 }
 
 function loadExample(i) {
@@ -1083,29 +1106,11 @@ function loadExample(i) {
   document.querySelectorAll('.ex-btn').forEach(b =>
     b.classList.toggle('active', Number(b.dataset.idx) === i));
   document.getElementById('filename').textContent = ALL_ITEMS[i].file;
-  if (window._editor) window._editor.setValue(ALL_ITEMS[i].code);
-  window._isRandom = false;
-  const randomBtn = document.getElementById('randomBtn');
-  const isModeling = i >= EXAMPLES.length;
-  randomBtn.style.display = isModeling ? 'inline-block' : 'none';
-  randomBtn.textContent = '🎲 Random';
-  randomBtn.classList.remove('active');
+  const modeBtn = document.querySelector(`.ex-mode-btn[data-midx="${i}"]`);
+  const isRandom = modeBtn && modeBtn.dataset.random === 'true';
+  if (window._editor)
+    window._editor.setValue(isRandom ? ALL_ITEMS[i].codeRandom : ALL_ITEMS[i].code);
 }
-
-document.getElementById('randomBtn').onclick = function() {
-  const item = ALL_ITEMS[currentIdx];
-  if (!item || !item.codeRandom) return;
-  window._isRandom = !window._isRandom;
-  if (window._isRandom) {
-    window._editor.setValue(item.codeRandom);
-    this.textContent = '📌 Default';
-    this.classList.add('active');
-  } else {
-    window._editor.setValue(item.code);
-    this.textContent = '🎲 Random';
-    this.classList.remove('active');
-  }
-};
 
 // ── MONACO EDITOR ─────────────────────────────────────────────────────────────
 function initMonaco() {
